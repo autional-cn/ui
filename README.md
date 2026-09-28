@@ -46,6 +46,9 @@ pnpm gen:check    # 校验产物与 SSOT 一致（CI 用，有漂移退出 1）
 | `pnpm lock:check` | SSOT 被改动过吗 | 改了什么必须登记（reason + owner + expires） |
 | `pnpm verify` | 以上四条一起跑 | 任一失败即退出码 1 |
 | `pnpm delta` | canonical 色阶决策改了多少 | 生成 `verification/canonical-decision/report.md`（令牌变更后需重生成，T11 会检查是否过期） |
+| `pnpm assets:fonts` | 字体是真的交付了吗 | 台账 A1–A5 + **浏览器级加载断言**（canonical 的 sans 首项在页面上是否真的生效） |
+| `pnpm visual` | 站点改完看起来对不对 | 对已构建的站点产物做像素 + SSIM 回归（3 个目标：web / admin-console / developer） |
+| `pnpm visual:baseline` | 重建视觉基线 | 只在环境变化时跑（基线绑定浏览器版本与平台） |
 
 **为什么需要后两条**：改了 `tokens.json` 再跑一次 `pnpm gen`，`gen:check` 就完全无感——产物是最新的。
 实测：把 `color.primary.500` 从 `#235f84` 改成 `#236085` 并重新生成后，`gen:check` 报 OK，

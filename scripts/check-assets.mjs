@@ -97,12 +97,74 @@ if (existsSync(sitesDir)) {
   warns.push('A4 本次工作区没有 sites/，跳过消费方核对（CI 里同样会跳过）');
 }
 
+// ── A4b 浏览器级加载断言 ────────────────────────────────────────────────
+// A4 只证明「有没有装包」，这里证明「页面上到底用没用上」。
+// 手法与 brandui 一致：document.fonts.check() 对不存在的字族也返回 true（浏览器总能回退），
+// 不能用；改用两个独立信号——document.fonts 里是否声明过 + canvas 实测文本宽度是否异于通用回退。
+const targetsPath = join(ROOT, 'verification', 'visual.targets.json');
+const fontProbe = [];
+if (existsSync(targetsPath)) {
+  let chromium = null;
+  try { chromium = (await import('playwright-core')).chromium; } catch (e) { chromium = null; }
+  let browser = null;
+  if (chromium) { try { browser = await chromium.launch(); } catch (e) { browser = null; } }
+  if (!browser) {
+    warns.push('A4b 无可用 chromium，跳过浏览器级字体断言（先 pnpm install 并确保有浏览器）');
+  } else {
+    const { serveStatic } = await import('./lib/static-server.mjs');
+    const targets = JSON.parse(readFileSync(targetsPath, 'utf8')).targets || [];
+    const firstChoice = (T.core.font.sans || []).map((s) => String(s).replace(/^['"]|['"]$/g, '').trim())[0];
+    let port = 18960;
+    for (const target of targets) {
+      const root = resolve(ROOT, target.root);
+      if (!existsSync(root)) continue;
+      const server = await serveStatic(root, port++);
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+      const page = await ctx.newPage();
+      try {
+        await page.goto('http://127.0.0.1:' + (port - 1) + target.path, { waitUntil: 'load', timeout: 45000 });
+        await page.evaluate(() => document.fonts.ready);
+        const probe = await page.evaluate((fam) => {
+          const s = 'mmmMMMwwwiiiWWW0123 汉字测试';
+          const c = document.createElement('canvas').getContext('2d');
+          c.font = '16px sans-serif'; const sans = c.measureText(s).width;
+          c.font = '16px monospace'; const mono = c.measureText(s).width;
+          c.font = '16px "' + fam + '", sans-serif'; const withFam = c.measureText(s).width;
+          const declaredFaces = Array.from(document.fonts).map((f) => f.family.replace(/["']/g, ''));
+          return {
+            declared: declaredFaces.some((f) => f.toLowerCase() === fam.toLowerCase()),
+            faces: declaredFaces.slice(0, 6),
+            sameAsFallback: Math.abs(withFam - sans) < 0.01 || Math.abs(withFam - mono) < 0.01,
+            bodyFont: getComputedStyle(document.body).fontFamily.slice(0, 70)
+          };
+        }, firstChoice);
+        const used = probe.declared && !probe.sameAsFallback;
+        fontProbe.push({ target: target.name, firstChoice, declared: probe.declared, used, faces: probe.faces, bodyFont: probe.bodyFont });
+        if (!used) {
+          const k = knownFor('Inter');
+          const msg = 'A4b ' + target.name + '：canonical 的 sans 首项「' + firstChoice + '」未生效（@font-face 声明=' + probe.declared + '）';
+          if (k) knownHits.push({ msg, issue: k }); else problems.push(msg);
+        }
+      } catch (e) {
+        warns.push('A4b ' + target.name + ' 断言失败：' + String(e.message || e).slice(0, 80));
+      }
+      await ctx.close();
+      server.close();
+    }
+    await browser.close();
+  }
+}
+
 console.log('字体资产台账：' + ledger.families.length + ' 条；令牌声明 ' + declared.size + ' 个字体族');
 for (const [fam, roles] of declared) {
   const f = byFamily.get(fam);
   console.log('  ' + fam.padEnd(22) + (f ? f.delivery.padEnd(9) + (f.package || '') : '（未登记）').padEnd(28) + roles.join(', '));
 }
 if (consumer.scanned) console.log('消费方核对：扫描 ' + consumer.scanned + ' 个站点');
+if (fontProbe.length) {
+  console.log('浏览器级字体断言（canonical sans 首项在页面上是否真的生效）：');
+  for (const f of fontProbe) console.log('  ' + f.target.padEnd(18) + (f.used ? '生效' : '未生效') + '  声明=' + f.declared + '  body: ' + f.bodyFont);
+}
 console.log('');
 for (const p of problems) console.log('  [ERROR] ' + p);
 for (const w of warns) console.log('  [WARN ] ' + w);

@@ -1,0 +1,39 @@
+{
+  "$description": "视觉回归目标。每个目标指向一个站点已构建的 dist 目录（静态托管，不起 dev server）。",
+  "$notes": [
+    "基线绑定浏览器版本 + 视口 + DPR + 平台 + 本机已装字体，跨机器复用必然误报。",
+    "采集时每个目标使用**全新 chromium 进程**：实测复用同一浏览器进程会导致同一页面出现两种渲染结果。",
+    "目标目录不存在时跳过（CI 里只 checkout ui/ 时属正常）。"
+  ],
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "deviceScaleFactor": 1,
+  "locale": "zh-CN",
+  "timezoneId": "Asia/Shanghai",
+  "settleMs": 1500,
+  "maxDiffPixelRatio": 0.005,
+  "pixelThreshold": 0.05,
+  "minSsim": 0.98,
+  "targets": [
+    {
+      "name": "web-home",
+      "root": "../sites/web/dist",
+      "path": "/",
+      "note": "营销站首页。注意：该站不加载 canonical 令牌 CSS（--color-primary-500 为空），字体栈首项是 Noto Sans SC —— 基线记录的是**现状**，不是规范。"
+    },
+    {
+      "name": "admin-console",
+      "root": "../sites/admin/apps/admin-console/dist",
+      "path": "/",
+      "note": "console SPA 外壳，依赖后端（会尝试跳转 auth）。基线只保证「渲染未意外变化」，不代表功能可用。"
+    },
+    {
+      "name": "developer-home",
+      "root": "../sites/developer/dist",
+      "path": "/",
+      "note": "开发者站首页，内容较完整，是最有代表性的回归目标。"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "$description": "视觉基线环境固化。跨机器复用基线必然误报——字体与抗锯齿随平台变化。",
+  "generatedAt": "2026-09-28T10:53:39.092Z",
+  "config": {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "deviceScaleFactor": 1,
+    "maxDiffPixelRatio": 0.005,
+    "pixelThreshold": 0.05,
+    "minSsim": 0.98
+  },
+  "env": {
+    "browser": "149.0.7827.55",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "dpr": 1,
+    "platform": "win32",
+    "node": "v24.15.0"
+  },
+  "results": [
+    {
+      "name": "web-home",
+      "action": "baseline-written",
+      "bytes": 560223,
+      "sha256": "846d85343af1c58a",
+      "env": {
+        "browser": "149.0.7827.55",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "dpr": 1,
+        "platform": "win32",
+        "node": "v24.15.0"
+      },
+      "httpFailures": []
+    },
+    {
+      "name": "admin-console",
+      "action": "baseline-written",
+      "bytes": 12438,
+      "sha256": "211748f45f69f8b2",
+      "env": {
+        "browser": "149.0.7827.55",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "dpr": 1,
+        "platform": "win32",
+        "node": "v24.15.0"
+      },
+      "httpFailures": []
+    },
+    {
+      "name": "developer-home",
+      "action": "baseline-written",
+      "bytes": 451813,
+      "sha256": "0b526500705b1fea",
+      "env": {
+        "browser": "149.0.7827.55",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "dpr": 1,
+        "platform": "win32",
+        "node": "v24.15.0"
+      },
+      "httpFailures": []
+    }
+  ]
+}

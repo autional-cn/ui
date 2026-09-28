@@ -43,5 +43,11 @@ jobs:
       - name: 消费者副本漂移
         run: node scripts/check-consumers.mjs
 
-      - name: 字体资产台账
+      - name: 字体资产台账 + 字体加载断言
         run: node scripts/check-assets.mjs
+
+      # 视觉回归需要真实浏览器与本机字体，基线绑定平台：
+      # 无浏览器或产物缺失时脚本会自动跳过（退出码 0），因此这里安全。
+      # 需要在 CI 上真正跑，请先 playwright install chromium 并接受跨平台基线差异。
+      - name: 站点视觉回归
+        run: node scripts/visual.mjs check

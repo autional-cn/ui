@@ -25,3 +25,5 @@ Thumbs.db
 butler/
 learned/
 gits/
+# 视觉回归的差异图（临时产物，每次 check 可重新生成）
+verification/diffs/
