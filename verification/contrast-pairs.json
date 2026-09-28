@@ -90,6 +90,34 @@
       "bg": "color.bg-primary",
       "min": 3,
       "role": "non-text"
+    },
+    {
+      "label": "成功色作文本 / 页面底（用 success-text，不是 success —— 后者对白底 2.27:1）",
+      "fg": "color.success-text",
+      "bg": "color.bg-primary",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "成功色作文本 / 卡片底",
+      "fg": "color.success-text",
+      "bg": "color.bg-surface",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "警告色作文本 / 页面底（用 warning-text，不是 warning —— 后者对白底 1.90:1）",
+      "fg": "color.warning-text",
+      "bg": "color.bg-primary",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "警告色作文本 / 卡片底",
+      "fg": "color.warning-text",
+      "bg": "color.bg-surface",
+      "min": 4.5,
+      "role": "body-text"
     }
   ]
 }
