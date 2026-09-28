@@ -265,6 +265,9 @@ declare const tokens: {
       tooltip: string;
     };
     layout: {
+      "header-height": string;
+      "header-height-compact": string;
+      "$header-note": string;
       "max-width": string;
       "prose-width": string;
       "breakpoint-sm": string;
