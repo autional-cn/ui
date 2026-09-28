@@ -1,4 +1,4 @@
 {
-  "$description": "令牌变更登记。每条必须给出 reason / owner / expires。用于把「有意的改动」与「意外的漂移」区分开。",
+  "$description": "令牌变更登记。每条必须给出 reason / owner / expires。用于把「有意的改动」与「意外的漂移」区分开。它是「过渡期放行」而不是「永久豁免」：变更被接受后应当重建 verification/tokens.lock.json 基线（node scripts/token-lock.mjs），并把这条登记删掉——否则 match 子串会连同将来的改动一起放行。",
   "approved": []
 }

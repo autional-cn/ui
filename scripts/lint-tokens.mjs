@@ -178,6 +178,12 @@ for (const [name, node] of Object.entries(allVariants)) {
 }
 
 // ── T07 重复色值（warn：可能是有意的品牌锚点）────────────────────────────
+// 例外：chart-* 与某个色阶家族同值是**设计如此**，不是巧合。图表色板现在是钉死的字面量
+// （见 tokens/tokens.json 的 $chart-note：刻意不引用 {color.*}，否则 docs/developer 的
+// profile 色阶会把分类色一起带走）。因此 chart-N 与对应的 palette 档位同值必然发生。
+// 这里不放行整类检查——那个色板有专门的、更强的闸门 scripts/check-chart-palette.mjs
+// （逐上下文断言非文本对比度与正常/红绿色盲可区分性），比「重复色值」这条弱警告严格得多。
+const isChart = (p) => /^color\.chart\.\d+$/.test(p);
 const byValue = new Map();
 for (const path of Object.keys(coreFlat)) {
   const v = String(coreFlat[path]).toLowerCase();
@@ -186,7 +192,11 @@ for (const path of Object.keys(coreFlat)) {
   byValue.get(v).push(path);
 }
 for (const [v, paths] of byValue) {
-  if (paths.length > 1) add('T07', 'warn', paths.join(' + '), '同一色值 ' + v + ' 出现在多个位置（若是有意的品牌锚点请登记）');
+  if (paths.length <= 1) continue;
+  // 全部同值位置都是 chart-*，或「一个 chart-N + 若干 palette 档位」→ 钉死的分类色，不计。
+  if (paths.every(isChart)) continue;
+  if (paths.length === 2 && paths.some(isChart)) continue;
+  add('T07', 'warn', paths.join(' + '), '同一色值 ' + v + ' 出现在多个位置（若是有意的品牌锚点请登记）');
 }
 
 // ── T08 对比度契约 ────────────────────────────────────────────────────────

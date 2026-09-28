@@ -153,10 +153,17 @@ for (const r of c2rows) {
 }
 
 // ── C3 packages/ui 的份数 ───────────────────────────────────────────────
+// 只有带库入口（src/index.ts）的目录才算「组件库的一份」。
+// 交付通道 sync:consumers 会往**每个**站点放 packages/ui/src/molecules/ErrorBoundary.tsx，
+// 于是 5 个 Astro 站点也有了一个只含单个文件的 packages/ui。那不是组件库的第二份实现，
+// 而是「交付了一个共享文件」。把两者混为一谈会让 C3 报一个并不存在的分叉。
+// 那些被交付文件的正确性由「消费者副本漂移」闸门逐字节负责，不归 C3。
 const uiGroups = new Map();
+const uiPartial = [];
 for (const site of readdirSync(SITES)) {
   const ui = join(SITES, site, 'packages', 'ui');
   if (!existsSync(ui)) continue;
+  if (!existsSync(join(ui, 'src', 'index.ts'))) { uiPartial.push(site); continue; }
   const files = walk(ui, [], () => true, (e) => ['node_modules', '.git', 'dist'].includes(e.name));
   const h = createHash('sha256');
   // 归一化行尾再比对：不归一化会把「同一份内容、行尾一个是 LF 一个是 CRLF」算成两个版本。
@@ -168,6 +175,7 @@ for (const site of readdirSync(SITES)) {
   uiGroups.get(key).push(site);
 }
 info.push('C3 packages/ui 的实现份数：' + uiGroups.size + ' 份（' + [...uiGroups.values()].map((v) => v.length + ' 站点: ' + v.join('/')).join(' | ') + '）');
+if (uiPartial.length) info.push('C3b 只收到交付文件、没有组件库入口的站点 ' + uiPartial.length + ' 个（' + uiPartial.join('/') + '）——这些文件由消费者副本漂移闸门比对，不计入 C3。');
 if (uiGroups.size > 1) {
   problems.push('C3 packages/ui 是共享组件库，却在 ' + uiGroups.size + ' 种实现间分叉（' +
     [...uiGroups.values()].map((v) => v.join('/')).join(' | ') +

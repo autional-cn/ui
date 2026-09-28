@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T11:51:13.418Z",
+  "generatedAt": "2026-09-28T21:40:49.682Z",
   "legacyDir": "D:/autional/ui/tokens",
   "legacyAvailable": true,
   "ramps": [
@@ -404,67 +404,102 @@
   "vendored": [
     {
       "site": "admin",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     },
     {
       "site": "auth",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     },
     {
       "site": "authenticator",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     },
     {
       "site": "brand",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
+    },
+    {
+      "site": "developer",
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
+    },
+    {
+      "site": "docs",
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     },
     {
       "site": "platform",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
+    },
+    {
+      "site": "reference",
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     },
     {
       "site": "security",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     },
     {
       "site": "status",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     },
     {
       "site": "trust",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     },
     {
       "site": "user",
-      "vars": 89,
-      "missing": 100,
-      "changed": 4,
-      "fontSansFirst": "'Noto Sans SC'"
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
+    },
+    {
+      "site": "web",
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
+    },
+    {
+      "site": "wiki",
+      "vars": 189,
+      "missing": 0,
+      "changed": 0,
+      "fontSansFirst": "Inter"
     }
   ],
-  "lockHash": "d2508ccb9e253ed361a4abcacb6f0b3ed45679875ef1391237b376bb51c9a35b"
+  "lockHash": "39cae03bdfb7636757235955772389e57319be1dd661e835f3bf7ec98c5ccd4c"
 }
