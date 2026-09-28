@@ -123,6 +123,11 @@ const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:]
 const isPublic = (f, sp) => relative(sp, f).replace(/\\/g, '/').startsWith('public/');
 const isTest = (f) => /(__tests__|\.test\.|\.spec\.)/.test(f);
 const isBuildConfig = (f) => /[^/]*\.config\.[cm]?[jt]s$/.test(f);
+// ⑤ theme-color / theme_color 这一类是**写给浏览器与清单的字面量**，不经过 CSS 解析。
+//    在这类位置写 var() 不是「更规范」，而是**失效**——浏览器视作非法值直接忽略。
+//    实测踩过：wiki 的 <meta name="theme-color" content="var(--color-primary-700)">
+//    实际效果是「没有 theme-color」。与 ④ 同理，这类行降级为 INFO，不判失败。
+const isLiteralOnlyContext = (line) => /theme[-_]color/i.test(line);
 const c2rows = [];
 const c2test = [];
 for (const site of readdirSync(SITES)) {
@@ -137,7 +142,7 @@ for (const site of readdirSync(SITES)) {
       const found = [...new Set((line.match(HEX_RE) || []).map((h) => h.toLowerCase()))].filter((h) => colorToToken.has(h));
       if (!found.length) return;
       const rec = { file: relative(sp, f).replace(/\\/g, '/'), line: i + 1, found: found.map((h) => h + '=' + colorToToken.get(h)) };
-      (isTest(f) || isBuildConfig(f) ? testHits : hits).push(rec);
+      (isTest(f) || isBuildConfig(f) || isLiteralOnlyContext(line) ? testHits : hits).push(rec);
     });
   }
   if (hits.length) c2rows.push({ site, hits });
