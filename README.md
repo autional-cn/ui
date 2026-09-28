@@ -134,6 +134,7 @@ node astryx-manifest-cli.mjs search token
 - [`docs/logo-favicon-kit.md`](docs/logo-favicon-kit.md) — 图形标与 favicon 套件
 - [`docs/guidelines/`](docs/guidelines) — 分站点落地规范
 - [`docs/case-studies/`](docs/case-studies) — 三次品牌化改造复盘
+- [`docs/case-studies/2026-09-fleet-token-migration.md`](docs/case-studies/2026-09-fleet-token-migration.md) — **站群接入设计系统：9 条已知问题的修复记录**（根因 / 逐条证据 / 有意改变渲染的部分 / 需人工确认的判断 / 回滚方式）
 - [`ASTRYX_MANIFEST.json`](ASTRYX_MANIFEST.json) — 机器可读契约
 
 ## 授权
