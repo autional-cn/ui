@@ -37,22 +37,29 @@ pnpm gen:check    # 校验产物与 SSOT 一致（CI 用，有漂移退出 1）
 
 ## 校验（pnpm verify）
 
-三条互补的检查，只跑其中任何一个都会留下盲区：
+七条互补的检查，只跑其中任何一个都会留下盲区：
 
 | 命令 | 问的问题 | 抓什么 |
 |---|---|---|
 | `pnpm gen:check` | 产物跟得上 SSOT 吗 | 改了 tokens.json 却没重新生成 |
 | `pnpm lint:tokens` | SSOT 的值本身站得住吗 | 类型错误、悬空引用、**层叠冲突**、对比度不达标、已知问题过期 |
 | `pnpm lock:check` | SSOT 被改动过吗 | 改了什么必须登记（reason + owner + expires） |
-| `pnpm verify` | 以上四条一起跑 | 任一失败即退出码 1 |
+| `pnpm verify` | 以上七条一起跑 | 任一失败即退出码 1 |
 | `pnpm delta` | canonical 色阶决策改了多少 | 生成 `verification/canonical-decision/report.md`（令牌变更后需重生成，T11 会检查是否过期） |
 | `pnpm assets:fonts` | 字体是真的交付了吗 | 台账 A1–A5 + **浏览器级加载断言**（canonical 的 sans 首项在页面上是否真的生效） |
 | `pnpm visual` | 站点改完看起来对不对 | 对已构建的站点产物做像素 + SSIM 回归（3 个目标：web / admin-console / developer） |
 | `pnpm visual:baseline` | 重建视觉基线 | 只在环境变化时跑（基线绑定浏览器版本与平台） |
+| `pnpm typography` | 排版令牌真的落地了吗 | 发布 CSS 里的阶梯外字号（TY1）+ 消费方编译产物里**用旧阶梯编译的过期产物**（TY3） |
 
 **为什么需要后两条**：改了 `tokens.json` 再跑一次 `pnpm gen`，`gen:check` 就完全无感——产物是最新的。
 实测：把 `color.primary.500` 从 `#235f84` 改成 `#236085` 并重新生成后，`gen:check` 报 OK，
 只有快照锁拦住了它。
+
+**为什么需要排版这一条**：颜色令牌在产物里是 `var(--color-*)`，会随令牌走；排版令牌在编译期就被写成了字面量
+（实测同一份产物里 `var(--color-*)` 204 处、`var(--font-size-*)` **0** 处）。所以改 `tokens.json` 的排版，
+已经编译好的产物不会跟——而 `gen:check` 只比「产物 vs SSOT」（两边都是新的，一致），`lock:check` 只比「SSOT 有没有被改」（没改），
+两道门都看不见下游的过期字面量。TY3 就是补这个盲区：它拿同名工具类的取值与当前阶梯对表，
+实测一份停在旧阶梯的产物（`.text-heading-lg` 32px，当前 30px）会被判失败。
 
 改动被拦下时有两个出口，都不是「关掉检查」：
 

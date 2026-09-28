@@ -19,6 +19,7 @@ const STEPS = [
   { key: 'lock', label: '令牌快照锁', cmd: ['node', 'scripts/token-lock.mjs', '--check'] },
   { key: 'consumers', label: '消费者副本漂移', cmd: ['node', 'scripts/check-consumers.mjs'] },
   { key: 'assets', label: '字体资产台账 + 字体加载断言', cmd: ['node', 'scripts/check-assets.mjs'] },
+  { key: 'typography', label: '排版令牌落地（发布 CSS + 消费方编译产物）', cmd: ['node', 'scripts/check-typography.mjs'] },
   { key: 'visual', label: '站点视觉回归（无产物/无浏览器时自动跳过）', cmd: ['node', 'scripts/visual.mjs', 'check'] }
 ];
 

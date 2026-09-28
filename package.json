@@ -13,6 +13,7 @@
     "verify": "node scripts/verify.mjs",
     "delta": "node scripts/canonical-delta.mjs",
     "assets:fonts": "node scripts/check-assets.mjs",
+    "typography": "node scripts/check-typography.mjs",
     "visual": "node scripts/visual.mjs check",
     "visual:baseline": "node scripts/visual.mjs baseline"
   },
