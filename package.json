@@ -6,6 +6,10 @@
   "license": "AGPL-3.0",
   "scripts": {
     "gen": "node scripts/generate.mjs",
-    "gen:check": "node scripts/generate.mjs --check"
+    "gen:check": "node scripts/generate.mjs --check",
+    "lint:tokens": "node scripts/lint-tokens.mjs",
+    "lock": "node scripts/token-lock.mjs",
+    "lock:check": "node scripts/token-lock.mjs --check",
+    "verify": "node scripts/verify.mjs"
   }
 }

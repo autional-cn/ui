@@ -1,0 +1,4 @@
+{
+  "$description": "令牌变更登记。每条必须给出 reason / owner / expires。用于把「有意的改动」与「意外的漂移」区分开。",
+  "approved": []
+}

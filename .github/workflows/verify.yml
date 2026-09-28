@@ -1,0 +1,39 @@
+name: verify
+
+# 这个 workflow 就是 DESIGN.md 与 ASTRYX_MANIFEST.json 里写的那句
+# 「CI asserts pnpm gen produces no diff」的载体。此前只有脚本，没有载体，
+# 等于「只在有人记得手动跑的时候才生效」。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # tokens/ 与 packages/ 都是纯文件生成，不需要 node_modules；
+      # 但保留 install 以便将来加入需要依赖的检查（视觉回归等）。
+      - name: Install (best effort)
+        run: pnpm install --frozen-lockfile || echo "no dependencies to install"
+
+      - name: 生成物一致性（产物 vs SSOT）
+        run: node scripts/generate.mjs --check
+
+      - name: 令牌 lint（值正确性 / 层叠冲突 / 对比度契约 / 已知问题到期）
+        run: node scripts/lint-tokens.mjs
+
+      - name: 令牌快照锁（改动是否登记）
+        run: node scripts/token-lock.mjs --check

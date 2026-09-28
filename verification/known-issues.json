@@ -1,0 +1,46 @@
+{
+  "$description": "已知问题登记。每条必须有 id / code / match / reason / owner / expires。到期未处理即构建失败——把「写在文档里的债」变成「机器守得住的债」。这不是豁免，是有期限的登记。",
+  "$rules": [
+    "登记必须给出 owner 与到期日；没有到期日的登记等于永久豁免，不允许",
+    "到期后 lint 会直接失败：要么修掉，要么重新评估并续期（续期必须改 expires 并写理由）",
+    "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
+  ],
+  "issues": [
+    {
+      "id": "KI-001",
+      "code": "T05",
+      "match": "color.border-subtle",
+      "reason": "层叠冲突：profiles/{docs,developer}.css 的 :root 在 tokens.css 之后加载，与 .dark / [data-theme=authenticator] 同为 0,1,0 特指度时后者被压掉。实测 docs/developer 深色模式下 --color-border-subtle 实际生效 #d1e5f2（浅色），本应是 #1a4a65（深色）。DESIGN.md 第 3 节只说 border-subtle 按 profile 解析，未提及它会压掉主题覆盖。",
+      "owner": "design-system",
+      "expires": "2026-10-31",
+      "note": "修法（三选一，需 owner 决策，因为会改变 docs/developer 站点的深色渲染）：① profiles/*.css 改用不参与同特指度竞争的选择器（例如 :root:not(.dark) 或按主题拆块）；② profile 的深色值单独成块并排在变体块之后；③ 把 border-subtle 从 profile 覆盖中移除，改为 core 内按主题解析。修复后应同步更新 DESIGN.md 第 3 节。"
+    },
+    {
+      "id": "KI-002",
+      "code": "T08",
+      "match": "color.text-muted",
+      "reason": "DESIGN.md 第 7 章 Known contrast debt 已记录的债：--color-text-muted 在明暗两套下都是 #64748d，深色底上约 3.6:1，低于 AA 正文要求。本次把这条文字描述变成机器检查。",
+      "owner": "design-system",
+      "expires": "2026-12-31",
+      "note": "修法：把深色模式的 text-muted 上移到 sky/neutral 阶梯（例如 sky-300 或 neutral-400 一档），并同步 DESIGN.md。"
+    },
+    {
+      "id": "KI-003",
+      "code": "T08",
+      "match": "color.danger",
+      "reason": "语义色（danger #ff4d4f）在设计上用于填充/图标，不是正文色。浅色底上作正文仅 3.27:1。新代码不得把语义色直接当正文色使用。",
+      "owner": "design-system",
+      "expires": "2026-12-31",
+      "note": "若确需语义色作正文，应在 core 增加一档更深的语义文本色（例如 danger-text），而不是降低本条要求。"
+    },
+    {
+      "id": "KI-004",
+      "code": "T08",
+      "match": "color.border-strong",
+      "reason": "border-strong 目前是装饰性分隔线（浅色 1.81:1 / 深色 2.87:1），不满足 WCAG 1.4.11 对「用于识别组件的视觉信息」3:1 的要求。只要它不被用作唯一边界指示（例如输入框唯一的边框），就属于装饰性。",
+      "owner": "design-system",
+      "expires": "2026-12-31",
+      "note": "需要确认：表单控件边界是否使用 border-strong？若使用，必须提升到 3:1 或改用 border + 背景对比共同表达。"
+    }
+  ]
+}

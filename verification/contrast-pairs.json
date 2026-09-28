@@ -1,0 +1,81 @@
+{
+  "$description": "对比度契约。每条 (前景, 背景, 最小值) 都会在所有上下文（profile x 主题）下计算 WCAG 比值；不达标即失败，除非在 known-issues.json 中登记。",
+  "roles": {
+    "body-text": "正文文本，WCAG AA 要求 4.5:1",
+    "large-text": "大号文本（18pt+ 或 14pt 粗体），要求 3:1",
+    "non-text": "UI 组件边界/焦点环等非文本信息，要求 3:1",
+    "fill-text": "填充色上的文字（如按钮）"
+  },
+  "pairs": [
+    {
+      "label": "正文 / 页面底",
+      "fg": "color.text-primary",
+      "bg": "color.bg-primary",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "正文 / 卡片底",
+      "fg": "color.text-primary",
+      "bg": "color.bg-surface",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "次要文本 / 页面底",
+      "fg": "color.text-secondary",
+      "bg": "color.bg-primary",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "弱化文本 / 页面底",
+      "fg": "color.text-muted",
+      "bg": "color.bg-primary",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "弱化文本 / 卡片底",
+      "fg": "color.text-muted",
+      "bg": "color.bg-surface",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "危险色作文本 / 卡片底",
+      "fg": "color.danger",
+      "bg": "color.bg-surface",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "按钮文字 / 品牌底",
+      "fg": "color.on-brand",
+      "bg": "color.brand",
+      "min": 4.5,
+      "role": "fill-text"
+    },
+    {
+      "label": "按钮文字 / 品牌悬停底",
+      "fg": "color.on-brand",
+      "bg": "color.brand-hover",
+      "min": 4.5,
+      "role": "fill-text"
+    },
+    {
+      "label": "焦点环 / 页面底",
+      "fg": "focus.ring-color",
+      "bg": "color.bg-primary",
+      "min": 3,
+      "role": "non-text"
+    },
+    {
+      "label": "强调边框 / 页面底",
+      "fg": "color.border-strong",
+      "bg": "color.bg-primary",
+      "min": 3,
+      "role": "non-text"
+    }
+  ]
+}

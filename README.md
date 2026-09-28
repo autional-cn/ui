@@ -35,6 +35,37 @@ pnpm gen          # 重新生成 packages/* 产物（改完 tokens.json 必跑�
 pnpm gen:check    # 校验产物与 SSOT 一致（CI 用，有漂移退出 1）
 ```
 
+## 校验（pnpm verify）
+
+三条互补的检查，只跑其中任何一个都会留下盲区：
+
+| 命令 | 问的问题 | 抓什么 |
+|---|---|---|
+| `pnpm gen:check` | 产物跟得上 SSOT 吗 | 改了 tokens.json 却没重新生成 |
+| `pnpm lint:tokens` | SSOT 的值本身站得住吗 | 类型错误、悬空引用、**层叠冲突**、对比度不达标、已知问题过期 |
+| `pnpm lock:check` | SSOT 被改动过吗 | 改了什么必须登记（reason + owner + expires） |
+| `pnpm verify` | 以上三条一起跑 | 任一失败即退出码 1 |
+
+**为什么需要后两条**：改了 `tokens.json` 再跑一次 `pnpm gen`，`gen:check` 就完全无感——产物是最新的。
+实测：把 `color.primary.500` 从 `#235f84` 改成 `#236085` 并重新生成后，`gen:check` 报 OK，
+只有快照锁拦住了它。
+
+改动被拦下时有两个出口，都不是「关掉检查」：
+
+- **有意的改动** → 在 `verification/token-change-approvals.json` 登记，或运行 `pnpm lock` 重建快照；
+- **已知的债** → 在 `verification/known-issues.json` 登记（必须给 owner 与到期日，到期即失败）。
+
+`verification/` 目录下的文件：
+
+| 文件 | 作用 |
+|---|---|
+| `contrast-pairs.json` | 对比度契约：每条 (前景, 背景, 最小值) 都会在所有 profile × 主题下计算 WCAG 比值 |
+| `known-issues.json` | 已知问题登记：把 DESIGN.md 里「fix when touched, do not propagate」的债变成有期限的机器约束 |
+| `token-change-approvals.json` | 令牌变更登记 |
+| `tokens.lock.json` | 令牌快照（生成物，勿手改） |
+
+CI：`.github/workflows/verify.yml`，push 与 PR 都会跑这三条。
+
 站点接入：
 
 ```css
