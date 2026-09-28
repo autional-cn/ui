@@ -12,32 +12,7 @@
     
     
     
-    {
-      "id": "KI-007",
-      "code": "A4",
-      "match": "Inter",
-      "reason": "品牌字体只在少数站点真正交付。实测：ASTRYX_MANIFEST.brandCore.fontRoleNotes 声明「Latin is self-hosted Inter (@fontsource)」，但 ui/package.json 的 dependencies 为空、仓库内 @font-face 声明为 0；扫描 14 个站点，只有 reference 与 wiki 装了 @fontsource/inter@^5.2.8，其余站点声明的是一款它们并不交付的字体。叠加 KI-006（站点自带旧副本，--font-sans 首项是 Noto Sans SC），结论是：**大多数站点根本没有渲染在 canonical 声明的字体栈上**。",
-      "owner": "design-system",
-      "expires": "2026-11-30",
-      "note": "修法：① 在 ui/ 内提供字体交付入口（例如 @autional-cn/tokens 附带 @font-face 片段 + 把 @fontsource/inter 列为 peerDependency）；② 或修改 canonical 的 fontRole：若决定不分发 Latin webfont，就把 Inter 从 no-restore 栈里去掉，并在 DESIGN.md/manifest 里改掉「self-hosted」的说法。两条路都必须让「声明」与「交付」一致。\n\n进展（2026-09，本轮）：走「真的交付」这条路，覆盖已从 2/14 提升到 11/14。做法：把 Inter 可变字体放进 packages/tokens/fonts/inter-latin-wght-normal.woff2（48KB，wght 100–900；静态五档约 115KB），生成器把 @font-face 写进 tokens.css（相对路径 url(./fonts/…)），sync:consumers 连同字体写入站点内置副本，消费方打包器再复制进产物。9 个内置站点的实测证据：woff2 进入产物、请求 HTTP 200、document.fonts.load('16px Inter') 返回 loaded、canvas 宽度探针与 sans-serif 相差 4.52px（确认不是回退）。\n\n仍未覆盖：docs / developer / web 这 3 个 Astro 站点——仓库里没有 packages/tailwind-preset，拿不到随包分发的字体；A4b 也仍在报 web-home 与 developer-home 未生效。下一步给这 3 个建立同样的内置交付路径（同时解掉 KI-010 在那 3 个站点的部分）。\n\n另两点：trust 自带 29 个 @font-face（自己的 fontsource 配置），与新路径并存未冲突；A4b 对 admin-console 报「未生效」，但其 @font-face 声明已为 true、woff2 实测 200/loaded——该断言在会跳转的页面上会误报，应改成与强制加载探针一致的判据。"
-    },
-    {
-      "id": "KI-009",
-      "code": "TY4",
-      "match": "品牌语义字号",
-      "reason": "品牌排版阶梯在舰队里的采用率是 0。逐站点扫描 14 个站点的源码（.astro/.tsx/.ts/.css/.md，排除 node_modules 与 dist）统计字号工具类出现次数：品牌语义档（text-display-xl / display-lg / heading-lg / heading-md / body-lg / body-md / body-sm / label-md / label-caps / code-md）合计 0 处；Tailwind 默认档（text-xs / sm / base / lg / xl / 2xl / 3xl / 4xl / 5xl…）合计 3127 处。也就是说 tokens/tokens.json 里的排版阶梯有定义、有快照锁、有 T06/T10 级的 lint、被 gen:check 守护着产物一致性——但没有任何一个消费方在用它。此前判断「还原度低」是某个字号值写错了（例如 36px 不在阶梯上），实测后修正：主因是整套品牌排版从未进入消费方，36px 只是这个事实的一个副作用。",
-      "owner": "design-system",
-      "expires": "2027-03-31",
-      "note": "这条不是「改个值」能修的，是迁移。已做的一项前置工作：本轮在 tokens.json 补了 font-size.4xl(36px)，因为舰队同时使用 30(text-3xl 63 处) / 36(text-4xl 68 处) / 48(text-5xl 40 处) 三档，而阶梯原本只有 30 与 48——缺 36 这一档时，text-4xl 的 68 处无处可迁。名字取 4xl 而非 heading-*，是为了让这些既有用法无需改标记即可被品牌令牌接管。\n修法建议（需 owner 决策，且必然改变站群渲染，必须逐站过 pnpm visual）：① 先做零风险的映射层——在各站点的 tailwind.config 里把 Tailwind 默认档指向品牌语义档（例如让 fontSize.base 取 var(--font-size-body-md)），现有 3127 处写法不变而取值来自令牌；② 再逐步把语义角色明确的处（正文、说明文字、代码、表头）改为显式品牌类；③ 每站迁移后跑视觉回归，把有意保留的差异写进该站登记。直接全局替换类名风险过高，不建议。"
-    },
-    {
-      "id": "KI-010",
-      "code": "TY5",
-      "match": "共享组件层",
-      "reason": "声明为共享组件层的 packages/tokens/primitives.css，消费方为零。它被 DESIGN.md 第 10.1 节列为品牌共享类（brand-shell / brand-card / brand-button-primary / -secondary / brand-kicker / developer-panel / developer-code / developer-chip / developer-nav-link / docs-nav-link / docs-prose），原文写着「Reuse these before inventing a new button, card, or shell」；ASTRYX_MANIFEST.json 也把它登记为 cssCore。实测：14 个站点里 0 个 import 它（无相对路径、无包名引用）；而这些类名在 6 个站点的 global.css 里被各自手写重实现（wiki / reference / web / docs / developer / brand，行号几乎一致，属手工复制）。另外 docs 站点的构建产物只加载一个样式表（_astro/*.css），primitives.css 根本不在其中。这是 KI-006（令牌用拷贝而非包依赖）在组件层的同一病因，但更隐蔽：令牌副本至少是同一份值的复制，组件类则是各站独立重写。",
-      "owner": "design-system",
-      "expires": "2026-11-30",
-      "note": "与 KI-006 同源，建议合并决策：组件的交付模型究竟是「包依赖」还是「拷贝」。修法：① 若定为包依赖——在 ui/ 内把 primitives.css 纳入 @autional-cn/tokens 的 exports（已是），站点声明依赖并删掉各自的 .brand-* 重写，逐站过 pnpm visual 确认外观不变；② 若定为拷贝——就必须像 check-consumers.mjs 那样对拷贝做哈希比对，让「副本必须与权威一致」成为可失败的检查，否则 6 份实现会各自漂移；③ 无论哪条，DESIGN.md 第 10.1 节都要改成与实际交付一致的表述。附带修正：同节写「primitives.css is hand-maintained and consumes only var() references」，在 KI-008 修好之前 36 条排版声明里只有 2 条是 var() 引用——本轮已改为 35/36，这句话现在基本成立，已补上精确表述。\n\n补充实测（2026-09，本轮）：问题比原记录更大。5 个 Astro 站点（docs / developer / web / wiki / reference）**根本没有 packages/tailwind-preset 目录，也不依赖 @autional-cn 任何包**——它们各自在 tailwind.config.cjs 里内联写死了一整套调色板（primary 50–900），也就是在 Tailwind 配置层又复制了一遍令牌。而且其中 web 用的还是另一套色阶（primary-500 = #2c8ec0，DESIGN.md 曾记为「an isolated point, not a ramp」），docs/developer/wiki/reference 共用的则是 docs profile 那套（primary-50 = #e9f3f9）。也就是说「伪造命名空间」有两种形态：9 个 SPA 站点是内置了一个同名包（KI-006，本轮已修），5 个 Astro 站点是在 tailwind.config 里内联了色阶（本条）。\n收尾路径：给这 5 个站点建立与 SPA 站点一致的内置交付（packages/tailwind-preset + 在 global.css 里 @import tokens.css/primitives.css + tailwind.config 改用 preset），然后删掉各自的 .brand-* 重写与内联色阶。这一步同时解掉 KI-007 在那 3 个站点的部分（docs/developer/web 目前拿不到随包分发的 Inter）。"
-    }
-  ]
+    
+    
+    ]
 }

@@ -1,7 +1,7 @@
 {
   "$description": "令牌快照锁（生成物，勿手改）。重建：node scripts/token-lock.mjs。比对：node scripts/token-lock.mjs --check。",
   "hash": "d2508ccb9e253ed361a4abcacb6f0b3ed45679875ef1391237b376bb51c9a35b",
-  "generatedAt": "2026-09-28T11:51:12.825Z",
+  "generatedAt": "2026-09-28T12:32:35.200Z",
   "entries": 318,
   "tokens": {
     "core:a11y.touch-target": "44px",

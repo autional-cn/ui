@@ -243,21 +243,50 @@ if (existsSync(sitesDir)) {
     brandHits += sb; neutralHits += sn;
   }
   const totalHits = brandHits + neutralHits;
-  info.push('TY4 站群字号采用率：品牌语义档 ' + brandHits + ' 处 / Tailwind 默认档 ' + neutralHits +
-    ' 处（共 ' + totalHits + ' 处）——品牌档占比 ' + (totalHits ? (brandHits / totalHits * 100).toFixed(1) : '0') + '%');
-  if (totalHits > 0 && brandHits === 0) {
-    problems.push('TY4 品牌语义字号（text-display-* / heading-* / body-* / label-* / code-*）在 ' +
-      siteCount + ' 个站点的源码里出现 0 次，同期 Tailwind 默认档出现 ' + neutralHits +
-      ' 次。令牌阶梯有定义、有锁、有 lint，但没有任何消费方在用它——这是「还原度低」的主因，而不是某个字号值写错了。');
-  } else if (totalHits > 0 && brandHits / totalHits < 0.2) {
-    warns.push('TY4 品牌语义字号占比仅 ' + (brandHits / totalHits * 100).toFixed(1) + '%（' + brandHits + '/' + totalHits + '）');
-  }
+  // 注意：这里**刻意只作 info，不判失败**。本规则的早期版本把「语义名占比 0」当成错误，
+  // 那个判据是错的：preset 的 fontSize 里 xs…4xl 本身就是定义在 core.font-size 的**品牌令牌**，
+  // 语义名（body-md / heading-lg / …）只是额外的角色别名，且两者取值大量重合。
+  // 站点写 text-base 并不等于它不受品牌管辖。真正的判据见下方 TY4b（编译产物指纹）。
+  info.push('TY4a 语义角色名的采用情况（信息级，不判失败）：品牌语义档 ' + brandHits + ' 处 / 通用档 ' + neutralHits + ' 处');
   info.push('TY5 共享组件层 packages/tokens/primitives.css 的消费方：' + importers.length + '/' + siteCount +
     ' 个站点' + (importers.length ? '（' + importers.join(', ') + '）' : ''));
   if (siteCount > 0 && importers.length === 0) {
     problems.push('TY5 packages/tokens/primitives.css 被 DESIGN.md 与 ASTRYX_MANIFEST.json 声明为共享组件层' +
       '（brand-shell / brand-card / brand-button-* / brand-kicker / docs-prose / developer-*），但 ' + siteCount +
       ' 个站点里 0 个 import 它；这些类在各站点 global.css 里被逐份手写重实现。声明为「复用它，别再造一个按钮」的契约，实际消费方为零。');
+  }
+}
+
+// ── TY4b 站点是否真的被品牌排版管辖（编译产物指纹）──────────────────────
+// 判据要能区分「站点的字号来自品牌 preset」与「来自 Tailwind 默认」。编译产物里可精确判别：
+//   品牌 preset 的 text-3xl 是 30px/36px **且带 font-weight:700**（定义在 core.font-size.3xl）；
+//   Tailwind 默认的 text-3xl 是 1.875rem/2.25rem 且**不设字重**。
+// 另一条独立指纹：品牌 preset 的 rounded-lg 是 24px，Tailwind 默认是 8px。
+// 命中任一即视为受品牌管辖；一条都不命中说明该站点的工具类来自 Tailwind 默认。
+const presetFingerprints = [
+  { name: 'text-3xl 带字重', re: /\.text-3xl\s*\{[^}]*font-weight:\s*700/ },
+  { name: 'rounded-lg = 24px', re: /\.rounded-lg\s*\{\s*border-radius:\s*24px/ },
+];
+if (existsSync(sitesDir)) {
+  const verdicts = [];
+  for (const site of readdirSync(sitesDir)) {
+    const sitePath = join(sitesDir, site);
+    if (!statSync(sitePath).isDirectory()) continue;
+    const css = collectCss(sitePath, []).filter((f) => /[\\/]dist[\\/]/.test(f));
+    if (!css.length) continue;
+    const text = css.map((f) => readFileSync(f, 'utf8')).join('\n');
+    const hit = presetFingerprints.find((fp) => fp.re.test(text));
+    verdicts.push({ site, hit: hit ? hit.name : null });
+  }
+  const governed = verdicts.filter((v) => v.hit);
+  info.push('TY4b 受品牌 preset 管辖的站点：' + governed.length + '/' + verdicts.length +
+    (governed.length ? '（指纹：' + governed[0].hit + '）' : ''));
+  const notGoverned = verdicts.filter((v) => !v.hit);
+  if (notGoverned.length) {
+    problems.push('TY4b 有 ' + notGoverned.length + ' 个站点的编译产物里找不到任何品牌 preset 指纹（' +
+      presetFingerprints.map((f) => f.name).join(' / ') + '）：' + notGoverned.map((v) => v.site).join(', ') +
+      '。这些站点的字号/圆角等工具类来自 Tailwind 默认而非品牌 preset，即排版不受品牌管辖。' +
+      '修法：在该站点的 tailwind.config 里加载 @autional-cn/tailwind-preset（见 pnpm sync:consumers）。');
   }
 }
 

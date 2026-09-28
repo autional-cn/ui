@@ -95,9 +95,14 @@ if (existsSync(sitesDir)) {
   if (consumer.scanned) {
     const line = 'A4 声明为 webfont 的字体里，消费方实际安装的站点 ' + uniqInstalled.length + '/' + consumer.scanned +
       '（已装: ' + (uniqInstalled.join(', ') || '无') + '）';
-    const k = knownFor('Inter');
-    if (k) knownHits.push({ msg: line, issue: k }); else problems.push(line + ' —— 其余站点声明的是一款它们并不交付的字体，浏览器会直接回退');
-    if (k && k.expires && k.expires < today) problems.push('A4 登记 ' + k.id + ' 已过期（' + k.expires + '）');
+    // 只有真的没交付齐才算问题。原先写成「只要登记存在就记一笔」，
+    // 于是 14/14 全交付时仍报 [KNOWN]，把已修好的事说成还没修——判据必须跟着事实走。
+    if (uniqInstalled.length < consumer.scanned) {
+      const k = knownFor('Inter');
+      if (k) knownHits.push({ msg: line, issue: k }); else problems.push(line + ' —— 其余站点声明的是一款它们并不交付的字体，浏览器会直接回退');
+    } else {
+      console.log('  [OK]    ' + line);
+    }
   }
 } else {
   warns.push('A4 本次工作区没有 sites/，跳过消费方核对（CI 里同样会跳过）');
@@ -130,7 +135,12 @@ if (existsSync(targetsPath)) {
       try {
         await page.goto('http://127.0.0.1:' + (port - 1) + target.path, { waitUntil: 'load', timeout: 45000 });
         await page.evaluate(() => document.fonts.ready);
-        const probe = await page.evaluate((fam) => {
+        const probe = await page.evaluate(async (fam) => {
+          // 必须先强制加载：canvas 在字体尚未加载时会直接用回退字体测量，
+          // 于是即使字体已交付且能正常加载，也会被误判为「未生效」。
+          // 实测 admin-console 就是这样被误报的——独立探针（先 document.fonts.load）测得
+          // status=loaded、宽度差 4.52px，即字体其实是好的。
+          try { await document.fonts.load('16px "' + fam + '"'); } catch (e) {}
           const s = 'mmmMMMwwwiiiWWW0123 汉字测试';
           const c = document.createElement('canvas').getContext('2d');
           c.font = '16px sans-serif'; const sans = c.measureText(s).width;

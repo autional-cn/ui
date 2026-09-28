@@ -1,6 +1,6 @@
 {
-  "$description": "视觉基线环境固化。跨机器复用基线必然误报——字体与抗锯齿随平台变化。",
-  "generatedAt": "2026-09-28T10:53:39.092Z",
+  "$description": "视觉基线环境固化。跨机器复用基线与字体差异必然误报——本基线绑定下列环境。",
+  "generatedAt": "2026-09-28T12:33:15.731Z",
   "config": {
     "viewport": {
       "width": 1440,
@@ -25,8 +25,8 @@
     {
       "name": "web-home",
       "action": "baseline-written",
-      "bytes": 560223,
-      "sha256": "846d85343af1c58a",
+      "bytes": 526005,
+      "sha256": "34d458f083b5c0b4",
       "env": {
         "browser": "149.0.7827.55",
         "viewport": {
@@ -59,8 +59,8 @@
     {
       "name": "developer-home",
       "action": "baseline-written",
-      "bytes": 451813,
-      "sha256": "0b526500705b1fea",
+      "bytes": 435001,
+      "sha256": "e8b992918ac3d604",
       "env": {
         "browser": "149.0.7827.55",
         "viewport": {
