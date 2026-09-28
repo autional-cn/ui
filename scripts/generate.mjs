@@ -372,6 +372,44 @@ outputs.set(
     `module.exports = {\n  light: { token: ${js(antdToken(light), 1)} },\n  dark: { token: ${js(antdToken(dark), 1)} },\n};\n`,
 );
 
+// ESM 变体：站点侧的应用是 ESM（package.json "type": "module"），而上面的 .js 是 CJS。
+// 用 .mjs 后缀消除歧义（不依赖消费方的 package type），再由 sync:consumers 下发给站点。
+outputs.set(
+  'packages/tokens/dist/antd-theme.mjs',
+  `/** ${GENERATED('tokens/tokens.json')}
+ *
+ * antd v5/v6 ThemeConfig bridge (ESM). Usage:
+ *   import antdTheme from '@autional-cn/tailwind-preset/antd-theme.mjs';
+ *   <ConfigProvider theme={{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+ *                            token: (isDark ? antdTheme.dark : antdTheme.light).token }}>
+ *
+ * 由 pnpm sync:consumers 下发到各站点的 packages/tailwind-preset/。
+ * 控制台不得再手写这些色值——手写会让令牌变更无法传导，各 portal 各自漂移（KI-011）。
+ */
+const antdTheme = {
+  light: { token: ${js(antdToken(light), 1)} },
+  dark: { token: ${js(antdToken(dark), 1)} },
+};
+export default antdTheme;
+export const light = antdTheme.light;
+export const dark = antdTheme.dark;
+`,
+);
+
+// .d.mts：TypeScript 对 .mjs 的声明查找规则要求同名的 .d.mts（.d.ts 在 moduleResolution
+// 为 bundler/node16 时不会命中 .mjs），所以两份都产出，内容相同。
+outputs.set(
+  'packages/tokens/dist/antd-theme.d.mts',
+  `/** ${GENERATED('tokens/tokens.json')} */\n` +
+    `declare const antdTheme: {\n` +
+    `  light: { token: Record<string, string | number> };\n` +
+    `  dark: { token: Record<string, string | number> };\n` +
+    `};\n` +
+    `export default antdTheme;\n` +
+    `export declare const light: { token: Record<string, string | number> };\n` +
+    `export declare const dark: { token: Record<string, string | number> };\n`,
+);
+
 outputs.set(
   'packages/tokens/dist/antd-theme.d.ts',
   `/** ${GENERATED('tokens/tokens.json')} */\n` +

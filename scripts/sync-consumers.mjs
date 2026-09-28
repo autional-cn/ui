@@ -39,6 +39,14 @@ const SOURCES = [
 ];
 // 字体与 tokens.css 同级分发：tokens.css 里的 @font-face 用相对路径 ./fonts/…，
 // 消费方的打包器会把它复制进产物。缺了这些文件，Inter 就只是「声明」而非「交付」（KI-007）。
+// antd 主题桥接（KI-011）：ui 早已生成 packages/tokens/dist/antd-theme.*，但 14 个站点 0 个消费它，
+// 三个控制台各自手写 colorPrimary 等值——platform/security 更是只设 algorithm、
+// 渲染出 antd 出厂蓝。下发 ESM 变体（站点应用是 ESM，原来的 .js 是 CJS）。
+const ANTD_SOURCES = [
+  { from: 'packages/tokens/dist/antd-theme.mjs', to: 'packages/tailwind-preset/antd-theme.mjs' },
+  { from: 'packages/tokens/dist/antd-theme.d.ts', to: 'packages/tailwind-preset/antd-theme.d.ts' },
+  { from: 'packages/tokens/dist/antd-theme.d.mts', to: 'packages/tailwind-preset/antd-theme.d.mts' },
+];
 // 组件层（KI-010）：DESIGN.md 把 primitives.css 声明为共享组件层，但 14 个站点里 0 个 import 它，
 // 而是各自在 global.css 里用 @apply 重写 .brand-* 与 .docs-prose。把它一并下发，站点才有东西可 import。
 const COMPONENT_SOURCES = [
@@ -74,7 +82,7 @@ let same = 0;
 const rows = [];
 const missing = [];
 for (const { site, sitePath, profile } of targets) {
-  const sources = SOURCES.concat(COMPONENT_SOURCES, FONT_SOURCES);
+  const sources = SOURCES.concat(COMPONENT_SOURCES, FONT_SOURCES, ANTD_SOURCES);
   if (profile) sources.push({ from: 'packages/tokens/profiles/' + profile + '.css', to: 'packages/tailwind-preset/profile.css' });
   for (const { from, to } of sources) {
     const src = join(ROOT, from);

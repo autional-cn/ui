@@ -6,15 +6,7 @@
     "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
   ],
   "issues": [
-    {
-      "id": "KI-011",
-      "code": "C1",
-      "match": "antd",
-      "reason": "用 antd 的控制台没有把 antd 主题接到设计系统上，于是同一个产品的两个控制台主色不是一个。实测：admin 设了 token.colorPrimary = #003153（品牌蓝）；platform 与 security 的 ConfigProvider 只设了 algorithm、没有 token，因此在浏览器里渲染出 18 处 antd 出厂蓝 rgb(22,119,255)，其中包含侧边栏选中项 .ant-menu-item-selected。而 ui 仓库其实早已生成好 packages/tokens/dist/antd-theme.js（light/dark 两套 token，值就是各站点手写的那批），但 14 个站点里 0 个消费它——与刚修完的 KI-006 是同一种病：手抄桥接产物而不是消费它。",
-      "owner": "design-system",
-      "expires": "2026-11-30",
-      "note": "修法：① 把 antd-theme.js 纳入 sync:consumers 的交付面（随内置包下发）；② 三个控制台的 antd-app.tsx 改为从桥接产物取 token（platform/security 补上 token，admin 去掉手写色值）；③ 注意 admin 现在写的是 borderRadius: 6 而桥接产物是 8，两者的取舍要先定——这是可见变更（圆角），需视觉回归确认后再落；④ 顺带考虑桥接产物的 colorBgContainer/colorBgElevated/colorText 是否保留（三个控制台目前靠 darkAlgorithm 而非显式 token）。"
-    },
+    
     {
       "id": "KI-012",
       "code": "C2",

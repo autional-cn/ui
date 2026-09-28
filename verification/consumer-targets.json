@@ -11,7 +11,9 @@
   ],
   "byteTargets": [
     { "auth": "packages/tailwind-preset/index.js", "copy": "../sites/*/packages/tailwind-preset/index.js" },
-    { "auth": "packages/tailwind-preset/index.d.ts", "copy": "../sites/*/packages/tailwind-preset/index.d.ts" }
+    { "auth": "packages/tailwind-preset/index.d.ts", "copy": "../sites/*/packages/tailwind-preset/index.d.ts" },
+    { "auth": "packages/tokens/dist/antd-theme.mjs", "copy": "../sites/*/packages/tailwind-preset/antd-theme.mjs" },
+    { "auth": "packages/tokens/dist/antd-theme.d.mts", "copy": "../sites/*/packages/tailwind-preset/antd-theme.d.mts" }
   ],
   "bootstrap": [
     { "site": "docs", "profile": "docs" },
