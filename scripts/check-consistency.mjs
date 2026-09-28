@@ -174,6 +174,52 @@ if (uiGroups.size > 1) {
     '）。这是又一处「拷贝而非依赖」——零件（Button/Input/Modal/Toast…）本该只有一份。');
 }
 
+// ── C4 站点本地覆盖设计系统令牌（同名、不同值）──────────────────────────
+// 与 C2 的区别：C2 查「硬编码了某个等于令牌的色值」；C4 查「把设计系统已有的变量名
+// 在本地重新定义成别的值」——后者更隐蔽，因为它看起来在「用令牌」，实际把令牌改掉了。
+// 实测（2026-09）：全舰队只有 3 处，都在 admin 的图表色上。
+const dsVars = new Map();
+{
+  const css = readFileSync(join(ROOT, 'packages', 'tokens', 'tokens.css'), 'utf8');
+  const i0 = css.indexOf(':root');
+  const open0 = css.indexOf('{', i0);
+  let dep = 0; let end0 = open0;
+  for (let j = open0; j < css.length; j++) {
+    if (css[j] === '{') dep++;
+    else if (css[j] === '}') { dep--; if (!dep) { end0 = j; break; } }
+  }
+  for (const m of css.slice(open0 + 1, end0).matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;]+);/g)) dsVars.set(m[1], m[2].trim());
+}
+const c4rows = [];
+{
+  for (const site of readdirSync(SITES)) {
+    const sp = join(SITES, site);
+    if (!statSync(sp).isDirectory()) continue;
+    const files = walk(sp, [], (n) => /\.(css|astro|tsx|ts)$/.test(n), SKIP)
+      .filter((f) => !relative(sp, f).replace(/\\/g, '/').startsWith('public/'));
+    for (const f of files) {
+      const rel = relative(sp, f).replace(/\\/g, '/');
+      const text = stripComments(readFileSync(f, 'utf8'));
+      for (const m of text.matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;\n}]+)/g)) {
+        const name = m[1]; const val = m[2].trim();
+        if (!dsVars.has(name)) continue;
+        if (val === dsVars.get(name)) continue;
+        if (/^var\(/.test(val)) continue;
+        c4rows.push({ site, rel, name, val, ds: dsVars.get(name) });
+      }
+    }
+  }
+}
+info.push('C4 本地覆盖设计系统令牌且值不同的处数：' + c4rows.length + ' 处，分布在 ' +
+  new Set(c4rows.map((r) => r.site)).size + ' 个站点');
+for (const s of new Set(c4rows.map((r) => r.site))) {
+  const list = c4rows.filter((r) => r.site === s);
+  problems.push('C4 ' + s + '：' + list.length + ' 处把设计系统已有的变量名在本地重新定义成了别的值（' +
+    list.slice(0, 4).map((r) => r.name + ' = ' + r.val + '，设计系统为 ' + r.ds).join('；') +
+    '）。这看起来像在用令牌，实际把令牌改掉了——各 portal 因此会各自漂移。' +
+    '修法二选一：改用设计系统的值，或把该站点确实需要的差异补成设计系统里的新令牌。');
+}
+
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
 const codeOf = (msg) => { const m = /^(C\d)/.exec(msg); return m ? m[1] : null; };
 const knownFor = (msg) => { const c = codeOf(msg); return c ? known.find((k) => k.code === c && msg.indexOf(k.match) >= 0) : undefined; };

@@ -5,5 +5,15 @@
     "到期后 lint 会直接失败：要么修掉，要么重新评估并续期（续期必须改 expires 并写理由）",
     "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
   ],
-  "issues": []
+  "issues": [
+    {
+      "id": "KI-014",
+      "code": "C4",
+      "match": "admin",
+      "reason": "admin 在 apps/admin-console/src/app/globals.css 里把设计系统已有的变量名重新定义成了别的值：--color-chart-2 = #10b981（设计系统为 amber-500）、--color-chart-3 = #8b5cf6（sky-500）、--color-chart-4 = #ef4444（amber-800）。这看起来像在用令牌，实际把令牌改掉了。C2（硬编码等于令牌的色值）抓不到这一类，因此本轮新增了 C4 判据。顺带查清了更完整的情况：这不只是 admin 一处——三个控制台（admin/platform/security）的图表都用了同一套非品牌色（emerald #10b981 / violet #8b5cf6 / red #ef4444），只是表达方式不同：admin 通过覆盖 chart-* 令牌，platform 与 security 用内联数组（值为 #003153 / #10b981 / #ef4444 等），后者因为值不是设计系统令牌所以 C2 也不报。结论：设计系统定义的 core.color.chart-1..8（primary/amber/sky 三色系）在全舰队无人使用，舰队自己收敛到了另一套图表配色。",
+      "owner": "design-system",
+      "expires": "2027-03-31",
+      "note": "这需要一个设计决策，不是机械替换：① 采用设计系统的 chart 色板——chart-1..8 是 primary/amber/sky 三个色系的明度变化，品牌一致但只有 3 个色相，8 条数据线的可区分性可能不足，且改动会可见地改变三个控制台的图表外观；② 承认舰队实际用的那套图表配色，把它收进 tokens.json 的 core.color.chart，让它在设计系统里有定义——这样「无人使用 chart-*」就变成「chart-* 就是大家在用的那套」；③ 折中：chart-1 保持品牌主色（品牌锚点），2..8 换成可区分性更好的色相并写进设计系统。倾向 ② 或 ③——设计系统的职责是把舰队已经收敛的事实定义下来，而不是让一个没人用的色板继续躺在 tokens 里。但这是配色决策，需 owner 拍板后再动。"
+    }
+  ]
 }

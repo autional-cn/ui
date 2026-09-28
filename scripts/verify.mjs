@@ -20,7 +20,7 @@ const STEPS = [
   { key: 'consumers', label: '消费者副本漂移', cmd: ['node', 'scripts/check-consumers.mjs'] },
   { key: 'assets', label: '字体资产台账 + 字体加载断言', cmd: ['node', 'scripts/check-assets.mjs'] },
   { key: 'typography', label: '排版令牌落地（发布 CSS + 消费方编译产物）', cmd: ['node', 'scripts/check-typography.mjs'] },
-  { key: 'consistency', label: '跨 portal 视觉一致性（antd 主题 / 硬编码色 / 组件库份数）', cmd: ['node', 'scripts/check-consistency.mjs'] },
+  { key: 'consistency', label: '跨 portal 视觉一致性（antd 主题 / 硬编码色 / 组件库份数 / 令牌覆盖）', cmd: ['node', 'scripts/check-consistency.mjs'] },
   { key: 'visual', label: '站点视觉回归（无产物/无浏览器时自动跳过）', cmd: ['node', 'scripts/visual.mjs', 'check'] }
 ];
 
