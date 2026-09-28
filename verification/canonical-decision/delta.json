@@ -1,0 +1,470 @@
+{
+  "generatedAt": "2026-09-28T10:48:07.123Z",
+  "legacyDir": "D:/autional/ui/tokens",
+  "legacyAvailable": true,
+  "ramps": [
+    {
+      "family": "primary",
+      "rows": [
+        {
+          "step": "50",
+          "legacy": "#EEF6FB",
+          "canonical": "#E8F1F8",
+          "delta": 1.5446410869500422
+        },
+        {
+          "step": "100",
+          "legacy": "#DBEAF4",
+          "canonical": "#D1E3F1",
+          "delta": 2.3081174584380215
+        },
+        {
+          "step": "200",
+          "legacy": "#B8D5EA",
+          "canonical": "#A3C7E3",
+          "delta": 4.730463748947343
+        },
+        {
+          "step": "300",
+          "legacy": "#87CEEB",
+          "canonical": "#75ABD5",
+          "delta": 9.838801161749247
+        },
+        {
+          "step": "400",
+          "legacy": "#61B8DF",
+          "canonical": "#478FC7",
+          "delta": 11.908449333613548
+        },
+        {
+          "step": "500",
+          "legacy": "#2C8EC0",
+          "canonical": "#235F84",
+          "delta": 15.248134730227997
+        },
+        {
+          "step": "600",
+          "legacy": "#0C5D8C",
+          "canonical": "#004565",
+          "delta": 9.150993605270518
+        },
+        {
+          "step": "700",
+          "legacy": "#003153",
+          "canonical": "#003153",
+          "delta": 0
+        },
+        {
+          "step": "800",
+          "legacy": "#022844",
+          "canonical": "#002540",
+          "delta": 1.2363259309810235
+        },
+        {
+          "step": "900",
+          "legacy": "#041D31",
+          "canonical": "#041D31",
+          "delta": 0
+        }
+      ]
+    },
+    {
+      "family": "sky",
+      "rows": [
+        {
+          "step": "50",
+          "legacy": "#F2FBFF",
+          "canonical": "#F2FAFD",
+          "delta": 0.3052916679116357
+        },
+        {
+          "step": "100",
+          "legacy": "#D7F4FD",
+          "canonical": "#EEF9FD",
+          "delta": 3.2820378539308233
+        },
+        {
+          "step": "200",
+          "legacy": "#B8EBFA",
+          "canonical": "#D5F0F9",
+          "delta": 3.8135228890465953
+        },
+        {
+          "step": "300",
+          "legacy": "#87CEEB",
+          "canonical": "#BDE6F5",
+          "delta": 9.260425939017187
+        },
+        {
+          "step": "400",
+          "legacy": "#5AB6DD",
+          "canonical": "#A2DCF0",
+          "delta": 13.240857444826034
+        },
+        {
+          "step": "500",
+          "legacy": "#3898C4",
+          "canonical": "#87CEEB",
+          "delta": 17.468383247534884
+        },
+        {
+          "step": "600",
+          "legacy": "#287598",
+          "canonical": "#64B4D8",
+          "delta": 20.122527760674263
+        },
+        {
+          "step": "700",
+          "legacy": "#225F7C",
+          "canonical": "#429BC5",
+          "delta": 19.54858001198796
+        },
+        {
+          "step": "800",
+          "legacy": "#204F66",
+          "canonical": "#2D7CA3",
+          "delta": 15.34956131712576
+        },
+        {
+          "step": "900",
+          "legacy": "#1F4357",
+          "canonical": "#1C5D7E",
+          "delta": 9.29818000151464
+        }
+      ]
+    },
+    {
+      "family": "amber",
+      "rows": [
+        {
+          "step": "50",
+          "legacy": "#FFF8E7",
+          "canonical": "#FFFCF0",
+          "delta": 1.2791785904891062
+        },
+        {
+          "step": "100",
+          "legacy": "#FFEFC2",
+          "canonical": "#FFF8E6",
+          "delta": 4.42552542059969
+        },
+        {
+          "step": "200",
+          "legacy": "#FFDF85",
+          "canonical": "#FFEFB3",
+          "delta": 5.435666394905338
+        },
+        {
+          "step": "300",
+          "legacy": "#FFCF47",
+          "canonical": "#FFE480",
+          "delta": 5.867265535391878
+        },
+        {
+          "step": "400",
+          "legacy": "#FFBF00",
+          "canonical": "#FFD94D",
+          "delta": 6.164990596347372
+        },
+        {
+          "step": "500",
+          "legacy": "#E2A800",
+          "canonical": "#FFBF00",
+          "delta": 7.656888507054928
+        },
+        {
+          "step": "600",
+          "legacy": "#B8860B",
+          "canonical": "#D9A300",
+          "delta": 9.627995593532212
+        },
+        {
+          "step": "700",
+          "legacy": "#8D680F",
+          "canonical": "#B38700",
+          "delta": 11.057786810666109
+        },
+        {
+          "step": "800",
+          "legacy": "#755512",
+          "canonical": "#8C6B00",
+          "delta": 7.79818940099428
+        },
+        {
+          "step": "900",
+          "legacy": "#634813",
+          "canonical": "#664F00",
+          "delta": 2.6134319345215076
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "role": "primary",
+      "value": "#003153",
+      "inCanonical": [
+        "primary.700"
+      ],
+      "inLegacy": [
+        "primary.700"
+      ],
+      "moved": false
+    },
+    {
+      "role": "sky",
+      "value": "#87ceeb",
+      "inCanonical": [
+        "sky.500"
+      ],
+      "inLegacy": [
+        "primary.300",
+        "sky.300"
+      ],
+      "moved": true
+    },
+    {
+      "role": "amber",
+      "value": "#ffbf00",
+      "inCanonical": [
+        "amber.500"
+      ],
+      "inLegacy": [
+        "amber.400"
+      ],
+      "moved": true
+    },
+    {
+      "role": "success",
+      "value": "#52c41a",
+      "inCanonical": [],
+      "inLegacy": [],
+      "moved": false
+    },
+    {
+      "role": "warning",
+      "value": "#faad14",
+      "inCanonical": [],
+      "inLegacy": [],
+      "moved": false
+    },
+    {
+      "role": "danger",
+      "value": "#ff4d4f",
+      "inCanonical": [],
+      "inLegacy": [],
+      "moved": false
+    },
+    {
+      "role": "info",
+      "value": "#1890ff",
+      "inCanonical": [],
+      "inLegacy": [],
+      "moved": false
+    }
+  ],
+  "contrast": [
+    {
+      "mode": "light",
+      "role": "正文 / 页面底",
+      "legacy": 17.304058797623746,
+      "canonical": 16.542897115268385,
+      "delta": -0.7611616823553611,
+      "legacyFg": "#171717",
+      "legacyBg": "#FAFBFC",
+      "canonFg": "#041D31",
+      "canonBg": "#FAFBFC"
+    },
+    {
+      "mode": "light",
+      "role": "次要文本 / 页面底",
+      "legacy": 7.542006711721549,
+      "canonical": 9.94000858506614,
+      "delta": 2.398001873344591,
+      "legacyFg": "#525252",
+      "legacyBg": "#FAFBFC",
+      "canonFg": "#004565",
+      "canonBg": "#FAFBFC"
+    },
+    {
+      "mode": "light",
+      "role": "主按钮文字 / 主按钮底",
+      "legacy": 13.425120530040923,
+      "canonical": 13.425120530040923,
+      "delta": 0,
+      "legacyFg": "#FFFFFF",
+      "legacyBg": "#003153",
+      "canonFg": "#FFFFFF",
+      "canonBg": "#003153"
+    },
+    {
+      "mode": "light",
+      "role": "链接强调 / 卡片底",
+      "legacy": 7.094444150225329,
+      "canonical": 10.298328739570632,
+      "delta": 3.2038845893453027,
+      "legacyFg": "#0C5D8C",
+      "legacyBg": "#FFFFFF",
+      "canonFg": "#004565",
+      "canonBg": "#FFFFFF"
+    },
+    {
+      "mode": "light",
+      "role": "品牌锚点本身（#87ceeb，从 300 档移到 500 档后）",
+      "legacy": 1.6809391981846058,
+      "canonical": 1.6809391981846058,
+      "delta": 0,
+      "legacyFg": "#87CEEB",
+      "legacyBg": "#FAFBFC",
+      "canonFg": "#87CEEB",
+      "canonBg": "#FAFBFC"
+    },
+    {
+      "mode": "light",
+      "role": "按档位名写死的引用：sky-300 迁移后取到什么",
+      "legacy": 1.6809391981846058,
+      "canonical": 1.2827872419638542,
+      "delta": -0.3981519562207516,
+      "legacyFg": "#87CEEB",
+      "legacyBg": "#FAFBFC",
+      "canonFg": "#BDE6F5",
+      "canonBg": "#FAFBFC"
+    },
+    {
+      "mode": "dark",
+      "role": "深色底上的次要文本",
+      "legacy": 13.304806186014236,
+      "canonical": 9.841460734055412,
+      "delta": -3.4633454519588245,
+      "legacyFg": "#B8EBFA",
+      "legacyBg": "#041D31",
+      "canonFg": "#87CEEB",
+      "canonBg": "#041D31"
+    },
+    {
+      "mode": "dark",
+      "role": "深色底上的正文",
+      "legacy": 16.503713097712918,
+      "canonical": 16.503713097712918,
+      "delta": 0,
+      "legacyFg": "#F8FBFE",
+      "legacyBg": "#041D31",
+      "canonFg": "#F8FBFE",
+      "canonBg": "#041D31"
+    },
+    {
+      "mode": "dark",
+      "role": "深色底上的弱化文本",
+      "legacy": 3.611188061288987,
+      "canonical": 3.611188061288987,
+      "delta": 0,
+      "legacyFg": "#64748D",
+      "legacyBg": "#041D31",
+      "canonFg": "#64748D",
+      "canonBg": "#041D31"
+    }
+  ],
+  "gaps": {
+    "fontSansLegacy": [
+      "\"Noto Sans SC\"",
+      "\"Segoe UI\"",
+      "-apple-system",
+      "sans-serif"
+    ],
+    "fontSansCanonical": [
+      "Inter",
+      "-apple-system",
+      "Segoe UI",
+      "PingFang SC",
+      "Microsoft YaHei",
+      "Noto Sans CJK SC",
+      "sans-serif"
+    ],
+    "shadowLegacy": [
+      "brand",
+      "card",
+      "soft"
+    ],
+    "shadowCanonical": [
+      "soft",
+      "card",
+      "brand"
+    ],
+    "imageLegacy": [
+      "brand-radial",
+      "brand-grid"
+    ],
+    "imageCanonical": [
+      "brand-radial",
+      "brand-grid",
+      "page-light",
+      "page-dark"
+    ]
+  },
+  "vendored": [
+    {
+      "site": "admin",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    },
+    {
+      "site": "auth",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    },
+    {
+      "site": "authenticator",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    },
+    {
+      "site": "brand",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    },
+    {
+      "site": "platform",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    },
+    {
+      "site": "security",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    },
+    {
+      "site": "status",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    },
+    {
+      "site": "trust",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    },
+    {
+      "site": "user",
+      "vars": 89,
+      "missing": 97,
+      "changed": 3,
+      "fontSansFirst": "'Noto Sans SC'"
+    }
+  ],
+  "lockHash": "7a7fd5ed23160f01c7fd329b5e6a73d808ba76282394bf6cfc7ba1c788a00b33"
+}

@@ -221,6 +221,23 @@ if (!existsSync(pairFile)) {
   }
 }
 
+// ── T11 决策报告是否与当前令牌同源 ──────────────────────────────────────
+// 决策文档最容易烂：令牌改了、报告没重生成，读者拿到的就是过期结论。
+// 这里只比对「报告记录的令牌快照 hash」与当前锁 hash，不做内容比对。
+const deltaJson = join(ROOT, 'verification', 'canonical-decision', 'delta.json');
+const lockJson = join(ROOT, 'verification', 'tokens.lock.json');
+if (existsSync(deltaJson) && existsSync(lockJson)) {
+  const dj = JSON.parse(readFileSync(deltaJson, 'utf8'));
+  const lj = JSON.parse(readFileSync(lockJson, 'utf8'));
+  if (dj.lockHash && lj.hash && dj.lockHash !== lj.hash) {
+    add('T11', 'error', 'verification/canonical-decision/report.md',
+      '影响报告基于的令牌快照与当前不一致，结论可能已过期',
+      '报告记录 ' + String(dj.lockHash).slice(0, 16) + '，当前 ' + String(lj.hash).slice(0, 16) + '。重新生成：pnpm delta');
+  }
+} else if (!existsSync(deltaJson)) {
+  add('T11', 'warn', 'verification/canonical-decision/', '缺少影响报告，运行 pnpm delta 生成');
+}
+
 // ── T09 已知问题登记 ──────────────────────────────────────────────────────
 const knownFile = join(ROOT, 'verification', 'known-issues.json');
 const known = existsSync(knownFile) ? JSON.parse(readFileSync(knownFile, 'utf8')).issues || [] : [];

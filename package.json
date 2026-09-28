@@ -10,6 +10,7 @@
     "lint:tokens": "node scripts/lint-tokens.mjs",
     "lock": "node scripts/token-lock.mjs",
     "lock:check": "node scripts/token-lock.mjs --check",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "delta": "node scripts/canonical-delta.mjs"
   }
 }

@@ -1,0 +1,66 @@
+{
+  "$description": "legacy 站点（www.autional.com）的实际渲染观测。这是 E1 级证据：它证明旧站当时**实际**渲染成什么，而不只是配置里写了什么。由 brandui 的 forensics collect 采集（1440x900 / chromium 149 / 2026-09-28）。",
+  "$tier": "E1 运行时一手（getComputedStyle 采样）",
+  "source": "https://www.autional.com/",
+  "capturedAt": "2026-09-28",
+  "elementsSampled": 364,
+  "topColors": [
+    {
+      "value": "#171717",
+      "count": 256,
+      "role": "正文（body color）"
+    },
+    {
+      "value": "#FFFFFF",
+      "count": 127,
+      "role": "卡片底 / 按钮文字"
+    },
+    {
+      "value": "#003153",
+      "count": 99,
+      "role": "品牌主色（primary-700）"
+    },
+    {
+      "value": "#000000",
+      "count": 64,
+      "role": "html 默认色"
+    },
+    {
+      "value": "#041D31",
+      "count": 52,
+      "role": "深色标题（primary-900）"
+    },
+    {
+      "value": "#525252",
+      "count": 49,
+      "role": "次要文本"
+    },
+    {
+      "value": "#2C8EC0",
+      "count": 28,
+      "role": "primary-500（旧）"
+    },
+    {
+      "value": "#0C5D8C",
+      "count": 22,
+      "role": "primary-600（链接强调）"
+    },
+    {
+      "value": "#87CEEB",
+      "count": 10,
+      "role": "品牌天蓝（sky.300 与 primary.300；含 span.text-sky-300）"
+    },
+    {
+      "value": "#EEF6FB",
+      "count": 8,
+      "role": "primary-50 浅底"
+    },
+    {
+      "value": "#B8EBFA",
+      "count": 8,
+      "role": "sky-200（深色模式下的标签文字）"
+    }
+  ],
+  "fontStack": "\"Noto Sans SC\", \"Segoe UI\", -apple-system, sans-serif（出现 345 次，@font-face 为 0 条，依赖本机字体）",
+  "note": "本文件是静态记录，不参与 lint。它的作用是让 canonical-delta 的对比度表有「旧站实际值」可用，而不是只用配置里的定义值。"
+}

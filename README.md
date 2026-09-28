@@ -44,7 +44,8 @@ pnpm gen:check    # 校验产物与 SSOT 一致（CI 用，有漂移退出 1）
 | `pnpm gen:check` | 产物跟得上 SSOT 吗 | 改了 tokens.json 却没重新生成 |
 | `pnpm lint:tokens` | SSOT 的值本身站得住吗 | 类型错误、悬空引用、**层叠冲突**、对比度不达标、已知问题过期 |
 | `pnpm lock:check` | SSOT 被改动过吗 | 改了什么必须登记（reason + owner + expires） |
-| `pnpm verify` | 以上三条一起跑 | 任一失败即退出码 1 |
+| `pnpm verify` | 以上四条一起跑 | 任一失败即退出码 1 |
+| `pnpm delta` | canonical 色阶决策改了多少 | 生成 `verification/canonical-decision/report.md`（令牌变更后需重生成，T11 会检查是否过期） |
 
 **为什么需要后两条**：改了 `tokens.json` 再跑一次 `pnpm gen`，`gen:check` 就完全无感——产物是最新的。
 实测：把 `color.primary.500` 从 `#235f84` 改成 `#236085` 并重新生成后，`gen:check` 报 OK，
