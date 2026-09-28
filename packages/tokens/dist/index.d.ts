@@ -338,6 +338,7 @@ declare const tokens: {
     authenticator: {
       $note: string;
       $colorScheme: string;
+      $extends: string;
       color: {
         "bg-primary": string;
         "bg-surface": string;

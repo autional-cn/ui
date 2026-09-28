@@ -287,15 +287,31 @@
   color-scheme: dark;
 
 /* ── color ── */
+--color-neutral-0: #0a0f1a;
+--color-neutral-50: #0f1a2e;
+--color-neutral-100: #142238;
+--color-neutral-200: #1a2a42;
+--color-neutral-300: #1f3350;
+--color-neutral-400: #2a4060;
+--color-neutral-500: #4a6585;
+--color-neutral-600: #6b8caa;
+--color-neutral-700: #8fb0cc;
+--color-neutral-800: #b5d0e6;
+--color-neutral-900: #e2edf5;
 --color-bg-primary: #0a0a0a;
 --color-bg-surface: #141414;
 --color-bg-elevated: #1f1f1f;
+--color-bg-muted: #0a1f30;
 --color-text-primary: #f5f5f5;
 --color-text-secondary: #a3a3a3;
+--color-text-muted: #64748d;
 --color-border-subtle: #2a2a2a;
 --color-border-strong: #3a3a3a;
+--color-border: var(--color-border-strong);
 --color-brand: var(--color-primary-500);
 --color-brand-hover: var(--color-primary-400);
+--color-on-brand: var(--color-on-brand-dark);
+--color-brand-soft: var(--color-sky-700);
 
 /* ── focus ── */
 --focus-ring-color: var(--color-sky-500);

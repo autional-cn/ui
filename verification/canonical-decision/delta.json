@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T11:40:05.798Z",
+  "generatedAt": "2026-09-28T11:49:25.137Z",
   "legacyDir": "D:/autional/ui/tokens",
   "legacyAvailable": true,
   "ramps": [
@@ -466,5 +466,5 @@
       "fontSansFirst": "'Noto Sans SC'"
     }
   ],
-  "lockHash": "2681631605314032036c207940a48c422527c9b4042dd117302acae226f1ba76"
+  "lockHash": "7a082ef2642d83ad398638be3a8ac9781c71b3aa7f9bacf50592496f9eec3178"
 }

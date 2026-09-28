@@ -6,15 +6,7 @@
     "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
   ],
   "issues": [
-    {
-      "id": "KI-001",
-      "code": "T05",
-      "match": "color.border-subtle",
-      "reason": "层叠冲突：profiles/{docs,developer}.css 的 :root 在 tokens.css 之后加载，与 .dark / [data-theme=authenticator] 同为 0,1,0 特指度时后者被压掉。实测 docs/developer 深色模式下 --color-border-subtle 实际生效 #d1e5f2（浅色），本应是 #1a4a65（深色）。DESIGN.md 第 3 节只说 border-subtle 按 profile 解析，未提及它会压掉主题覆盖。",
-      "owner": "design-system",
-      "expires": "2026-10-31",
-      "note": "修法（三选一，需 owner 决策，因为会改变 docs/developer 站点的深色渲染）：① profiles/*.css 改用不参与同特指度竞争的选择器（例如 :root:not(.dark) 或按主题拆块）；② profile 的深色值单独成块并排在变体块之后；③ 把 border-subtle 从 profile 覆盖中移除，改为 core 内按主题解析。修复后应同步更新 DESIGN.md 第 3 节。"
-    },
+    
     {
       "id": "KI-002",
       "code": "T08",
@@ -42,15 +34,7 @@
       "expires": "2026-12-31",
       "note": "需要确认：表单控件边界是否使用 border-strong？若使用，必须提升到 3:1 或改用 border + 背景对比共同表达。"
     },
-    {
-      "id": "KI-005",
-      "code": "T10",
-      "match": "variant:authenticator",
-      "reason": "authenticator 与 dark 同为 dark 主题（都有 $colorScheme: dark），但 authenticator 只覆盖 10 条、dark 覆盖 26 条，且未声明依赖。二者是互斥选择器不会层叠，因此「只加 [data-theme=authenticator] 而不加 .dark」时会回落到 core 的浅色值。无头浏览器实测：--color-neutral-900 得到 #1e293b（应为 #e2edf5）、--color-on-brand 得到 #ffffff（应为 #0a0f1a）、--color-brand-soft 得到 #bde6f5（应为 #429bc5）——形成深色底配浅色品牌色的坏混合。同时带 .dark 时取值正确。",
-      "owner": "design-system",
-      "expires": "2026-10-31",
-      "note": "变体 $note 已写明「Wins over .dark when both apply」，说明设计意图是两个一起用；但这条依赖只存在于注释里。修法二选一：① tokens.json 里显式声明 $requires: [\"dark\"]（需更新 dist 产物并走快照登记）；② 补齐 authenticator 的覆盖使其可独立成立。推荐 ①：把隐式依赖写成机器可读的契约。"
-    },
+    
     {
       "id": "KI-006",
       "code": "T11",

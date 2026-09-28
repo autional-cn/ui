@@ -35,8 +35,41 @@ export function flatten(node, prefix, out) {
 /** 变体块的输出顺序。generate.mjs 的 VARIANT_ORDER 必须与此一致。 */
 export const VARIANT_ORDER = ['portal', 'auth', 'dark', 'authenticator'];
 
+// ── $extends：变体可以继承另一个变体的完整令牌集 ────────────────────────
+// authenticator 是「dark + 10 处覆盖」。此前它只写那 10 条，导致单独应用
+// [data-theme=authenticator] 而不带 .dark 时，未覆盖的键回落到 core 的**浅色**值，
+// 形成深色底 + 浅色文字的坏混合（KI-005）。$extends 把这条依赖从注释变成结构：
+// 展开后 authenticator 的块自带 dark 的全部值，可独立成立。
+// 注：generate.mjs 是零依赖的独立脚本，那边有一份同构实现，必须与此保持一致
+// （与 VARIANT_ORDER 的重复是同一约定）。
+function resolveVariantExtends(all, name, seen) {
+  const node = all[name];
+  if (!node || typeof node !== 'object') return node;
+  const parent = node.$extends;
+  if (!parent) return node;
+  seen = seen || new Set([name]);
+  if (seen.has(parent)) throw new Error('变体 $extends 成环：' + name + ' -> ' + parent);
+  if (!all[parent]) throw new Error('变体「' + name + '」的 $extends 指向不存在的变体「' + parent + '」');
+  seen.add(parent);
+  const base = resolveVariantExtends(all, parent, seen) || {};
+  const out = Object.assign({}, base);
+  for (const [k, v] of Object.entries(node)) {
+    if (k.startsWith('$')) continue;
+    const isGroup = v && typeof v === 'object' && !Array.isArray(v);
+    // 注意：这里必须返回**对象本身**而不是布尔。写成 `b[k] && typeof b[k]==='object' && !Array.isArray(b[k])`
+    // 的话，&& 链返回的是最后一个操作数（true），Object.assign({}, true, v) 只会拷到 v——静默失效。
+    const baseGroup = base[k] && typeof base[k] === 'object' && !Array.isArray(base[k]) ? base[k] : null;
+    out[k] = isGroup && baseGroup ? Object.assign({}, baseGroup, v) : v;
+  }
+  for (const [k, v] of Object.entries(node)) if (k.startsWith('$')) out[k] = v;
+  return out;
+}
+
 export function variantMap(T) {
-  return Object.assign({}, T.variants, { dark: T.modes.dark });
+  const raw = Object.assign({}, T.variants, { dark: T.modes.dark });
+  const out = {};
+  for (const name of Object.keys(raw)) out[name] = resolveVariantExtends(raw, name);
+  return out;
 }
 
 export function orderedVariants(T) {
@@ -99,9 +132,23 @@ export const cssVarName = (path) => '--' + path.split('.').join('-');
 // :root 与 .dark / [data-theme] 特指度相同（0,1,0），同分时**源码顺序靠后者胜**。
 // 因此 profile 的 :root 会压掉 tokens.css 里的变体覆盖——这正是要检测的冲突。
 
+/** 深色上下文（$colorScheme: dark）的变体名集合 */
+export function darkSchemeVariants(T) {
+  const all = variantMap(T);
+  return orderedVariants(T).filter((n) => all[n] && all[n].$kind !== 'runtime' && all[n].$colorScheme === 'dark');
+}
+
+/** 这些变体覆盖了哪些路径——profile 若覆盖同名路径就会把它们压掉 */
+export function darkSchemePaths(T) {
+  const all = variantMap(T);
+  const out = new Set();
+  for (const n of darkSchemeVariants(T)) for (const p of Object.keys(flatten(stripMeta(all[n])))) out.add(p);
+  return out;
+}
+
 export function cascadeDeclarations(T) {
   const decls = [];
-  const add = (path, selector, order, source) => decls.push({ path, selector, order, source });
+  const add = (path, selector, order, source, darkGuarded) => decls.push({ path, selector, order, source, darkGuarded: !!darkGuarded });
   const coreFlat = flatten(T.core);
   for (const p of Object.keys(coreFlat)) add(p, ':root', 1, 'core');
   const all = variantMap(T);
@@ -111,9 +158,16 @@ export function cascadeDeclarations(T) {
     const flat = flatten(stripMeta(node));
     for (const p of Object.keys(flat)) add(p, name === 'dark' ? '.dark' : '[data-theme="' + name + '"]', 2 + i, 'variant:' + name);
   });
+  // KI-001：profile 里与深色变体同名的声明，生成器会把它放进
+  // `:root:not(.dark):not([data-theme=…])` 块——浅色下生效，深色下不匹配。
+  // 模型必须同构，否则 T05 会一直报一个已经修掉的冲突。
+  const guarded = darkSchemePaths(T);
   for (const [name, profile] of Object.entries(T.profiles)) {
     const flat = flatten(stripMeta(profile));
-    for (const p of Object.keys(flat)) add(p, ':root', 100, 'profile:' + name);
+    for (const p of Object.keys(flat)) {
+      const g = guarded.has(p);
+      add(p, g ? ':root:not(.dark):not([data-theme])' : ':root', 100, 'profile:' + name, g);
+    }
   }
   return decls;
 }
@@ -125,7 +179,11 @@ export function cascadeFor(T, path, opts) {
   const active = new Set(['core']);
   if (opts.profile) active.add('profile:' + opts.profile);
   if (opts.variant && all[opts.variant]) active.add('variant:' + opts.variant);
-  const hits = cascadeDeclarations(T).filter((d) => d.path === path && active.has(d.source));
+  // 深色上下文下，被守卫的 profile 声明不匹配，直接排除
+  const variantIsDark = !!(opts.variant && all[opts.variant] && all[opts.variant].$colorScheme === 'dark');
+  const hits = cascadeDeclarations(T).filter(
+    (d) => d.path === path && active.has(d.source) && !(d.darkGuarded && variantIsDark),
+  );
   // 胜者 = 声明顺序最大者（源码顺序靠后）
   return hits.sort((a, b) => a.order - b.order);
 }

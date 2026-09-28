@@ -131,5 +131,5 @@ canonical :root 有 188 个变量；权威 --font-sans 首项是 Inter。
 
 ---
 
-本报告基于令牌快照 hash 2681631605314032。令牌变更后需重新生成本报告（pnpm delta）。
+本报告基于令牌快照 hash 7a082ef2642d83ad。令牌变更后需重新生成本报告（pnpm delta）。
 

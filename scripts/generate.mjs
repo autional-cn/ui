@@ -203,12 +203,39 @@ const variantBlocks = [];
 // [data-theme=authenticator] is dark-first and must WIN over .dark.
 const VARIANT_ORDER = ['portal', 'auth', 'dark', 'authenticator'];
 const allVariants = { ...TOKENS.variants, dark: TOKENS.modes.dark };
+// ── $extends：变体可以继承另一个变体的完整令牌集 ──
+// authenticator 是「dark + 10 处覆盖」。此前只写那 10 条，导致单独应用
+// [data-theme=authenticator] 而不带 .dark 时，未覆盖的键回落到 core 的浅色值，
+// 形成深色底 + 浅色文字的坏混合（KI-005）。展开后其块自带 dark 的全部值，可独立成立。
+// 注：scripts/lib/tokens.mjs 的 variantMap 有一份同构实现，必须与此保持一致。
+function resolveVariantExtends(name, seen) {
+  const node = allVariants[name];
+  if (!node || typeof node !== 'object') return node;
+  const parent = node.$extends;
+  if (!parent) return node;
+  seen = seen || new Set([name]);
+  if (seen.has(parent)) throw new Error('变体 $extends 成环：' + name + ' -> ' + parent);
+  if (!allVariants[parent]) throw new Error('变体「' + name + '」的 $extends 指向不存在的变体「' + parent + '」');
+  seen.add(parent);
+  const base = resolveVariantExtends(parent, seen) || {};
+  const out = { ...base };
+  for (const [k, v] of Object.entries(node)) {
+    if (k.startsWith('$')) continue;
+    const isGroup = v && typeof v === 'object' && !Array.isArray(v);
+    // 必须返回对象本身：`base[k] && typeof base[k]==='object' && !Array.isArray(base[k])` 求值为 true，
+    // 那样 { ...true, ...v } 只会得到 v —— 静默失效。
+    const baseGroup = base[k] && typeof base[k] === 'object' && !Array.isArray(base[k]) ? base[k] : null;
+    out[k] = isGroup && baseGroup ? { ...baseGroup, ...v } : v;
+  }
+  for (const [k, v] of Object.entries(node)) if (k.startsWith('$')) out[k] = v;
+  return out;
+}
 const ordered = [
   ...VARIANT_ORDER.filter((n) => allVariants[n]),
   ...Object.keys(allVariants).filter((n) => !VARIANT_ORDER.includes(n)),
 ];
 for (const name of ordered) {
-  const node = allVariants[name];
+  const node = resolveVariantExtends(name);
   if (node.$kind === 'runtime') continue;
   variantBlocks.push(themeBlock(selectorFor(name), blockBody(node)));
 }
@@ -228,15 +255,63 @@ outputs.set(
     '\n',
 );
 
+// ── KI-001：profile 的语义覆盖不能压掉深色变体 ──────────────────────────
+// profiles/X.css 在 tokens.css 之后加载，同为 0,1,0 特指度时源码顺序靠后者胜，
+// 于是 profile 的 :root 会把 .dark / [data-theme=authenticator] 的覆盖压掉。
+// 实测：docs 深色下 --color-border-subtle 生效 #d1e5f2（近白），本应 #1a4a65。
+// 修法：把「与深色变体同名变量」的声明单独放进一个排除深色上下文的块——
+// 浅色下它照常匹配并覆盖 :root；深色下不匹配，深色变体自然胜出。
+// 排除列表由变体的 $colorScheme 自动推导，将来新增深色变体无需手改这里。
+const darkSchemeVars = new Set();
+const darkExclusions = [];
+for (const vname of ordered) {
+  const vnode = resolveVariantExtends(vname);
+  if (!vnode || vnode.$kind === 'runtime' || vnode.$colorScheme !== 'dark') continue;
+  for (const m of blockBody(vnode).matchAll(/(--[a-z0-9-]+)\s*:/g)) darkSchemeVars.add(m[1]);
+  for (const sel of selectorFor(vname).split(',')) darkExclusions.push(':not(' + sel.trim() + ')');
+}
+const darkGuard = darkExclusions.join('');
+
+function partitionProfile(profile, darkVars) {
+  const base = {};
+  const restricted = {};
+  for (const [ns, group] of Object.entries(profile)) {
+    if (ns.startsWith('$') || group === null || typeof group !== 'object') continue;
+    for (const [k, v] of Object.entries(group)) {
+      if (k.startsWith('$')) continue;
+      if (v !== null && typeof v === 'object') {
+        const a = {};
+        const b = {};
+        for (const [k2, v2] of Object.entries(v)) {
+          if (k2.startsWith('$')) continue;
+          (darkVars.has(varName([ns, k, k2])) ? a : b)[k2] = v2;
+        }
+        if (Object.keys(a).length) (restricted[ns] = restricted[ns] || {})[k] = a;
+        if (Object.keys(b).length) (base[ns] = base[ns] || {})[k] = b;
+      } else {
+        const target = darkVars.has(varName([ns, k])) ? restricted : base;
+        (target[ns] = target[ns] || {})[k] = v;
+      }
+    }
+  }
+  return { base, restricted };
+}
+
 for (const [name, profile] of Object.entries(TOKENS.profiles)) {
   const hasOverrides = Object.keys(profile).some((k) => !k.startsWith('$'));
   if (!hasOverrides) continue;
-  const body = emitVars(
+  const { base, restricted } = partitionProfile(
     Object.fromEntries(Object.entries(profile).filter(([k]) => !k.startsWith('$'))),
+    darkSchemeVars,
   );
+  const blocks = [];
+  if (Object.keys(base).length) blocks.push(themeBlock(':root', emitVars(base)));
+  if (Object.keys(restricted).length) {
+    blocks.push(themeBlock(darkGuard ? ':root' + darkGuard : ':root', emitVars(restricted)));
+  }
   outputs.set(
     `packages/tokens/profiles/${name}.css`,
-    `/**\n * Autional profile: ${name} — ${GENERATED('tokens/tokens.json')}\n * Load AFTER @autional-cn/tokens/tokens.css.\n */\n\n${themeBlock(':root', body)}\n`,
+    `/**\n * Autional profile: ${name} — ${GENERATED('tokens/tokens.json')}\n * Load AFTER @autional-cn/tokens/tokens.css.\n */\n\n${blocks.join('\n\n')}\n`,
   );
 }
 
