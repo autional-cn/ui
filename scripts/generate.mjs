@@ -464,9 +464,22 @@ const FLAT_COLORS = [
   ['inverse', 'text-inverse'],
   ['surface', 'bg-surface'],
   ['muted', 'bg-muted'],
+  ['elevated', 'bg-elevated'],
+  ['developer', 'bg-developer'],
   ['border-subtle', 'border-subtle'],
   ['border-strong', 'border-strong'],
 ];
+// 注意这里**不能**用补 DEFAULT 的方式去解决 bg-primary / text-primary：
+// 设计系统的令牌名自带语义前缀（--color-bg-primary / --color-text-primary），
+// Tailwind 的 utility 也加前缀（bg- / text- / border-），两者叠加就撞车。
+// 而 colors.primary 是**色阶**（50..900、无 DEFAULT），于是
+//   bg-primary / text-primary / border-primary 一个类都生成不出来。
+// 更麻烦的是设计系统里 bg-primary 与 text-primary 是**两个不同令牌**
+// （页面底色 vs 正文色），Tailwind 的一个 colors.X 只能有一个 DEFAULT ——
+// 让 text-primary 生效就会让 bg-primary 拿到正文色。
+// 实测（2026-09-29）全舰队因此有 133 处类名写了、构建成功、页面上什么都没发生：
+//   text-primary 74 / text-muted 29 / bg-primary 17 / border-primary 11 / bg-elevated 2。
+// 命名口径的收敛方案见 docs/PORTAL-UI-UNIFICATION-PLAN-V2.md §P6，定下来之前不盲改。
 
 const presetColors = {};
 for (const name of PALETTES) {
