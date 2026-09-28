@@ -1,8 +1,8 @@
 {
   "$description": "令牌快照锁（生成物，勿手改）。重建：node scripts/token-lock.mjs。比对：node scripts/token-lock.mjs --check。",
-  "hash": "9ed3b66d13c70a8ea0b3d565064600a10b243ba2202431f652738969f161d007",
-  "generatedAt": "2026-09-28T23:31:25.255Z",
-  "entries": 360,
+  "hash": "53748c49b92d3e9cfa97f785c2bce3fe6a04598f5f3fb5ba93bec98e8c5ba384",
+  "generatedAt": "2026-09-28T23:34:08.602Z",
+  "entries": 362,
   "tokens": {
     "core:a11y.touch-target": "44px",
     "core:color.accent": "{color.amber.500}",
@@ -215,6 +215,8 @@
     "core:space.5": "20px",
     "core:space.6": "24px",
     "core:space.8": "32px",
+    "core:space.hero-gap": "40px",
+    "core:space.section-gap": "48px",
     "core:z.base": "0",
     "core:z.dropdown": "1000",
     "core:z.fixed": "1030",

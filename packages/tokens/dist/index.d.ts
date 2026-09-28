@@ -233,6 +233,9 @@ declare const tokens: {
       "8": string;
       "10": string;
       "12": string;
+      "hero-gap": string;
+      "section-gap": string;
+      "$rhythm-note": string;
     };
     radius: {
       sm: string;
