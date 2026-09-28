@@ -1,0 +1,11 @@
+{
+  "$description": "顶栏契约闸门（check-headers.mjs）的文件级豁免。与 known-issues / color-exemptions 同样的纪律：必须有 reason / owner / expires，到期即失败。",
+  "exemptions": [
+    {
+      "match": "web/src/layouts/LandingLayout.astro",
+      "reason": "该文件有**未提交的在飞改动**（用户 2026-09-29 05:29 的首页改版）。它的顶栏是一个 rounded-full 胶囊式设计，高度写在 py-3 上；在改版定稿前动它既会与用户的工作冲突，也会让视觉回归失去参照。到期前应随该次改版一并收敛。",
+      "owner": "design-system",
+      "expires": "2026-12-31"
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+#!/usr/bin/env node
+// 顶栏契约闸门（verify 第 13 道）
+//
+// 顶栏是**每个页面都会出现的第一条水平线**。图标套件统一之后（第 12 道闸门），
+// 顶栏是紧接着的第二条——高度差 8px 在跨站切换时肉眼可辨，而它是「我们不是同一个
+// 产品」最廉价的信号。
+//
+// 实测（2026-09-29 修复前）：高度跨度 48–117px，position 在 static（admin/platform/
+// status/user）与 sticky（其余）之间分成两派，品牌标有三种形态——其中 status 用
+// lucide 的 activity、trust 用 lucide 的 shield，把**概念图标**当成了**身份标识**。
+//
+// 断言：
+//   H1 顶层布局里必须存在顶栏元素（<header> 或 antd 的 <AntHeader>）
+//   H2 顶栏高度必须来自令牌，不能是写死的数字
+//   H3 顶栏 position 必须是 sticky 或 fixed（不能随内容滚走）
+//   H4 顶栏里的品牌标必须是品牌资产，不能是图标组件
+//
+// 用法: node scripts/check-headers.mjs [--json]
+
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { join, resolve, relative, extname } from 'node:path';
+import { ROOT } from './lib/tokens.mjs';
+
+const AS_JSON = process.argv.includes('--json');
+const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
+
+const EXEMPT_PATH = join(ROOT, 'verification', 'header-exemptions.json');
+const TODAY = new Date().toISOString().slice(0, 10);
+const exemptions = existsSync(EXEMPT_PATH) ? (JSON.parse(readFileSync(EXEMPT_PATH, 'utf8')).exemptions || []) : [];
+const expiredEx = exemptions.filter((e) => e.expires && e.expires < TODAY);
+const exemptFor = (rel) => exemptions.find((e) => rel.indexOf(e.match) >= 0);
+
+const problems = [];
+const rows = [];
+
+if (!existsSync(SITES)) {
+  console.log('check-headers：本次工作区没有 sites/，跳过（CI 里同样跳过）');
+  process.exit(0);
+}
+
+const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage']);
+function walk(d, out) {
+  let es; try { es = readdirSync(d, { withFileTypes: true }); } catch (e) { return out; }
+  for (const e of es) {
+    if (SKIPDIR.has(e.name)) continue;
+    const p = join(d, e.name);
+    if (e.isDirectory()) walk(p, out);
+    else if (['.tsx', '.jsx', '.astro', '.html'].includes(extname(e.name))) out.push(p);
+  }
+  return out;
+}
+
+// 判定一个顶栏元素「高度是否来自令牌」。
+// 接受三种等价写法——它们的共同点是**值只有一个来源**：
+//   h-[var(--layout-header-height)]             Tailwind 任意值
+//   height: var(--layout-header-height)         CSS
+//   class="site-header"                         设计系统原语（内部已是令牌）
+// 不接受：h-16 / h-14 / py-4 这类写死的数字。
+const USES_TOKEN = /var\(--layout-header-height\)|site-header\b/;
+const HARDCODED_H = /\bh-(?:[0-9]|1[0-9]|2[0-9])\b|\bpy-(?:[0-9])\b|height:\s*\d+px/;
+const STICKY = /\b(sticky|fixed)\b|position:\s*(?:sticky|fixed)/;
+const ICON_AS_LOGO = /<(?:Activity|Shield|Bell|Zap|Globe|Lock|Server|Gauge|Pulse)\b[^>]*className/;
+
+for (const site of readdirSync(SITES)) {
+  const dir = join(SITES, site);
+  if (!statSync(dir).isDirectory()) continue;
+  const hits = [];
+  for (const f of walk(dir, [])) {
+    const rel = f.replace(/\\/g, '/');
+    if (/\/packages\//.test(rel)) continue;              // 交付副本不归本站管
+    const lines = readFileSync(f, 'utf8').split(/\r?\n/);
+    lines.forEach((ln, i) => {
+      // 顶栏不一定叫 <header>。状态站的结构是
+      //   <header class="w-full"><div 状态横幅/><nav class="sticky h-[var(...)]">…
+      // 真正承担顶栏职责的是那个 sticky 的 <nav>；只认 <header> 会误判。
+      // 但 <nav> 太常见（页内目录、侧栏分组），所以只收**自报 sticky/fixed** 的。
+      // 三种写法都要认：原生 <header>、antd 的 <AntHeader>（解构自 Layout 后重命名）、
+      // antd 的 <Header>（直接解构。security 用的就是这种——只认 <AntHeader> 会漏掉它，
+      // 而「漏掉」在这道闸门里等于谎报合规）。
+      // <Header\b 不会误匹配 <PageHeader：那要求 '<' 紧跟 'Header'。
+      const isHeader = /<header\b|<AntHeader\b|<Header\b/.test(ln);
+      const isStickyNav = /<nav\b/.test(ln) && /\b(sticky|fixed)\b|position:\s*(?:sticky|fixed)/.test(ln);
+      if (!isHeader && !isStickyNav) return;
+      hits.push({ file: relative(SITES, f).replace(/\\/g, '/'), line: i + 1, text: ln });
+    });
+  }
+  if (!hits.length) {
+    rows.push({ site, headers: 0, verdict: '无顶栏元素' });
+    continue;
+  }
+  // 逐个候选算分，取**最满足契约**的那个再判定。
+  // 不能只取第一个 <header>：status 的结构是
+  //   <header class="w-full">        ← 外层，同时装状态横幅与导航
+  //     <nav class="sticky h-[var(...)]"> ← 真正承担顶栏职责的是它
+  // 只取第一个会把已经改好的站点判成失败（实测踩过）。
+  const readAll = (h) => readFileSync(join(SITES, h.file), 'utf8').split(/\r?\n/).slice(h.line - 1, h.line + 7).join('\n');
+  const score = (h) => {
+    const b = readAll(h);
+    const prim = /(^|[\s"'])site-header([\s"']|$)/.test(b);
+    return (prim || USES_TOKEN.test(b) ? 2 : 0) + (prim || STICKY.test(b) ? 1 : 0);
+  };
+  const primary = hits.slice().sort((a, b) => score(b) - score(a))[0];
+
+  // 判定必须看 <header> 元素**及其紧随的若干行**，不能只看那一行。
+  // 原因：内容站普遍是两层结构——<header class="sticky top-0"><div class="h-...">——
+  // 高度写在**内层容器**上。只看 <header> 那一行会对已经改好的站点报假阳性（实测踩过：
+  // developer/brand/docs/trust 四处都被误判）。
+  const block = readAll(primary);
+
+  // .site-header 原语自带 position:sticky 与 height:var(--layout-header-height)，
+  // 挂了它就等于两项都满足——判定要认得这一点，否则「改用原语」反而被判失败。
+  const primitive = /(^|[\s"'])site-header([\s"']|$)/.test(block);
+
+  const tokenOk = primitive || USES_TOKEN.test(block);
+  const stickyOk = primitive || STICKY.test(block);
+  const hardcoded = !tokenOk && HARDCODED_H.test(block);
+  const iconAsLogo = ICON_AS_LOGO.test(block);
+
+  const ex = exemptFor(primary.file);
+  if (ex) {
+    rows.push({ site, headers: hits.length, tokenOk: '豁免', stickyOk: '豁免', file: primary.file + ':' + primary.line });
+    for (const e of [ex]) console.log('  [KNOWN] 豁免 ' + e.match + '（owner ' + e.owner + '，到期 ' + e.expires + '）');
+    continue;
+  }
+  if (!tokenOk) {
+    problems.push('H2 ' + site + '：顶栏高度不是令牌驱动（' + primary.file + ':' + primary.line + '）' +
+      (hardcoded ? '——用的是写死的高度' : '') + '；应为 h-[var(--layout-header-height)] 或挂 .site-header');
+  }
+  if (!stickyOk) problems.push('H3 ' + site + '：顶栏 position 不是 sticky/fixed（' + primary.file + ':' + primary.line + '）——会随内容滚走');
+  if (iconAsLogo) problems.push('H4 ' + site + '：顶栏疑似用图标组件充当品牌标（' + primary.file + ':' + primary.line + '）——图标表达概念，品牌标表达身份');
+
+  rows.push({ site, headers: hits.length, tokenOk, stickyOk, file: primary.file + ':' + primary.line });
+}
+
+if (AS_JSON) console.log(JSON.stringify({ rows, problems }, null, 2));
+else {
+  console.log('顶栏契约闸门：' + rows.length + ' 个站点');
+  console.log('');
+  console.log('  站点'.padEnd(17) + '顶栏数  令牌驱动  sticky');
+  for (const r of rows) {
+    // 豁免不等于达标——显示成 '免' 而不是 'Y'，否则这张表会谎报合规。
+    const mark = (v) => (v === '豁免' ? '免' : (r.headers === 0 ? '—' : (v ? 'Y' : 'N')));
+    const t = mark(r.tokenOk), s = mark(r.stickyOk);
+    console.log('  ' + r.site.padEnd(15) + String(r.headers).padStart(5) + String(t).padStart(9) + String(s).padStart(8));
+  }
+  console.log('');
+  for (const p of problems) console.log('  [ERROR] ' + p);
+  console.log(problems.length ? '结论：顶栏契约有 ' + problems.length + ' 项不达标' : '结论：顶栏契约一致（' + rows.length + ' 站）');
+}
+for (const e of expiredEx) console.log('  [ERROR] 顶栏豁免已过期：' + e.match + '（' + e.expires + '）—— 要么修掉，要么重新评估并续期');
+process.exit(problems.length || expiredEx.length ? 1 : 0);
