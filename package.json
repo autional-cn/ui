@@ -14,6 +14,7 @@
     "delta": "node scripts/canonical-delta.mjs",
     "assets:fonts": "node scripts/check-assets.mjs",
     "typography": "node scripts/check-typography.mjs",
+    "sync:consumers": "node scripts/sync-consumers.mjs",
     "visual": "node scripts/visual.mjs check",
     "visual:baseline": "node scripts/visual.mjs baseline"
   },
