@@ -1,0 +1,22 @@
+{
+  "$description": "非设计系统色值闸门（check-colors.mjs）的文件级豁免。与 known-issues.json 同样的纪律：必须有 reason / owner / expires，到期即构建失败。用来登记「已知、但正确修法不是机械替换」的文件。",
+  "$rules": [
+    "match 是相对路径子串，粒度必须够细——不能用来屏蔽整个站点",
+    "只登记「需要专门处置」的文件，不登记「懒得改」的文件",
+    "到期未处理即失败：要么修掉，要么重新评估后改 expires 并写理由"
+  ],
+  "exemptions": [
+    {
+      "match": "security/apps/security-dashboard/src/app/globals.css",
+      "reason": "整份手写的 antd 暗色主题覆盖（15 处 !important，用的是整套 Tailwind slate：#1e293b #334155 #0f172a #e2e8f0 #94a3b8…）。它**绕过了设计系统的暗色模式**——设计系统的暗底是品牌深蓝（#041d31 / #0a2940），这里是 Tailwind 的冷灰。所以 security 在暗色下不是品牌暗色。闸门报出的 #e2e8f0（≈neutral.300）与 #0f172a（≈bg-developer）都出自这里。正确修法是整块改用设计系统的暗色令牌（bg-primary / bg-surface / text-primary / text-secondary / border-subtle），那是逐屏视觉验证的工作，属 P6「页面模式层」，不是把色号逐一替换就能收工的。",
+      "owner": "design-system",
+      "expires": "2027-03-31"
+    },
+    {
+      "match": "web/src/pages/index.astro",
+      "reason": "该文件有**未提交的在飞改动**（用户 2026-09-29 05:29 的首页改版，05:33 重新构建，部分基线早于改动）。闸门报出的 #61b8df（≈sky.600）与 #07192c（≈primary.900）都在这段在飞内容里。在其定稿前改动会与用户的工作冲突，也会让视觉回归失去参照。到期前应随该次改版一并收敛。",
+      "owner": "design-system",
+      "expires": "2026-12-31"
+    }
+  ]
+}

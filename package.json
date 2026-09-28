@@ -16,6 +16,7 @@
     "typography": "node scripts/check-typography.mjs",
     "chart": "node scripts/check-chart-palette.mjs",
     "cdn": "node scripts/check-cdn.mjs",
+    "colors": "node scripts/check-colors.mjs",
     "consistency": "node scripts/check-consistency.mjs",
     "sync:consumers": "node scripts/sync-consumers.mjs",
     "build:cdn": "node scripts/build-cdn.mjs",
