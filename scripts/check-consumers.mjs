@@ -8,6 +8,7 @@
 // gen:check / lint-tokens / token-lock 都只看 ui/ 内部，看不见这件事。
 
 import { readFileSync, existsSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ROOT } from './lib/tokens.mjs';
@@ -91,6 +92,31 @@ for (const rel of patterns) {
     } else {
       console.log('  [OK]    ' + label);
     }
+  }
+}
+
+// ── 字节级目标：index.js / index.d.ts 这类非 CSS 产物没有 :root 可比，
+// 且它们是纯生成物，逐字节一致才是正确判据（sync:consumers 保证这一点）。
+const sha = (p) => createHash('sha256').update(readFileSync(p)).digest('hex').slice(0, 12);
+for (const bt of (cfg.byteTargets || [])) {
+  const authPath = resolve(ROOT, bt.auth);
+  if (!existsSync(authPath)) { console.log('  [缺失]  权威产物不存在：' + bt.auth); drifted++; continue; }
+  const authSha = sha(authPath);
+  const m2 = bt.copy.match(/^([^*]*)\*([^*]*)$/);
+  if (!m2) continue;
+  const baseDir2 = resolve(ROOT, m2[1]);
+  if (!existsSync(baseDir2)) continue;
+  const fs2 = await import('node:fs');
+  for (const name of fs2.readdirSync(baseDir2)) {
+    const copyPath = join(baseDir2, name, m2[2].replace(/^\//, ''));
+    if (!existsSync(copyPath)) continue;
+    checked++;
+    const label = copyPath.replace(resolve(ROOT, '..') + '\\', '').replace(resolve(ROOT, '..') + '/', '');
+    const copySha = sha(copyPath);
+    if (copySha === authSha) { console.log('  [OK]    ' + label + '  sha=' + copySha); continue; }
+    const k = knownFor(label);
+    if (k) { knownDrift++; console.log('  [KNOWN] ' + label + '  已登记为 ' + k.id); }
+    else { drifted++; console.log('  [DRIFT] ' + label + '  sha=' + copySha + ' != 权威 ' + authSha + '（重新生成：pnpm sync:consumers --site <站点> --write）'); }
   }
 }
 
