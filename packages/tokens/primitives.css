@@ -71,8 +71,8 @@
     background-color: var(--color-primary-700);
     padding: 12px 24px;
     min-height: var(--a11y-touch-target);
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
     font-weight: 600;
     color: #ffffff;
     box-shadow: var(--shadow-soft);
@@ -95,8 +95,8 @@
     border: 1px solid var(--color-primary-200);
     background-color: rgba(255, 255, 255, 0.9);
     padding: 12px 24px;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
     font-weight: 600;
     color: var(--color-primary-700);
     transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
@@ -128,11 +128,11 @@
     border: 1px solid var(--color-primary-100);
     background-color: rgba(255, 255, 255, 0.8);
     padding: 6px 16px;
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-xs);
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: var(--letter-spacing-label-caps);
     color: var(--color-primary-700);
     box-shadow: var(--shadow-soft);
   }
@@ -163,8 +163,8 @@
     display: block;
     border-radius: var(--radius-md);
     padding: 12px 16px;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
     font-weight: 500;
     color: var(--color-neutral-600);
     transition-property: color, background-color, border-color;
@@ -195,35 +195,35 @@
   .docs-prose h1 {
     margin-top: 0;
     margin-bottom: 24px;
-    font-size: 36px;
-    line-height: 1.2;
+    font-size: var(--font-size-4xl);
+    line-height: var(--line-height-display-lg);
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--letter-spacing-display-xl);
     color: var(--color-text-primary);
   }
 
   @media (min-width: 640px) {
     .docs-prose h1 {
-      font-size: 48px;
-      line-height: 1.16;
+      font-size: var(--font-size-display-xl);
+      line-height: var(--line-height-display-xl);
     }
   }
 
   .docs-prose h2 {
     margin-top: 48px;
     margin-bottom: 16px;
-    font-size: 24px;
-    line-height: 1.4;
+    font-size: var(--font-size-2xl);
+    line-height: var(--line-height-2xl);
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: var(--letter-spacing-heading-lg);
     color: var(--color-text-primary);
   }
 
   .docs-prose h3 {
     margin-top: 36px;
     margin-bottom: 12px;
-    font-size: 20px;
-    line-height: 1.5;
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-xl);
     font-weight: 600;
     color: var(--color-text-primary);
   }
@@ -231,8 +231,8 @@
   .docs-prose p {
     margin-top: 20px;
     margin-bottom: 0;
-    font-size: 16px;
-    line-height: 1.8;
+    font-size: var(--font-size-body-md);
+    line-height: var(--line-height-body-md);
     color: var(--color-neutral-600);
   }
 
@@ -240,8 +240,8 @@
   .docs-prose ol {
     margin-top: 16px;
     padding-left: 24px;
-    font-size: 16px;
-    line-height: 1.8;
+    font-size: var(--font-size-body-md);
+    line-height: var(--line-height-body-md);
     color: var(--color-neutral-600);
   }
 
@@ -267,8 +267,8 @@
     border-radius: var(--radius-lg);
     background-color: var(--color-bg-developer);
     padding: 16px 20px;
-    font-size: 14px;
-    line-height: 1.75;
+    font-size: var(--font-size-code-md);
+    line-height: var(--line-height-code-md);
     color: var(--color-text-inverse);
     box-shadow: 0 24px 60px rgba(3, 20, 37, 0.18);
   }
@@ -289,8 +289,8 @@
     border: 1px solid var(--color-primary-100);
     background-color: #ffffff;
     text-align: left;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
     box-shadow: var(--shadow-soft);
     border-collapse: separate;
     border-spacing: 0;
@@ -318,8 +318,8 @@
     border: 1px solid var(--color-sky-100);
     background-color: color-mix(in srgb, var(--color-sky-50) 80%, transparent);
     padding: 16px 20px;
-    font-size: 14px;
-    line-height: 28px;
+    font-size: var(--font-size-body-sm);
+    line-height: var(--line-height-lg);
     color: var(--color-neutral-700);
   }
 
@@ -339,8 +339,8 @@
     background-color: var(--color-bg-developer);
     padding: 16px 20px;
     font-family: var(--font-mono);
-    font-size: 14px;
-    line-height: 28px;
+    font-size: var(--font-size-code-md);
+    line-height: var(--line-height-lg);
     color: var(--color-text-inverse);
   }
 
@@ -351,15 +351,15 @@
     border: 1px solid var(--color-primary-100);
     background-color: rgba(255, 255, 255, 0.8);
     padding: 4px 12px;
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-xs);
     font-weight: 500;
     color: var(--color-neutral-600);
   }
 
   .developer-nav-link {
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
     font-weight: 500;
     color: var(--color-neutral-500);
     transition-property: color;

@@ -13,7 +13,7 @@ DESIGN.md 第 3 节已记录该决策：当历史站点与 console 舰队冲突�
 |---|---|---|---|
 | legacy 定义 | D:/autional/ui/tokens | 旧站点当时打算用什么 | 可用（3 套 profile） |
 | legacy 实际渲染 | 对 www.autional.com 的取证观测（E1，见 legacy-render-observations.json） | 旧站点实际渲染成什么 | 见该文件 |
-| canonical 定义 | tokens/tokens.json | 现在规定用什么 | 可用（186 个叶子） |
+| canonical 定义 | tokens/tokens.json | 现在规定用什么 | 可用（188 个叶子） |
 | 站点实际生效 | sites/*/packages/tailwind-preset/tokens.css | 线上真正在用什么 | 9 个站点副本 |
 
 ## 1. 品牌锚点核对（ASTRYX_MANIFEST.brandCore.colorRoles vs canonical 阶梯）
@@ -104,17 +104,17 @@ legacy 解析为品牌天蓝，canonical 解析为另一档——代码没动，
 
 | 站点 | :root 变量数 | 与 canonical :root 的差异 | --font-sans 首项 |
 |---|---|---|---|
-| admin | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
-| auth | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
-| authenticator | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
-| brand | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
-| platform | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
-| security | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
-| status | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
-| trust | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
-| user | 89 | 缺 97 / 取值不同 3 | 'Noto Sans SC' |
+| admin | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
+| auth | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
+| authenticator | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
+| brand | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
+| platform | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
+| security | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
+| status | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
+| trust | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
+| user | 89 | 缺 99 / 取值不同 3 | 'Noto Sans SC' |
 
-canonical :root 有 186 个变量；权威 --font-sans 首项是 Inter。
+canonical :root 有 188 个变量；权威 --font-sans 首项是 Inter。
 
 ## 6. 人工裁定清单
 
@@ -131,5 +131,5 @@ canonical :root 有 186 个变量；权威 --font-sans 首项是 Inter。
 
 ---
 
-本报告基于令牌快照 hash 7a7fd5ed23160f01。令牌变更后需重新生成本报告（pnpm delta）。
+本报告基于令牌快照 hash 2681631605314032。令牌变更后需重新生成本报告（pnpm delta）。
 

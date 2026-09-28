@@ -118,6 +118,9 @@ module.exports = {
           lineHeight: '36px',
           fontWeight: '700'
         }],
+        '4xl': ['36px', {
+          lineHeight: '40px'
+        }],
         'display-xl': ['48px', {
           lineHeight: '1.16',
           fontWeight: '800',

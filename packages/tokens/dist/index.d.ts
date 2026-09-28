@@ -118,6 +118,7 @@ declare const tokens: {
       mono: (string)[];
     };
     "$font-note": string;
+    "$font-size-note": string;
     "font-size": {
       xs: {
         size: string;
@@ -150,6 +151,10 @@ declare const tokens: {
         size: string;
         lineHeight: string;
         fontWeight: string;
+      };
+      "4xl": {
+        size: string;
+        lineHeight: string;
       };
       "display-xl": {
         size: string;

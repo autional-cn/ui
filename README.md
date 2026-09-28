@@ -49,7 +49,7 @@ pnpm gen:check    # 校验产物与 SSOT 一致（CI 用，有漂移退出 1）
 | `pnpm assets:fonts` | 字体是真的交付了吗 | 台账 A1–A5 + **浏览器级加载断言**（canonical 的 sans 首项在页面上是否真的生效） |
 | `pnpm visual` | 站点改完看起来对不对 | 对已构建的站点产物做像素 + SSIM 回归（3 个目标：web / admin-console / developer） |
 | `pnpm visual:baseline` | 重建视觉基线 | 只在环境变化时跑（基线绑定浏览器版本与平台） |
-| `pnpm typography` | 排版令牌真的落地了吗 | 发布 CSS 里的阶梯外字号（TY1）+ 消费方编译产物里**用旧阶梯编译的过期产物**（TY3） |
+| `pnpm typography` | 排版令牌真的落地了吗 | 发布 CSS 里的阶梯外字号（TY1）、消费方编译产物里**用旧阶梯编译的过期产物**（TY3）、**品牌字号采用率**（TY4）、**共享组件层有没有消费方**（TY5） |
 
 **为什么需要后两条**：改了 `tokens.json` 再跑一次 `pnpm gen`，`gen:check` 就完全无感——产物是最新的。
 实测：把 `color.primary.500` 从 `#235f84` 改成 `#236085` 并重新生成后，`gen:check` 报 OK，

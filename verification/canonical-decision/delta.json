@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T10:48:07.123Z",
+  "generatedAt": "2026-09-28T11:40:05.798Z",
   "legacyDir": "D:/autional/ui/tokens",
   "legacyAvailable": true,
   "ramps": [
@@ -405,66 +405,66 @@
     {
       "site": "admin",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     },
     {
       "site": "auth",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     },
     {
       "site": "authenticator",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     },
     {
       "site": "brand",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     },
     {
       "site": "platform",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     },
     {
       "site": "security",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     },
     {
       "site": "status",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     },
     {
       "site": "trust",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     },
     {
       "site": "user",
       "vars": 89,
-      "missing": 97,
+      "missing": 99,
       "changed": 3,
       "fontSansFirst": "'Noto Sans SC'"
     }
   ],
-  "lockHash": "7a7fd5ed23160f01c7fd329b5e6a73d808ba76282394bf6cfc7ba1c788a00b33"
+  "lockHash": "2681631605314032036c207940a48c422527c9b4042dd117302acae226f1ba76"
 }

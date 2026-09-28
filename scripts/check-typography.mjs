@@ -194,9 +194,79 @@ if (existsSync(sitesDir)) {
   warns.push('TY2 本次工作区没有 sites/，跳过消费方编译产物核对（CI 里同样会跳过）');
 }
 
+// ── TY4 品牌语义字号的采用率 / TY5 共享组件层有没有消费方 ────────────────
+// 实测（2026-09）：14 个站点里，品牌命名的字号工具类
+// （text-display-* / heading-* / body-* / label-* / code-*）出现 **0 次**，
+// 而 Tailwind 默认档（text-xs … text-5xl）出现 **3019 次**。
+// 品牌排版阶梯存在、被锁、被 lint、被 gen:check 守护，但在舰队里的采用率是 0。
+// 这比任何一个具体的字号值都更能解释「还原度低」——问题不在定义，在没有消费方。
+// 同一批站点里也没有任何一个 import primitives.css（共享组件层），
+// 而是各自在 global.css 里手写一份 .brand-shell / .brand-button-primary / .brand-kicker。
+const BRAND_STEP_NAMES = Object.keys(STEPS).filter((k) => !/^(xs|sm|base|lg|xl|2xl|3xl|4xl)$/.test(k));
+const NEUTRAL_STEP_NAMES = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl', '9xl'];
+const SRC_EXT = /\.(astro|tsx|ts|jsx|js|mjs|vue|svelte|css|md|mdx|html)$/;
+const SRC_SKIP = /[\\/](node_modules|dist|\.git|\.astro|\.next)[\\/]/;
+function collectSrc(dir, acc) {
+  let entries;
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch (e) { return acc; }
+  for (const e of entries) {
+    if (e.name === 'node_modules' || e.name === '.git' || e.name === 'dist') continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) collectSrc(p, acc);
+    else if (SRC_EXT.test(e.name)) acc.push(p);
+  }
+  return acc;
+}
+// 边界用 [^a-z0-9-] 而不是引号集合：class 出现在 " " / ' ' / 反引号 / : 之后都能命中，
+// 且不必在正则里写引号字符。
+const countClass = (text, name) =>
+  (text.match(new RegExp('(?:^|[^a-z0-9-])text-' + name + '(?![a-z0-9-])', 'g')) || []).length;
+if (existsSync(sitesDir)) {
+  let brandHits = 0;
+  let neutralHits = 0;
+  const importers = [];
+  let siteCount = 0;
+  for (const site of readdirSync(sitesDir)) {
+    const sitePath = join(sitesDir, site);
+    if (!statSync(sitePath).isDirectory()) continue;
+    const files = collectSrc(sitePath, []).filter((f) => !SRC_SKIP.test(f));
+    if (!files.length) continue;
+    siteCount++;
+    let sb = 0; let sn = 0; let imports = false;
+    for (const file of files) {
+      const text = readFileSync(file, 'utf8');
+      if (/primitives\.css/.test(text)) imports = true;
+      for (const n of BRAND_STEP_NAMES) sb += countClass(text, n);
+      for (const n of NEUTRAL_STEP_NAMES) sn += countClass(text, n);
+    }
+    if (imports) importers.push(site);
+    brandHits += sb; neutralHits += sn;
+  }
+  const totalHits = brandHits + neutralHits;
+  info.push('TY4 站群字号采用率：品牌语义档 ' + brandHits + ' 处 / Tailwind 默认档 ' + neutralHits +
+    ' 处（共 ' + totalHits + ' 处）——品牌档占比 ' + (totalHits ? (brandHits / totalHits * 100).toFixed(1) : '0') + '%');
+  if (totalHits > 0 && brandHits === 0) {
+    problems.push('TY4 品牌语义字号（text-display-* / heading-* / body-* / label-* / code-*）在 ' +
+      siteCount + ' 个站点的源码里出现 0 次，同期 Tailwind 默认档出现 ' + neutralHits +
+      ' 次。令牌阶梯有定义、有锁、有 lint，但没有任何消费方在用它——这是「还原度低」的主因，而不是某个字号值写错了。');
+  } else if (totalHits > 0 && brandHits / totalHits < 0.2) {
+    warns.push('TY4 品牌语义字号占比仅 ' + (brandHits / totalHits * 100).toFixed(1) + '%（' + brandHits + '/' + totalHits + '）');
+  }
+  info.push('TY5 共享组件层 packages/tokens/primitives.css 的消费方：' + importers.length + '/' + siteCount +
+    ' 个站点' + (importers.length ? '（' + importers.join(', ') + '）' : ''));
+  if (siteCount > 0 && importers.length === 0) {
+    problems.push('TY5 packages/tokens/primitives.css 被 DESIGN.md 与 ASTRYX_MANIFEST.json 声明为共享组件层' +
+      '（brand-shell / brand-card / brand-button-* / brand-kicker / docs-prose / developer-*），但 ' + siteCount +
+      ' 个站点里 0 个 import 它；这些类在各站点 global.css 里被逐份手写重实现。声明为「复用它，别再造一个按钮」的契约，实际消费方为零。');
+  }
+}
+
 // ── 已知问题登记（与 lint-tokens 同一套约定）─────────────────────────────
 const known = existsSync(KNOWN) ? (JSON.parse(readFileSync(KNOWN, 'utf8')).issues || []) : [];
-const knownFor = (msg) => known.find((k) => /^TY\d/.test(k.code) && (msg.indexOf(k.match) >= 0));
+// 必须同时匹配 code 与 match：只要求 code 前缀会让「针对 TY1 的登记」把 TY5 的发现也吞掉，
+// 而 known-issues.json 的 $rules 明确写了「match 粒度要够细，不能用来屏蔽整类检查」。
+const codeOf = (msg) => { const m = /^(TY\d)/.exec(msg); return m ? m[1] : null; };
+const knownFor = (msg) => { const c = codeOf(msg); return c ? known.find((k) => k.code === c && msg.indexOf(k.match) >= 0) : undefined; };
 const suppressed = [];
 const active = [];
 for (const msg of problems) {

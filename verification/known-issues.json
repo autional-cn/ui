@@ -70,13 +70,22 @@
       "note": "修法：① 在 ui/ 内提供字体交付入口（例如 @autional-cn/tokens 附带 @font-face 片段 + 把 @fontsource/inter 列为 peerDependency）；② 或修改 canonical 的 fontRole：若决定不分发 Latin webfont，就把 Inter 从 no-restore 栈里去掉，并在 DESIGN.md/manifest 里改掉「self-hosted」的说法。两条路都必须让「声明」与「交付」一致——现状是两者不一致且无人察觉。"
     },
     {
-      "id": "KI-008",
-      "code": "TY1",
-      "match": "primitives.css",
-      "reason": "设计系统自己第一个不遵守令牌。packages/tokens/primitives.css 是发布出去的组件层（源码注释写着 Ported from the docs-* styles），共 36 条排版声明，其中：引用 var(--…) 只有 2 条（都在同一条 body 规则里）、写死但恰好等于某令牌值 28 条（例如 .brand-button-primary 的 14px/20px）、绝对值不在令牌阶梯上 5 条：.docs-prose h1 的 font-size: 36px（阶梯里 36px 这一档不存在——3xl 是 30px、display-lg 是 40px）、.docs-prose h2 的 line-height: 1.4、.docs-prose h3 的 line-height: 1.5、.docs-prose p 与 .docs-prose ul/ol 的 line-height: 1.8（阶梯里没有这三个比例）。另 1 条 .docs-prose code 的 font-size: 0.92em 是相对值，属正当手法，只作警告。",
+      "id": "KI-009",
+      "code": "TY4",
+      "match": "品牌语义字号",
+      "reason": "品牌排版阶梯在舰队里的采用率是 0。逐站点扫描 14 个站点的源码（.astro/.tsx/.ts/.css/.md，排除 node_modules 与 dist）统计字号工具类出现次数：品牌语义档（text-display-xl / display-lg / heading-lg / heading-md / body-lg / body-md / body-sm / label-md / label-caps / code-md）合计 0 处；Tailwind 默认档（text-xs / sm / base / lg / xl / 2xl / 3xl / 4xl / 5xl…）合计 3127 处。也就是说 tokens/tokens.json 里的排版阶梯有定义、有快照锁、有 T06/T10 级的 lint、被 gen:check 守护着产物一致性——但没有任何一个消费方在用它。此前判断「还原度低」是某个字号值写错了（例如 36px 不在阶梯上），实测后修正：主因是整套品牌排版从未进入消费方，36px 只是这个事实的一个副作用。",
       "owner": "design-system",
-      "expires": "2026-12-31",
-      "note": "后果：改 tokens/tokens.json 的排版，这份 CSS 不会跟——颜色层已经做到 var(--color-*)，排版层没有。实测旁证：sites/docs 的编译产物里 .docs-prose h1 = 2.25rem（=36px），与这里的 36px 同源，说明这个数字已经流到了站点。\n修法（需 owner 决策，因为会改变 docs-prose 的现有渲染）：① 36px 是映射到 3xl(30px) 还是 display-lg(40px)、还是新增一档 36px 写进 tokens.json——三选一，这是设计决策不是重构；② line-height 1.4/1.5/1.8 若确实必要，应作为语义令牌补进 core 而不是就地写死；③ 28 条「抄值」改为引用 var(--…)，这一步不改渲染，可先做。改完必须跑 pnpm visual 看站点视觉回归。"
+      "expires": "2027-03-31",
+      "note": "这条不是「改个值」能修的，是迁移。已做的一项前置工作：本轮在 tokens.json 补了 font-size.4xl(36px)，因为舰队同时使用 30(text-3xl 63 处) / 36(text-4xl 68 处) / 48(text-5xl 40 处) 三档，而阶梯原本只有 30 与 48——缺 36 这一档时，text-4xl 的 68 处无处可迁。名字取 4xl 而非 heading-*，是为了让这些既有用法无需改标记即可被品牌令牌接管。\n修法建议（需 owner 决策，且必然改变站群渲染，必须逐站过 pnpm visual）：① 先做零风险的映射层——在各站点的 tailwind.config 里把 Tailwind 默认档指向品牌语义档（例如让 fontSize.base 取 var(--font-size-body-md)），现有 3127 处写法不变而取值来自令牌；② 再逐步把语义角色明确的处（正文、说明文字、代码、表头）改为显式品牌类；③ 每站迁移后跑视觉回归，把有意保留的差异写进该站登记。直接全局替换类名风险过高，不建议。"
+    },
+    {
+      "id": "KI-010",
+      "code": "TY5",
+      "match": "共享组件层",
+      "reason": "声明为共享组件层的 packages/tokens/primitives.css，消费方为零。它被 DESIGN.md 第 10.1 节列为品牌共享类（brand-shell / brand-card / brand-button-primary / -secondary / brand-kicker / developer-panel / developer-code / developer-chip / developer-nav-link / docs-nav-link / docs-prose），原文写着「Reuse these before inventing a new button, card, or shell」；ASTRYX_MANIFEST.json 也把它登记为 cssCore。实测：14 个站点里 0 个 import 它（无相对路径、无包名引用）；而这些类名在 6 个站点的 global.css 里被各自手写重实现（wiki / reference / web / docs / developer / brand，行号几乎一致，属手工复制）。另外 docs 站点的构建产物只加载一个样式表（_astro/*.css），primitives.css 根本不在其中。这是 KI-006（令牌用拷贝而非包依赖）在组件层的同一病因，但更隐蔽：令牌副本至少是同一份值的复制，组件类则是各站独立重写。",
+      "owner": "design-system",
+      "expires": "2026-11-30",
+      "note": "与 KI-006 同源，建议合并决策：组件的交付模型究竟是「包依赖」还是「拷贝」。修法：① 若定为包依赖——在 ui/ 内把 primitives.css 纳入 @autional-cn/tokens 的 exports（已是），站点声明依赖并删掉各自的 .brand-* 重写，逐站过 pnpm visual 确认外观不变；② 若定为拷贝——就必须像 check-consumers.mjs 那样对拷贝做哈希比对，让「副本必须与权威一致」成为可失败的检查，否则 6 份实现会各自漂移；③ 无论哪条，DESIGN.md 第 10.1 节都要改成与实际交付一致的表述。附带修正：同节写「primitives.css is hand-maintained and consumes only var() references」，在 KI-008 修好之前 36 条排版声明里只有 2 条是 var() 引用——本轮已改为 35/36，这句话现在基本成立，已补上精确表述。"
     }
   ]
 }

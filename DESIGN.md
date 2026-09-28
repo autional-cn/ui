@@ -109,6 +109,15 @@ from one class. It also means `text-lg font-normal` is required to opt out.
 are **not** part of the token scale — they fall through to Tailwind defaults.
 Prefer token-backed `rounded-{sm,md,lg,xl,xxl}` and `shadow-{soft,card,brand}`.
 
+`text-4xl` (36px / 40px) is the one case that was **promoted into the scale** instead
+of being left to fall through. Reason: the ladder had a ×1.333 hole between `3xl`
+(30px) and `display-lg` (40px) — the largest adjacent jump in the whole scale, every
+other step being ≤ ×1.25 — and the fleet had independently settled on 36px for page
+titles (`text-4xl` appears 68× across all 14 sites, alongside 63× `text-3xl` and 40×
+`text-5xl`). The preset defines it with stock Tailwind's values (36px / 40px, no
+weight or tracking), so switching an existing `text-4xl` onto the token is a no-op
+by construction. Rationale is recorded in `core.font-size.$font-size-note`.
+
 ## 3. Color
 
 One deep brand blue, one sky accent, one amber accent, a neutral ramp, four
@@ -342,10 +351,20 @@ Defined in `packages/tokens/primitives.css`, consumed with zero build step.
 | `developer-panel` / `developer-code` / `developer-chip` / `developer-nav-link` | dark technical surfaces |
 | `docs-nav-link`, `docs-prose` | documentation navigation and prose |
 
-`primitives.css` is hand-maintained and consumes only `var()` references, so the
-same class renders correctly under every profile. Reuse these before inventing a
-new button, card, or shell. If a new reusable pattern is needed, it belongs in
-this file, not inline in one page.
+`primitives.css` is hand-maintained. Every absolute typographic and color value in
+it is a `var()` reference — measured 35 of 36 typographic declarations (the single
+exception is a relative `0.92em` on inline code) — so the same class renders
+correctly under every profile. Reuse these before inventing a new button, card, or
+shell. If a new reusable pattern is needed, it belongs in this file, not inline in
+one page.
+
+> **Consumption status (measured 2026-09).** Despite being documented here as the
+> shared component layer, **none of the 14 sites imports this file** — 0 references
+> by relative path or package name. These classes are instead re-implemented by hand
+> in six sites' own `global.css` (`brand-shell`, `brand-button-primary`,
+> `brand-kicker`), and the docs site's build loads only a single `_astro/*.css`.
+> Treat this section as the **intended** contract, not the delivered one. The gap is
+> tracked as `KI-010` and enforced by `pnpm typography` (rule TY5).
 
 It also carries the content-site base layer: `html { scroll-behavior: smooth }`,
 the page wash, and `::selection`. The page wash reads
