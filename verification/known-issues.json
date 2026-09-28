@@ -5,15 +5,5 @@
     "到期后 lint 会直接失败：要么修掉，要么重新评估并续期（续期必须改 expires 并写理由）",
     "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
   ],
-  "issues": [
-    {
-      "id": "KI-013",
-      "code": "C3",
-      "match": "packages/ui",
-      "reason": "packages/ui 是共享组件库（29 个源文件），在 9 个站点各存一份、分叉成 3 种实现：admin | 7 个站点（auth/authenticator/brand/security/status/trust/user） | platform。逐文件比对后，29 个文件里只有 1 个真正不同：src/molecules/ErrorBoundary.tsx。而且差异只在界面默认文案上——admin 用「重新加载 / 出现错误 / 发生意外错误，请刷新页面重试。」，platform 与 7 站点用「刷新 / 页面出错了 / 发生了未知错误，请刷新页面重试。」，三份都是 96 行、导出与逻辑完全相同。同一个错误组件在不同 portal 显示不同措辞，这是文案不统一而非实现分叉。注：本条最初被误判为「4 份不同实现」，两处修正——① 逐文件比对后只有 1 个文件不同；② C3 判据原先按字节哈希分组，把「同一份内容、行尾 LF vs CRLF」也算成分叉，brand 的 4 个文件（PageContainer.tsx / package.json / test/setup.ts / vitest.config.ts）归一化行尾后内容完全相同，判据已修，份数从 4 降到 3。",
-      "owner": "design-system",
-      "expires": "2026-12-31",
-      "note": "修法：packages/ui 已依赖 react-i18next（peerDependencies 里有），ErrorBoundary 却把默认文案硬编码在组件里。正确做法是让它走 useTranslation，由各 portal 的语言设置决定，而不是每个 portal 各存一份改文案的副本。选定一份为权威（建议 7 站点共用的那份，多数派）后统一，并纳入 C3 判据。注意这会改变 admin 与 platform 的错误页文案——需要确认后再落。"
-    }
-  ]
+  "issues": []
 }

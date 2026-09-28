@@ -39,6 +39,12 @@ const SOURCES = [
 ];
 // 字体与 tokens.css 同级分发：tokens.css 里的 @font-face 用相对路径 ./fonts/…，
 // 消费方的打包器会把它复制进产物。缺了这些文件，Inter 就只是「声明」而非「交付」（KI-007）。
+// 共享组件层（KI-013）：packages/ui 是共享组件库，却在 9 个站点各存一份、
+// 29 个文件里只有 ErrorBoundary.tsx 不同，且差异只在默认文案。
+// 以 ui 仓库的 shared/ui/ErrorBoundary.tsx 为权威统一下发。
+const SHARED_UI_SOURCES = [
+  { from: 'shared/ui/ErrorBoundary.tsx', to: 'packages/ui/src/molecules/ErrorBoundary.tsx' },
+];
 // antd 主题桥接（KI-011）：ui 早已生成 packages/tokens/dist/antd-theme.*，但 14 个站点 0 个消费它，
 // 三个控制台各自手写 colorPrimary 等值——platform/security 更是只设 algorithm、
 // 渲染出 antd 出厂蓝。下发 ESM 变体（站点应用是 ESM，原来的 .js 是 CJS）。
@@ -82,7 +88,7 @@ let same = 0;
 const rows = [];
 const missing = [];
 for (const { site, sitePath, profile } of targets) {
-  const sources = SOURCES.concat(COMPONENT_SOURCES, FONT_SOURCES, ANTD_SOURCES);
+  const sources = SOURCES.concat(COMPONENT_SOURCES, FONT_SOURCES, ANTD_SOURCES, SHARED_UI_SOURCES);
   if (profile) sources.push({ from: 'packages/tokens/profiles/' + profile + '.css', to: 'packages/tailwind-preset/profile.css' });
   for (const { from, to } of sources) {
     const src = join(ROOT, from);
