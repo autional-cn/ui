@@ -1,0 +1,188 @@
+{
+  "$description": "字体资产台账。令牌里声明的每一个字体族都必须在此登记：从哪来、什么授权、怎么交付。缺一条即视为字体资产未落地。",
+  "$rules": [
+    "A1 令牌声明的每个字体族都必须有台账条目（按 family 名精确匹配）",
+    "A2 delivery=webfont 的必须有 package 或 @font-face 证据；delivery=system 的必须写明为什么不随产品分发",
+    "A3 每个条目必须有 license / scope 四项 / expires（永久写 null 并说明依据）",
+    "A4 跨仓库：台账标记为 webfont 的字体，消费方是否真的装了（扫描 sites/*）",
+    "A5 台账里标记 active 的字体族必须真的在令牌里被引用"
+  ],
+  "families": [
+    {
+      "family": "-apple-system",
+      "role": "sans 回退（Apple 系统别名）",
+      "delivery": "system",
+      "package": null,
+      "license": "Apple 系统字体（不可分发）",
+      "licenseUrl": null,
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "Apple 平台的系统 UI 字体关键字，不是可交付的字体文件。"
+    },
+    {
+      "family": "Segoe UI",
+      "role": "sans 回退（Windows 系统 UI）",
+      "delivery": "system",
+      "package": null,
+      "license": "Microsoft 系统字体（不可分发）",
+      "licenseUrl": null,
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "Windows 系统 UI 字体，不可分发。"
+    },
+    {
+      "family": "Inter",
+      "role": "sans 首项（拉丁）",
+      "delivery": "webfont",
+      "package": "@fontsource/inter",
+      "license": "SIL Open Font License 1.1",
+      "licenseUrl": "https://github.com/rsms/inter/blob/master/LICENSE.txt",
+      "scope": {
+        "web": true,
+        "desktop": true,
+        "embedding": true,
+        "redistribute": true
+      },
+      "expires": null,
+      "note": "OFL 允许再分发与嵌入，因此是唯一可以随包分发的字体。ASTRYX_MANIFEST.brandCore.fontRoleNotes 写明「Latin is self-hosted Inter (@fontsource)」。"
+    },
+    {
+      "family": "Noto Sans CJK SC",
+      "role": "sans 回退（CJK）",
+      "delivery": "system",
+      "package": null,
+      "license": "SIL OFL 1.1（系统预装）",
+      "licenseUrl": "https://fonts.google.com/noto",
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "CJK webfont 体积超过 2MB，决定不随产品分发，仅依赖系统预装（manifest fontRoleNotes 已记录该决定）。"
+    },
+    {
+      "family": "PingFang SC",
+      "role": "sans 回退（macOS）",
+      "delivery": "system",
+      "package": null,
+      "license": "Apple 系统字体（不可分发）",
+      "licenseUrl": null,
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "macOS/iOS 系统字体，无法授权也无法分发，只能作为回退。"
+    },
+    {
+      "family": "Microsoft YaHei",
+      "role": "sans 回退（Windows）",
+      "delivery": "system",
+      "package": null,
+      "license": "Microsoft 系统字体（不可分发）",
+      "licenseUrl": null,
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "Windows 系统字体，不可分发。"
+    },
+    {
+      "family": "Source Han Serif SC",
+      "role": "serif 首项",
+      "delivery": "system",
+      "package": null,
+      "license": "SIL OFL 1.1（系统预装）",
+      "licenseUrl": "https://github.com/adobe-fonts/source-han-serif",
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "同为 CJK 字体，同 Noto Sans CJK SC 的处理：只做回退，不随产品分发。"
+    },
+    {
+      "family": "Noto Serif SC",
+      "role": "serif 回退",
+      "delivery": "system",
+      "package": null,
+      "license": "SIL OFL 1.1（系统预装）",
+      "licenseUrl": "https://fonts.google.com/noto",
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "同上。"
+    },
+    {
+      "family": "JetBrains Mono",
+      "role": "mono 首项",
+      "delivery": "system",
+      "package": null,
+      "license": "SIL OFL 1.1",
+      "licenseUrl": "https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt",
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "OFL 允许分发，但目前未随产品交付，只做回退。若要交付 Latin 等宽，应与 Inter 一并走 @fontsource。"
+    },
+    {
+      "family": "Fira Code",
+      "role": "mono 回退",
+      "delivery": "system",
+      "package": null,
+      "license": "SIL OFL 1.1",
+      "licenseUrl": "https://github.com/tonsky/FiraCode/blob/master/LICENSE",
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "同上。"
+    },
+    {
+      "family": "Consolas",
+      "role": "mono 回退（Windows）",
+      "delivery": "system",
+      "package": null,
+      "license": "Microsoft 系统字体（不可分发）",
+      "licenseUrl": null,
+      "scope": {
+        "web": false,
+        "desktop": false,
+        "embedding": false,
+        "redistribute": false
+      },
+      "expires": null,
+      "note": "Windows 系统字体，不可分发。"
+    }
+  ]
+}

@@ -11,6 +11,7 @@
     "lock": "node scripts/token-lock.mjs",
     "lock:check": "node scripts/token-lock.mjs --check",
     "verify": "node scripts/verify.mjs",
-    "delta": "node scripts/canonical-delta.mjs"
+    "delta": "node scripts/canonical-delta.mjs",
+    "assets:fonts": "node scripts/check-assets.mjs"
   }
 }

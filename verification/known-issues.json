@@ -59,6 +59,15 @@
       "owner": "design-system",
       "expires": "2026-11-30",
       "note": "最可见的后果在字体栈：权威是 Inter 打头（Inter, -apple-system, 'Segoe UI', 'PingFang SC', …），站点副本是 'Noto Sans SC' 打头，而 admin 的 dist 产物跟随的是副本那套。也就是说这些站点根本没有声明 Inter —— manifest 里 brandCore.fontRoleNotes 写的「Latin is self-hosted Inter」在站点侧并不成立。\n修法：① 短期——建立拷贝脚本并在拷贝后比对哈希（check-consumers.mjs 已能把漂移变成可见报告）；② 长期——站点改为 workspace 依赖 @autional-cn/tokens，去掉副本，并把「副本必须与权威一致」写成一个可失败的检查。"
+    },
+    {
+      "id": "KI-007",
+      "code": "A4",
+      "match": "Inter",
+      "reason": "品牌字体只在少数站点真正交付。实测：ASTRYX_MANIFEST.brandCore.fontRoleNotes 声明「Latin is self-hosted Inter (@fontsource)」，但 ui/package.json 的 dependencies 为空、仓库内 @font-face 声明为 0；扫描 14 个站点，只有 reference 与 wiki 装了 @fontsource/inter@^5.2.8，其余站点声明的是一款它们并不交付的字体。叠加 KI-006（站点自带旧副本，--font-sans 首项是 Noto Sans SC），结论是：**大多数站点根本没有渲染在 canonical 声明的字体栈上**。",
+      "owner": "design-system",
+      "expires": "2026-11-30",
+      "note": "修法：① 在 ui/ 内提供字体交付入口（例如 @autional-cn/tokens 附带 @font-face 片段 + 把 @fontsource/inter 列为 peerDependency）；② 或修改 canonical 的 fontRole：若决定不分发 Latin webfont，就把 Inter 从 no-restore 栈里去掉，并在 DESIGN.md/manifest 里改掉「self-hosted」的说法。两条路都必须让「声明」与「交付」一致——现状是两者不一致且无人察觉。"
     }
   ]
 }

@@ -42,3 +42,6 @@ jobs:
       # 需要站点副本一起检查时，用 workflow_dispatch 在完整工作区里跑。
       - name: 消费者副本漂移
         run: node scripts/check-consumers.mjs
+
+      - name: 字体资产台账
+        run: node scripts/check-assets.mjs
