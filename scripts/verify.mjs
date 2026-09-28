@@ -25,6 +25,7 @@ const STEPS = [
   { key: 'colors', label: '非设计系统色值（是否在重复发明已有令牌）', cmd: ['node', 'scripts/check-colors.mjs'] },
   { key: 'icons', label: '图标套件（声明完整 / 文件存在 / theme-color 单源 / 不漂移）', cmd: ['node', 'scripts/check-icons.mjs'] },
   { key: 'headers', label: '顶栏契约（高度令牌驱动 / position / 品牌标）', cmd: ['node', 'scripts/check-headers.mjs'] },
+  { key: 'capabilities', label: '预设能力契约（模板用了需要插件的类，插件是否真的在）', cmd: ['node', 'scripts/check-preset-capabilities.mjs'] },
   { key: 'consistency', label: '跨 portal 视觉一致性（antd 主题 / 硬编码色 / 组件库份数 / 令牌覆盖）', cmd: ['node', 'scripts/check-consistency.mjs'] },
   { key: 'visual', label: '站点视觉回归（无产物/无浏览器时自动跳过）', cmd: ['node', 'scripts/visual.mjs', 'check'] }
 ];
