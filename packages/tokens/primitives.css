@@ -91,8 +91,13 @@
      而全舰队 lead 段落用的是 text-neutral-600（灰）。设计系统里有 --color-text-muted
      (#64748d)，与站点在用的 neutral-600 (#64748b) 几乎同色——按「把舰队已收敛的事实
      定义下来」的原则，用后者。 */
+  /* 刻意**不设 max-width**：第一版设成了 prose-width(768px)，结果采用它的那个
+     引导段落从 max-w-2xl(672px) 被撑宽到 768px，整段重排，视觉回归差 8.385%。
+     而我在提交里把这次改动描述成「颜色肉眼看不出差」——**描述与事实不符**。
+     一个类该管排版（字号/行高/颜色），不该顺手替调用方决定行宽：
+     引导段落的行宽是编辑决策（短引导用更窄的行更易读），不是排版令牌能定的。
+     现在调用方自己带 max-w-*。 */
   .page-lead {
-    max-width: var(--layout-prose-width);
     font-size: var(--font-size-body-lg);
     line-height: var(--line-height-body-lg);
     color: var(--color-text-muted);
