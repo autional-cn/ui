@@ -6,24 +6,14 @@
     "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
   ],
   "issues": [
-    
-    {
-      "id": "KI-012",
-      "code": "C2",
-      "match": "硬编码",
-      "reason": "页面里硬编码了设计系统已有同值的色。实测 68 行分布在 9 个站点，最集中在 platform 21 行、security 19 行、admin 17 行、wiki 6 行。形态以 style 内联属性（图标 color、Statistic.valueStyle）与 JS 常量（antd 主题、图表色映射、品牌默认值）为主，className 任意值 0 处（没有人用 bg-[#003153]）。典型值：#003153 = color.primary.700、#52c41a = color.success、#faad14 = color.warning、#1890ff = color.info、#ff4d4f = color.danger。另有 antd 独有值 #cf1322 / #3f8600（antd red-7 / green-7）在令牌里没有对应值，需要先决定是补令牌还是保留。",
-      "owner": "design-system",
-      "expires": "2026-12-31",
-      "note": "修法：① 令牌里已有同值的改为引用（内联 style 里可以直接写 var(--color-success)，浏览器支持）；② antd 独有值先做决策再动——补一档令牌还是保留原值；③ 判据已按实测修过假阳性：public/ 下的第三方 vendored 产物（reference/public/scalar）不扫、注释里的色值不扫、测试文件里的色值断言降为 INFO（auth 25 行）。"
-    },
     {
       "id": "KI-013",
       "code": "C3",
       "match": "packages/ui",
-      "reason": "packages/ui 是共享组件库（Button/Input/Label/StatusBadge/Toggle/Modal/Toast/PageHeader/SectionCard/EmptyState 等 29 个源文件），却在 9 个站点各存一份、分叉成 4 种实现。实测逐文件比对：以 admin 为基准，6 个站点（auth/authenticator/security/status/trust/user）只差 1 个文件（ErrorBoundary.tsx），platform 差 1 个（同一个文件），brand 差 5 个（package.json、ErrorBoundary.tsx、PageContainer.tsx、test/setup.ts、vitest.config.ts）。也就是说零件主体（原子与分子组件）本来是一致的——问题不是「长得不一样」，而是「同一份东西存了 4 份」，任何一份改了另外三份不会跟。",
+      "reason": "packages/ui 是共享组件库（29 个源文件），在 9 个站点各存一份、分叉成 3 种实现：admin | 7 个站点（auth/authenticator/brand/security/status/trust/user） | platform。逐文件比对后，29 个文件里只有 1 个真正不同：src/molecules/ErrorBoundary.tsx。而且差异只在界面默认文案上——admin 用「重新加载 / 出现错误 / 发生意外错误，请刷新页面重试。」，platform 与 7 站点用「刷新 / 页面出错了 / 发生了未知错误，请刷新页面重试。」，三份都是 96 行、导出与逻辑完全相同。同一个错误组件在不同 portal 显示不同措辞，这是文案不统一而非实现分叉。注：本条最初被误判为「4 份不同实现」，两处修正——① 逐文件比对后只有 1 个文件不同；② C3 判据原先按字节哈希分组，把「同一份内容、行尾 LF vs CRLF」也算成分叉，brand 的 4 个文件（PageContainer.tsx / package.json / test/setup.ts / vitest.config.ts）归一化行尾后内容完全相同，判据已修，份数从 4 降到 3。",
       "owner": "design-system",
       "expires": "2026-12-31",
-      "note": "注：本条最初被误判为「组件库有 4 份不同实现」，逐文件比对后修正为 1–5 个文件的分叉，影响面比预想小，但性质与 KI-006/KI-010 相同（拷贝而非依赖）。修法：① 先确认哪一份是权威（看起来 auth/authenticator/security/status/trust/user 共用的那份是基线）；② 用与 sync:consumers 相同的手法统一并纳入 C3 逐字节比对；③ 顺带清理 tsconfig.tsbuildinfo 这类不该入库的构建产物。"
+      "note": "修法：packages/ui 已依赖 react-i18next（peerDependencies 里有），ErrorBoundary 却把默认文案硬编码在组件里。正确做法是让它走 useTranslation，由各 portal 的语言设置决定，而不是每个 portal 各存一份改文案的副本。选定一份为权威（建议 7 站点共用的那份，多数派）后统一，并纳入 C3 判据。注意这会改变 admin 与 platform 的错误页文案——需要确认后再落。"
     }
   ]
 }

@@ -113,10 +113,16 @@ for (const x of c1) problems.push('C1 ' + x.msg);
 // 判据细节（第一版有假阳性，按实测修）：
 //   ① 跳过 public/ —— 那里是第三方 vendored 产物（如 reference/public/scalar/api-reference.js），不是站点自己的代码；
 //   ② 扫之前先剥掉注释 —— 否则「文档里提到某个色值」会被当成硬编码（本项目自己的 global.css 头部注释就中过招）；
-//   ③ 测试文件单列：断言里出现色值是正当的，降级为 INFO，不判失败。
-const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+//   ③ 测试文件单列：断言里出现色值是正当的，降级为 INFO，不判失败；
+//   ④ 构建配置文件（*.config.*）单列：那里的色值是写给工具/清单用的字面量，不是渲染样式。
+//      实测踩过：status 的 vite.config.ts 里 theme_color: '#003153' 是 PWA manifest 字段，
+//      写成 var(--color-primary-700) 在 manifest.webmanifest 里毫无意义（它不经过 CSS 解析）。
+// 注意 m 标志：没有它时 `^` 只匹配整个字符串的开头，行内的 // 注释剥不掉——
+// 实测本项目自己的 antd-app.tsx 头注释就被当成了硬编码（第二处同类假阳性）。
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
 const isPublic = (f, sp) => relative(sp, f).replace(/\\/g, '/').startsWith('public/');
 const isTest = (f) => /(__tests__|\.test\.|\.spec\.)/.test(f);
+const isBuildConfig = (f) => /[^/]*\.config\.[cm]?[jt]s$/.test(f);
 const c2rows = [];
 const c2test = [];
 for (const site of readdirSync(SITES)) {
@@ -131,7 +137,7 @@ for (const site of readdirSync(SITES)) {
       const found = [...new Set((line.match(HEX_RE) || []).map((h) => h.toLowerCase()))].filter((h) => colorToToken.has(h));
       if (!found.length) return;
       const rec = { file: relative(sp, f).replace(/\\/g, '/'), line: i + 1, found: found.map((h) => h + '=' + colorToToken.get(h)) };
-      (isTest(f) ? testHits : hits).push(rec);
+      (isTest(f) || isBuildConfig(f) ? testHits : hits).push(rec);
     });
   }
   if (hits.length) c2rows.push({ site, hits });
@@ -139,7 +145,7 @@ for (const site of readdirSync(SITES)) {
 }
 const c2total = c2rows.reduce((a, r) => a + r.hits.length, 0);
 info.push('C2 硬编码设计系统已有色值的行数：' + c2total + ' 处，分布在 ' + c2rows.length + ' 个站点');
-if (c2test.length) info.push('C2b 测试文件里的色值断言（正当，不判失败）：' + c2test.map((t) => t.site + ' ' + t.n + ' 行').join(', '));
+if (c2test.length) info.push('C2b 测试文件与构建配置里的色值（正当，不判失败——前者是断言、后者是写给工具/清单的字面量）：' + c2test.map((t) => t.site + ' ' + t.n + ' 行').join(', '));
 for (const r of c2rows) {
   problems.push('C2 ' + r.site + '：' + r.hits.length + ' 行硬编码了设计系统已有同值的色（示例：' +
     r.hits.slice(0, 3).map((h) => h.file + ':' + h.line + ' ' + h.found.join(' ')).join('；') +
@@ -153,7 +159,10 @@ for (const site of readdirSync(SITES)) {
   if (!existsSync(ui)) continue;
   const files = walk(ui, [], () => true, (e) => ['node_modules', '.git', 'dist'].includes(e.name));
   const h = createHash('sha256');
-  for (const f of files.sort()) { h.update(relative(ui, f)); h.update(readFileSync(f)); }
+  // 归一化行尾再比对：不归一化会把「同一份内容、行尾一个是 LF 一个是 CRLF」算成两个版本。
+  // 实测：brand 的 PageContainer.tsx / package.json / test/setup.ts / vitest.config.ts
+  // 与其余 8 个站点逐字节不同，归一化后**内容完全相同**——那是行尾符噪声，不是真分叉。
+  for (const f of files.sort()) { h.update(relative(ui, f)); h.update(readFileSync(f, 'utf8').replace(/\r\n/g, '\n')); }
   const key = h.digest('hex').slice(0, 12);
   if (!uiGroups.has(key)) uiGroups.set(key, []);
   uiGroups.get(key).push(site);
