@@ -15,8 +15,10 @@
     "assets:fonts": "node scripts/check-assets.mjs",
     "typography": "node scripts/check-typography.mjs",
     "chart": "node scripts/check-chart-palette.mjs",
+    "cdn": "node scripts/check-cdn.mjs",
     "consistency": "node scripts/check-consistency.mjs",
     "sync:consumers": "node scripts/sync-consumers.mjs",
+    "build:cdn": "node scripts/build-cdn.mjs",
     "visual": "node scripts/visual.mjs check",
     "visual:baseline": "node scripts/visual.mjs baseline"
   },
