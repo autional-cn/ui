@@ -13,7 +13,7 @@ DESIGN.md 第 3 节已记录该决策：当历史站点与 console 舰队冲突�
 |---|---|---|---|
 | legacy 定义 | D:/autional/ui/tokens | 旧站点当时打算用什么 | 可用（3 套 profile） |
 | legacy 实际渲染 | 对 www.autional.com 的取证观测（E1，见 legacy-render-observations.json） | 旧站点实际渲染成什么 | 见该文件 |
-| canonical 定义 | tokens/tokens.json | 现在规定用什么 | 可用（194 个叶子） |
+| canonical 定义 | tokens/tokens.json | 现在规定用什么 | 可用（196 个叶子） |
 | 站点实际生效 | sites/*/packages/tailwind-preset/tokens.css | 线上真正在用什么 | 14 个站点副本 |
 
 ## 1. 品牌锚点核对（ASTRYX_MANIFEST.brandCore.colorRoles vs canonical 阶梯）
@@ -97,29 +97,29 @@ legacy 解析为品牌天蓝，canonical 解析为另一档——代码没动，
 | 类别 | legacy | canonical | 判定 |
 |---|---|---|---|
 | 字体族 sans | ["\"Noto Sans SC\"","\"Segoe UI\"","-apple-system","sans-serif"] | ["Inter","-apple-system","Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC","sans-serif"] | **不同** |
-| 阴影 | brand, card, soft | soft, card, brand | 需核对 |
+| 阴影 | brand, card, soft | soft, card, brand, code, deep, $note | 需核对 |
 | 品牌背景 | brand-radial, brand-grid | brand-radial, brand-grid, page-light, page-dark | canonical 多出 page-light / page-dark |
 
 ## 5. 站点实际生效的值（这一节决定线上到底在跑哪套）
 
 | 站点 | :root 变量数 | 与 canonical :root 的差异 | --font-sans 首项 |
 |---|---|---|---|
-| admin | 192 | 缺 2 / 取值不同 0 | Inter |
-| auth | 192 | 缺 2 / 取值不同 0 | Inter |
-| authenticator | 192 | 缺 2 / 取值不同 0 | Inter |
-| brand | 192 | 缺 2 / 取值不同 0 | Inter |
-| developer | 192 | 缺 2 / 取值不同 0 | Inter |
-| docs | 192 | 缺 2 / 取值不同 0 | Inter |
-| platform | 192 | 缺 2 / 取值不同 0 | Inter |
-| reference | 192 | 缺 2 / 取值不同 0 | Inter |
-| security | 192 | 缺 2 / 取值不同 0 | Inter |
-| status | 192 | 缺 2 / 取值不同 0 | Inter |
-| trust | 192 | 缺 2 / 取值不同 0 | Inter |
-| user | 192 | 缺 2 / 取值不同 0 | Inter |
-| web | 192 | 缺 2 / 取值不同 0 | Inter |
-| wiki | 192 | 缺 2 / 取值不同 0 | Inter |
+| admin | 196 | 缺 0 / 取值不同 0 | Inter |
+| auth | 196 | 缺 0 / 取值不同 0 | Inter |
+| authenticator | 196 | 缺 0 / 取值不同 0 | Inter |
+| brand | 196 | 缺 0 / 取值不同 0 | Inter |
+| developer | 196 | 缺 0 / 取值不同 0 | Inter |
+| docs | 196 | 缺 0 / 取值不同 0 | Inter |
+| platform | 196 | 缺 0 / 取值不同 0 | Inter |
+| reference | 196 | 缺 0 / 取值不同 0 | Inter |
+| security | 196 | 缺 0 / 取值不同 0 | Inter |
+| status | 196 | 缺 0 / 取值不同 0 | Inter |
+| trust | 196 | 缺 0 / 取值不同 0 | Inter |
+| user | 196 | 缺 0 / 取值不同 0 | Inter |
+| web | 196 | 缺 0 / 取值不同 0 | Inter |
+| wiki | 196 | 缺 0 / 取值不同 0 | Inter |
 
-canonical :root 有 194 个变量；权威 --font-sans 首项是 Inter。
+canonical :root 有 196 个变量；权威 --font-sans 首项是 Inter。
 
 ## 6. 人工裁定清单
 
@@ -136,5 +136,5 @@ canonical :root 有 194 个变量；权威 --font-sans 首项是 Inter。
 
 ---
 
-本报告基于令牌快照 hash 2b66e9af0c831826。令牌变更后需重新生成本报告（pnpm delta）。
+本报告基于令牌快照 hash 25a75ba81414e80a。令牌变更后需重新生成本报告（pnpm delta）。
 

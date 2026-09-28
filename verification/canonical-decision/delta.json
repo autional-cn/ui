@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T22:39:37.209Z",
+  "generatedAt": "2026-09-28T23:27:03.952Z",
   "legacyDir": "D:/autional/ui/tokens",
   "legacyAvailable": true,
   "ramps": [
@@ -388,7 +388,10 @@
     "shadowCanonical": [
       "soft",
       "card",
-      "brand"
+      "brand",
+      "code",
+      "deep",
+      "$note"
     ],
     "imageLegacy": [
       "brand-radial",
@@ -404,102 +407,102 @@
   "vendored": [
     {
       "site": "admin",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "auth",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "authenticator",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "brand",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "developer",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "docs",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "platform",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "reference",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "security",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "status",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "trust",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "user",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "web",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     },
     {
       "site": "wiki",
-      "vars": 192,
-      "missing": 2,
+      "vars": 196,
+      "missing": 0,
       "changed": 0,
       "fontSansFirst": "Inter"
     }
   ],
-  "lockHash": "2b66e9af0c8318263e456aa68a1c9a04c0e7809e1b501c63e07849731324474e"
+  "lockHash": "25a75ba81414e80a7e0d01efd346aef886d98130b5476a87daa3f1c4d2af4f06"
 }
