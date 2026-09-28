@@ -41,6 +41,24 @@
       "owner": "design-system",
       "expires": "2026-12-31",
       "note": "需要确认：表单控件边界是否使用 border-strong？若使用，必须提升到 3:1 或改用 border + 背景对比共同表达。"
+    },
+    {
+      "id": "KI-005",
+      "code": "T10",
+      "match": "variant:authenticator",
+      "reason": "authenticator 与 dark 同为 dark 主题（都有 $colorScheme: dark），但 authenticator 只覆盖 10 条、dark 覆盖 26 条，且未声明依赖。二者是互斥选择器不会层叠，因此「只加 [data-theme=authenticator] 而不加 .dark」时会回落到 core 的浅色值。无头浏览器实测：--color-neutral-900 得到 #1e293b（应为 #e2edf5）、--color-on-brand 得到 #ffffff（应为 #0a0f1a）、--color-brand-soft 得到 #bde6f5（应为 #429bc5）——形成深色底配浅色品牌色的坏混合。同时带 .dark 时取值正确。",
+      "owner": "design-system",
+      "expires": "2026-10-31",
+      "note": "变体 $note 已写明「Wins over .dark when both apply」，说明设计意图是两个一起用；但这条依赖只存在于注释里。修法二选一：① tokens.json 里显式声明 $requires: [\"dark\"]（需更新 dist 产物并走快照登记）；② 补齐 authenticator 的覆盖使其可独立成立。推荐 ①：把隐式依赖写成机器可读的契约。"
+    },
+    {
+      "id": "KI-006",
+      "code": "T11",
+      "match": "consumer",
+      "reason": "交付方式是手工拷贝而非包依赖：9 个站点各自带一份 packages/tailwind-preset/tokens.css 拷贝，且没有任何站点声明 @autional-cn/* 依赖。用 :root 块逐变量比对（只比 :root，避免把变体块当成差异）：权威 186 个变量 / 副本 89 个，缺 97 个（含整组 --color-chart-1..8 与 --color-method-*）；另有 3 个变量取值不同：--font-sans / --font-serif / --font-mono。",
+      "owner": "design-system",
+      "expires": "2026-11-30",
+      "note": "最可见的后果在字体栈：权威是 Inter 打头（Inter, -apple-system, 'Segoe UI', 'PingFang SC', …），站点副本是 'Noto Sans SC' 打头，而 admin 的 dist 产物跟随的是副本那套。也就是说这些站点根本没有声明 Inter —— manifest 里 brandCore.fontRoleNotes 写的「Latin is self-hosted Inter」在站点侧并不成立。\n修法：① 短期——建立拷贝脚本并在拷贝后比对哈希（check-consumers.mjs 已能把漂移变成可见报告）；② 长期——站点改为 workspace 依赖 @autional-cn/tokens，去掉副本，并把「副本必须与权威一致」写成一个可失败的检查。"
     }
   ]
 }

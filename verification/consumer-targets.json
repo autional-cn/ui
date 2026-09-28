@@ -1,0 +1,7 @@
+{
+  "$description": "消费者副本位置。ui/ 是独立 git 仓库，sites/ 是同级目录；CI 里只 checkout ui/ 时该检查自动跳过。",
+  "$note": "交付方式目前是「手工拷贝」：站点自带 packages/tailwind-preset/tokens.css 与 index.js，且不声明 @autional-cn/* 依赖。",
+  "targets": [
+    "../sites/*/packages/tailwind-preset/tokens.css"
+  ]
+}

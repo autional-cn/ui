@@ -142,6 +142,41 @@ for (const vName of orderedVariants(T)) {
   variantReport.push({ variant: vName, overrides: set.size });
 }
 
+// ── T10 变体包含：变体之间是互斥选择器，不会层叠 ──────────────────────
+// [data-theme=authenticator] 与 .dark 是两个独立选择器。若某变体只覆盖了另一变体的
+// 一部分键，它单独应用时，未覆盖的键会**回落到 core 的浅色值**，而不是继承另一变体。
+// 实测：authenticator 只覆盖 10 条，dark 覆盖 26 条；单独应用 [data-theme=authenticator]
+// 时 --color-neutral-900 得到 #1e293b（浅色值）而不是 #e2edf5，--color-on-brand 得到
+// #ffffff 而不是 #0a0f1a —— 形成「深色底 + 浅色文字/品牌色」的坏混合。
+const allVariants = variantMap(T);
+for (const [name, node] of Object.entries(allVariants)) {
+  if (!node || node.$kind === 'runtime') continue;
+  const own = new Set(Object.keys(flatten(stripMeta(node))));
+  const declared = Array.isArray(node.$requires) ? node.$requires : (node.$requires ? [node.$requires] : []);
+  for (const [other, otherNode] of Object.entries(allVariants)) {
+    if (other === name || !otherNode || otherNode.$kind === 'runtime') continue;
+    const otherSet = new Set(Object.keys(flatten(stripMeta(otherNode))));
+    const missingKeys = [...otherSet].filter((k) => !own.has(k));
+    if (!missingKeys.length) continue;
+    const isSubset = [...own].every((k) => otherSet.has(k));
+    if (declared.includes(other)) {
+      add('T10', 'error', 'variant:' + name, '声明依赖变体「' + other + '」，但少覆盖 ' + missingKeys.length + ' 个键；单独应用时会回落到 core 的浅色值',
+        '缺失示例: ' + missingKeys.slice(0, 6).join(', '));
+      continue;
+    }
+    // 只在「同为某个 colorScheme 的主题变体」之间存在包含关系时才报——那才是真危险：
+    // 它会与另一个主题变体互换使用，未覆盖的键会回落到 core（浅色），形成深浅混合。
+    // portal / auth 没有 $colorScheme，是「浅色面覆盖」，本就有意地不完整，不在此列。
+    const sameScheme = node.$colorScheme && node.$colorScheme === otherNode.$colorScheme;
+    if (sameScheme && isSubset && own.size < otherSet.size) {
+      add('T10', 'error', 'variant:' + name,
+        '变体「' + name + '」与「' + other + '」同为 ' + node.$colorScheme + ' 主题，但覆盖（' + own.size + ' 条）是后者的真子集（' + otherSet.size + ' 条），且未声明依赖',
+        '未覆盖的 ' + missingKeys.length + ' 个键在「只加 [data-theme=' + name + '] 而不加 .' + other + '」时会回落到 core 的浅色值：' + missingKeys.slice(0, 6).join(', ') +
+        '。二者之一：在 tokens.json 里显式声明 $requires: ["' + other + '"]（把隐式依赖写成契约），或补齐覆盖使其可独立成立。');
+    }
+  }
+}
+
 // ── T07 重复色值（warn：可能是有意的品牌锚点）────────────────────────────
 const byValue = new Map();
 for (const path of Object.keys(coreFlat)) {

@@ -37,3 +37,8 @@ jobs:
 
       - name: 令牌快照锁（改动是否登记）
         run: node scripts/token-lock.mjs --check
+
+      # 只在 ui/ 被单独 checkout 时自动跳过（它需要同级的 sites/）。
+      # 需要站点副本一起检查时，用 workflow_dispatch 在完整工作区里跑。
+      - name: 消费者副本漂移
+        run: node scripts/check-consumers.mjs

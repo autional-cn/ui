@@ -1,0 +1,16 @@
+# 统一换行：生成器写 LF，git 若在 checkout 时改成 CRLF，
+# gen:check（按字节比对产物）会在干净的 Windows 克隆上直接失败。
+# 实测：core.autocrlf=true + 无 .gitattributes 时，git checkout 后
+# packages/tokens/tokens.css 从 9587 字节（LF）变成 9898 字节（CRLF），gen:check 报 13 个 DRIFT。
+* text=auto eol=lf
+
+# 二进制资源不参与换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
