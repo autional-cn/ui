@@ -10,17 +10,108 @@
     "../sites/*/packages/tailwind-preset/tokens.css"
   ],
   "byteTargets": [
-    { "auth": "packages/tailwind-preset/index.js", "copy": "../sites/*/packages/tailwind-preset/index.js" },
-    { "auth": "packages/tailwind-preset/index.d.ts", "copy": "../sites/*/packages/tailwind-preset/index.d.ts" },
-    { "auth": "packages/tokens/dist/antd-theme.mjs", "copy": "../sites/*/packages/tailwind-preset/antd-theme.mjs" },
-    { "auth": "packages/tokens/dist/antd-theme.d.mts", "copy": "../sites/*/packages/tailwind-preset/antd-theme.d.mts" },
-    { "auth": "shared/ui/ErrorBoundary.tsx", "copy": "../sites/*/packages/ui/src/molecules/ErrorBoundary.tsx" }
+    {
+      "auth": "packages/tailwind-preset/index.js",
+      "copy": "../sites/*/packages/tailwind-preset/index.js"
+    },
+    {
+      "auth": "packages/tailwind-preset/index.d.ts",
+      "copy": "../sites/*/packages/tailwind-preset/index.d.ts"
+    },
+    {
+      "auth": "packages/tokens/dist/antd-theme.mjs",
+      "copy": "../sites/*/packages/tailwind-preset/antd-theme.mjs"
+    },
+    {
+      "auth": "packages/tokens/dist/antd-theme.d.mts",
+      "copy": "../sites/*/packages/tailwind-preset/antd-theme.d.mts"
+    },
+    {
+      "auth": "shared/ui/ErrorBoundary.tsx",
+      "copy": "../sites/*/packages/ui/src/molecules/ErrorBoundary.tsx"
+    }
   ],
   "bootstrap": [
-    { "site": "docs", "profile": "docs" },
-    { "site": "developer", "profile": "developer" },
-    { "site": "web", "profile": null },
-    { "site": "wiki", "profile": "docs" },
-    { "site": "reference", "profile": "docs" }
-  ]
+    {
+      "site": "docs",
+      "profile": "docs"
+    },
+    {
+      "site": "developer",
+      "profile": "developer"
+    },
+    {
+      "site": "web",
+      "profile": null
+    },
+    {
+      "site": "wiki",
+      "profile": "docs"
+    },
+    {
+      "site": "reference",
+      "profile": "docs"
+    }
+  ],
+  "publicDirs": {
+    "$note": "各站点静态资源目录。9 个 SPA 站在 apps/<app>/public，5 个 Astro 站在根 public。图标套件下发到这里。",
+    "admin": "apps/admin-console/public",
+    "auth": "apps/auth-pages/public",
+    "authenticator": "apps/authenticator-app/public",
+    "brand": "apps/brand-portal/public",
+    "developer": "public",
+    "docs": "public",
+    "platform": "apps/platform-console/public",
+    "reference": "public",
+    "security": "apps/security-dashboard/public",
+    "status": "apps/status-page/public",
+    "trust": "apps/trust-center/public",
+    "user": "apps/end-user-portal/public",
+    "web": "public",
+    "wiki": "public"
+  },
+  "themeColors": {
+    "$note": "每站 theme-color 的**单一来源**。theme-color 由浏览器消费、必须写字面量（写 var() 会被直接忽略），所以它无法直接引用 CSS 变量——这里的做法是：在这里声明一次（值可以是 {令牌路径} 引用），sync-consumers 解析后写进 site.webmanifest，check-icons 闸门再断言各站 <meta> 与之一致。三处非默认值是刻意的平台差异，不是心情：authenticator 是纯黑底暗色应用、user 是 indigo 品牌体系、web 是白底营销站。",
+    "default": "{color.primary.700}",
+    "authenticator": "#0a0a0a",
+    "user": "#4f46e5",
+    "web": "{color.neutral.0}"
+  },
+  "iconSources": {
+    "$note": "图标套件的权威来源 → 站点 public/ 内的目标名。sync-consumers 按此下发，check-icons 按此做逐字节漂移校验。favicon 在修复前**完全没有交付通道**（U65④）：14 站各自手工放置，实测只有 3 站有完整图标组。",
+    "files": [
+      {
+        "from": "assets/favicon_io/favicon.ico",
+        "to": "favicon.ico"
+      },
+      {
+        "from": "assets/favicon_io/favicon-16x16.png",
+        "to": "favicon-16x16.png"
+      },
+      {
+        "from": "assets/favicon_io/favicon-32x32.png",
+        "to": "favicon-32x32.png"
+      },
+      {
+        "from": "assets/favicon/png/favicon-48x48.png",
+        "to": "favicon-48x48.png"
+      },
+      {
+        "from": "assets/favicon_io/apple-touch-icon.png",
+        "to": "apple-touch-icon.png"
+      },
+      {
+        "from": "assets/favicon_io/android-chrome-192x192.png",
+        "to": "android-chrome-192x192.png"
+      },
+      {
+        "from": "assets/favicon_io/android-chrome-512x512.png",
+        "to": "android-chrome-512x512.png"
+      },
+      {
+        "from": "assets/logo/favicon.svg",
+        "to": "favicon.svg"
+      }
+    ]
+  }
 }

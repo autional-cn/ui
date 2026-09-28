@@ -21,7 +21,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
 import { join, resolve, relative, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
-import { ROOT } from './lib/tokens.mjs';
+import { ROOT, loadTokens, resolvedIn } from './lib/tokens.mjs';
 
 const CONFIG = join(ROOT, 'verification', 'consumer-targets.json');
 
@@ -62,6 +62,21 @@ const FONT_SOURCES = [
   { from: 'packages/tokens/fonts/inter-latin-wght-normal.woff2', to: 'packages/tailwind-preset/fonts/inter-latin-wght-normal.woff2' },
   { from: 'packages/tokens/fonts/LICENSE-Inter-OFL.txt', to: 'packages/tailwind-preset/fonts/LICENSE-Inter-OFL.txt' },
 ];
+
+// ── 图标套件（U65④）────────────────────────────────────────────────────────
+// favicon / logo 在此之前**完全没有交付通道**：ui/assets/ 只被 4 个文档文件引用，
+// 14 个站点的图标全靠手工放置，已经漂移。实测：14 站里只有 3 站（developer/docs/web）
+// 有完整图标组；8 个 SPA 站只声明 1 个 link；user 声明 0 个；
+// status 的 /favicon-32x32.png 返回的是 SPA fallback（text/html 947B）——文件根本不存在，
+// 被前端路由掩盖了，肉眼看不出来。
+//
+// 为什么下发到站点 public/ 而不是让 <link> 指向 cdn.autional.cn：
+//   favicon 是最基础的品牌资产，不该依赖一个外部源站的可用性；
+//   相对路径写进 <head> 后，设计系统换版本也不需要改 14 个站的 HTML。
+//   CDN 侧仍保留一份，供 Go 服务 demo 与 og:image 这类需要绝对 URL 的场景。
+// 来源清单放在 consumer-targets.json 里，sync（下发）与 check-icons（漂移校验）共用同一份，
+// 避免两处各写一份列表又慢慢对不上。
+const ICON_SOURCES = (JSON.parse(readFileSync(CONFIG, 'utf8')).iconSources || {}).files || [];
 
 const sha = (buf) => createHash('sha256').update(buf).digest('hex').slice(0, 12);
 
@@ -114,6 +129,54 @@ for (const { site, sitePath, profile } of targets) {
   }
 }
 
+// ── 图标套件下发 ────────────────────────────────────────────────────────────
+const CT = JSON.parse(readFileSync(CONFIG, 'utf8'));
+const PUBLIC_DIRS = CT.publicDirs || {};
+const THEME_COLORS = CT.themeColors || {};
+const TK = loadTokens();
+const RES = resolvedIn(TK, {});
+// {color.x.y} 形式按令牌解析成字面量；其余字符串原样使用（用于 authenticator/user 这类
+// 在默认上下文里没有对应令牌的站点专有值）。
+const resolveThemeColor = (site) => {
+  const raw = THEME_COLORS[site] || THEME_COLORS.default || '#003153';
+  const m = /^\{([^}]+)\}$/.exec(raw);
+  if (!m) return raw;
+  const v = RES[m[1]];
+  if (!v) throw new Error('themeColors 引用了不存在的令牌：' + raw + '（站点 ' + site + '）');
+  return v;
+};
+const iconManifest = (site) => JSON.stringify({
+  name: 'Autional', short_name: 'Autional',
+  icons: [
+    { src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+    { src: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' }
+  ],
+  theme_color: resolveThemeColor(site),
+  background_color: RES['color.neutral-0'] || '#ffffff',
+  display: 'standalone'
+}, null, 2) + '\n';
+
+let iconChanged = 0;
+let iconSame = 0;
+const iconRows = [];
+for (const { site, sitePath } of targets) {
+  const pub = PUBLIC_DIRS[site];
+  if (!pub) { missing.push('consumer-targets.json 的 publicDirs 缺少站点 ' + site); continue; }
+  const pubPath = join(sitePath, pub);
+  const items = ICON_SOURCES.map((s) => ({ to: s.to, buf: readFileSync(join(ROOT, s.from)) }));
+  // site.webmanifest 是**生成**的而非拷贝：原始那份用相对路径是对的（本站就要相对路径），
+  // 但它的 theme_color 是手填字面量。这里改成取自令牌。
+  items.push({ to: 'site.webmanifest', buf: Buffer.from(iconManifest(site), 'utf8') });
+  for (const { to, buf } of items) {
+    const dst = join(pubPath, to);
+    const b = existsSync(dst) ? readFileSync(dst) : null;
+    if (b && sha(buf) === sha(b)) { iconSame++; continue; }
+    iconChanged++;
+    iconRows.push('  ' + site.padEnd(15) + to.padEnd(30) + (b ? b.length + 'B/' + sha(b) : '(不存在)').padEnd(22) + ' -> ' + buf.length + 'B/' + sha(buf));
+    if (WRITE) { mkdirSync(dirname(dst), { recursive: true }); writeFileSync(dst, buf); }
+  }
+}
+
 console.log('站点内置副本同步：' + targets.length + ' 个站点' + (ONLY ? '（--site ' + ONLY + '）' : ''));
 console.log('  逐字节一致 ' + same + ' 个 / 需要更新 ' + changed + ' 个');
 if (rows.length) {
@@ -121,6 +184,9 @@ if (rows.length) {
   console.log('  站点'.padEnd(17) + '文件'.padEnd(15) + '当前'.padEnd(24) + '权威');
   for (const r of rows) console.log(r);
 }
+console.log('');
+console.log('图标套件下发（public/）：逐字节一致 ' + iconSame + ' 个 / 需要更新 ' + iconChanged + ' 个');
+if (iconRows.length) for (const r of iconRows) console.log(r);
 if (missing.length) {
   console.log('');
   console.log('  [ERROR] 权威产物缺失，无法同步：');
@@ -129,7 +195,7 @@ if (missing.length) {
 }
 console.log('');
 if (WRITE) {
-  console.log(changed ? '已写入 ' + changed + ' 个文件。请逐站构建并跑视觉回归后再提交。'
+  console.log((changed + iconChanged) ? '已写入 ' + (changed + iconChanged) + ' 个文件。请逐站构建并跑视觉回归后再提交。'
     : '无需改动。');
 } else {
   console.log(changed ? '这是**预演**，未写盘。加 --write 才会写入。' : '全部一致，无需同步。');
