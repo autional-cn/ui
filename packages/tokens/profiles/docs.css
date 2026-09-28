@@ -1,0 +1,44 @@
+/**
+ * Autional profile: docs — GENERATED FILE — DO NOT EDIT. Source: tokens/tokens.json · Regenerate: pnpm gen · v0.1.0-rc
+ * Load AFTER @autional-cn/tokens/tokens.css.
+ */
+
+:root {
+/* ── color ── */
+--color-primary-50: #e9f3f9;
+--color-primary-100: #d1e5f2;
+--color-primary-200: #9ec2db;
+--color-primary-300: #6a9fbe;
+--color-primary-400: #3c779a;
+--color-primary-500: #235f84;
+--color-primary-600: #124b70;
+--color-primary-700: #003153;
+--color-primary-800: #032845;
+--color-primary-900: #021c31;
+--color-sky-50: #eef9fd;
+--color-sky-100: #d6f0fa;
+--color-sky-200: #b4e3f6;
+--color-sky-300: #87ceeb;
+--color-sky-400: #59bcde;
+--color-sky-500: #3094b8;
+--color-sky-600: #24778f;
+--color-sky-700: #1f6173;
+--color-sky-800: #1d505f;
+--color-sky-900: #1d434f;
+--color-amber-50: #fff8e6;
+--color-amber-100: #ffefbf;
+--color-amber-200: #ffdf80;
+--color-amber-300: #ffcf40;
+--color-amber-400: #ffc71a;
+--color-amber-500: #ffbf00;
+--color-amber-600: #d69f00;
+--color-amber-700: #a67800;
+--color-amber-800: #755400;
+--color-amber-900: #4a3500;
+--color-border-subtle: var(--color-primary-100);
+
+/* ── shadow ── */
+--shadow-soft: 0 16px 40px rgba(0, 49, 83, 0.10);
+--shadow-card: 0 20px 60px rgba(3, 20, 37, 0.08);
+--shadow-brand: 0 32px 100px rgba(3, 20, 37, 0.12);
+}

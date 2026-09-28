@@ -1,0 +1,19 @@
+{
+  "name": "@autional-cn/tailwind-preset",
+  "version": "0.1.0-rc",
+  "description": "Autional Tailwind CSS preset backed by @autional-cn/tokens",
+  "license": "AGPL-3.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "tokens.css"
+  ],
+  "dependencies": {
+    "@autional-cn/tokens": "workspace:*"
+  },
+  "peerDependencies": {
+    "tailwindcss": ">=3.0.0"
+  }
+}

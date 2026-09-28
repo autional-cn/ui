@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# NOTE: packages/*/dist/ is intentionally NOT ignored — generated artifacts
+# (tokens.css, tokens.json, index.js, antd-theme.js, chart.js, *.d.ts) are
+# committed so consumers need no build step. CI asserts `pnpm gen` is a no-op.
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Butler process artifacts (workspace convention: tracked only on the `butler` branch)
+butler/
+learned/
+gits/

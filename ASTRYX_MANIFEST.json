@@ -1,0 +1,810 @@
+{
+  "apiVersion": 1,
+  "type": "ui.manifest",
+  "name": "autional-ui",
+  "description": "Machine-readable brand and UI contract for the canonical Autional design system repository.",
+  "designContext": {
+    "primaryDesignSpec": "DESIGN.md",
+    "primaryOverview": "docs/brand-system-overview.md",
+    "repositoryReadme": "README.md",
+    "usage": [
+      "Read DESIGN.md first for brand intent, tokens, and visual rules.",
+      "Read tokens/tokens.json for the exact values. It is the single source of truth; if DESIGN.md and the JSON disagree, the JSON wins.",
+      "Use this manifest to discover canonical resources, shared primitives, and site-specific entry points.",
+      "Prefer shared primitives and existing tokens before inventing new local styles.",
+      "Never edit packages/* generated artifacts by hand — edit tokens/tokens.json and run `pnpm gen`."
+    ]
+  },
+  "tokenSystem": {
+    "sourceOfTruth": "tokens/tokens.json",
+    "generator": "scripts/generate.mjs",
+    "regenerate": "pnpm gen",
+    "verify": "pnpm gen:check",
+    "packages": {
+      "@autional-cn/tokens": {
+        "css": "packages/tokens/tokens.css",
+        "cssCore": "packages/tokens/primitives.css",
+        "profiles": "packages/tokens/profiles/*.css",
+        "data": "packages/tokens/dist/tokens.json",
+        "types": "packages/tokens/dist/index.d.ts",
+        "antdBridge": "packages/tokens/dist/antd-theme.js",
+        "charts": "packages/tokens/dist/chart.js"
+      },
+      "@autional-cn/tailwind-preset": {
+        "preset": "packages/tailwind-preset/index.js",
+        "css": "packages/tailwind-preset/tokens.css"
+      }
+    },
+    "layers": {
+      "core": "L1 — palette, semantic colors, type, space, radius, shadow, motion, focus, z-index, layout, a11y, imagery.",
+      "profiles": ["console", "marketing", "docs", "developer"],
+      "variants": ["portal", "auth", "dark", "authenticator", "auth-tenant"]
+    },
+    "consumption": [
+      "CSS: @import '@autional-cn/tailwind-preset/tokens.css'; then an optional profile stylesheet, then packages/tokens/primitives.css for content sites.",
+      "Tailwind: presets: [require('@autional-cn/tailwind-preset')].",
+      "antd: ConfigProvider token from @autional-cn/tokens/antd-theme (light/dark), algorithm switched with the theme mode."
+    ],
+    "primitives": "packages/tokens/primitives.css",
+    "deprecatedPaths": {
+      "legacy/profiles/*.cjs": "Replaced by packages/tailwind-preset/index.js + packages/tokens/profiles/*.css.",
+      "legacy/styles/*.css": "Replaced by packages/tokens/primitives.css + packages/tokens/tokens.css. Kept only as migration reference; do not consume."
+    }
+  },
+  "cliManifest": {
+    "apiVersion": 1,
+    "envelope": {
+      "success": {
+        "type": "<response.type>",
+        "data": "<payload>"
+      },
+      "error": {
+        "error": "<human message>",
+        "code": "<stable machine code>",
+        "suggestions": [
+          {
+            "name": "<suggestion>",
+            "reason": "<why>"
+          }
+        ]
+      }
+    },
+    "globalOptions": [
+      {
+        "flag": "--json",
+        "type": "boolean",
+        "description": "Return a typed JSON envelope instead of prose."
+      },
+      {
+        "flag": "--site <website|developer-site|docs-site|console>",
+        "type": "enum",
+        "choices": ["website", "developer-site", "docs-site", "console"],
+        "description": "Scope a query to a specific site profile when relevant."
+      },
+      {
+        "flag": "--detail <brief|compact|full>",
+        "type": "enum",
+        "choices": ["brief", "compact", "full"],
+        "default": "compact",
+        "description": "Control verbosity of list responses."
+      },
+      {
+        "flag": "--lang <en|zh|dense>",
+        "type": "enum",
+        "choices": ["en", "zh", "dense"],
+        "default": "en",
+        "description": "Output language or token-efficient dense format."
+      },
+      {
+        "flag": "--dense",
+        "type": "boolean",
+        "description": "Shortcut for --lang dense."
+      }
+    ],
+    "commands": [
+      {
+        "name": "manifest",
+        "description": "Print this capability manifest.",
+        "arguments": [],
+        "options": [],
+        "json": true,
+        "responseTypes": ["manifest"]
+      },
+      {
+        "name": "sites",
+        "description": "List site profiles (website, developer-site, docs-site, console).",
+        "arguments": [],
+        "options": [
+          {
+            "flag": "--list",
+            "type": "boolean",
+            "description": "List site ids."
+          }
+        ],
+        "json": true,
+        "responseTypes": ["sites.list", "sites.detail"]
+      },
+      {
+        "name": "site",
+        "description": "Get a single site profile with canonical file entry points.",
+        "arguments": [
+          {
+            "name": "id",
+            "required": true,
+            "variadic": false
+          }
+        ],
+        "options": [],
+        "json": true,
+        "responseTypes": ["site.detail"]
+      },
+      {
+        "name": "primitives",
+        "description": "List known shared primitives and site-specific primitives.",
+        "arguments": [],
+        "options": [
+          {
+            "flag": "--list",
+            "type": "boolean",
+            "description": "List primitive ids only."
+          }
+        ],
+        "json": true,
+        "responseTypes": ["primitives.list", "primitives.detail"]
+      },
+      {
+        "name": "primitive",
+        "description": "Get a single primitive definition and where to use it.",
+        "arguments": [
+          {
+            "name": "id",
+            "required": true,
+            "variadic": false
+          }
+        ],
+        "options": [],
+        "json": true,
+        "responseTypes": ["primitive.detail"]
+      },
+      {
+        "name": "resources",
+        "description": "List brand assets (logos, favicons) and their canonical paths.",
+        "arguments": [],
+        "options": [
+          {
+            "flag": "--type <logos|favicons>",
+            "type": "enum",
+            "choices": ["logos", "favicons"],
+            "description": "Filter to a single resource category."
+          }
+        ],
+        "json": true,
+        "responseTypes": ["resources.list"]
+      },
+      {
+        "name": "resolve",
+        "description": "Resolve a logical id (site, primitive, resource) to canonical paths and usage hints.",
+        "arguments": [
+          {
+            "name": "ref",
+            "required": true,
+            "variadic": false,
+            "description": "Examples: site:docs-site, primitive:brand-card, logo:logo-mark-color"
+          }
+        ],
+        "options": [],
+        "json": true,
+        "responseTypes": ["resolve.result"]
+      },
+      {
+        "name": "search",
+        "description": "Search across sites, primitives, and resources by keyword.",
+        "arguments": [
+          {
+            "name": "query",
+            "required": true,
+            "variadic": false
+          }
+        ],
+        "options": [
+          {
+            "flag": "--type <site|primitive|resource|doc|token|style>",
+            "type": "enum",
+            "choices": ["site", "primitive", "resource", "doc", "token", "style"],
+            "description": "Restrict search domain."
+          },
+          {
+            "flag": "--limit <n>",
+            "type": "number",
+            "default": 20,
+            "description": "Maximum number of results."
+          }
+        ],
+        "json": true,
+        "responseTypes": ["search.results"]
+      }
+    ],
+    "errorCodes": [
+      {
+        "code": "ERR_UNKNOWN",
+        "meaning": "Generic fallback for any error without a more specific code."
+      },
+      {
+        "code": "ERR_UNKNOWN_SITE",
+        "meaning": "The requested site id does not exist."
+      },
+      {
+        "code": "ERR_UNKNOWN_PRIMITIVE",
+        "meaning": "The requested primitive id does not exist."
+      },
+      {
+        "code": "ERR_UNKNOWN_RESOURCE",
+        "meaning": "The requested resource id does not exist."
+      },
+      {
+        "code": "ERR_INVALID_ARGUMENT",
+        "meaning": "An argument value was rejected or required values were missing."
+      }
+    ]
+  },
+  "brandCore": {
+    "positioning": [
+      "enterprise",
+      "trustworthy",
+      "saas-productized",
+      "data-oriented",
+      "modern-but-restrained"
+    ],
+    "avoid": [
+      "flashy marketing aesthetics",
+      "template-like generic tech landing pages",
+      "random hard-coded brand colors",
+      "shadow and radius drift across sites"
+    ],
+    "colorRoles": {
+      "primary": "#003153",
+      "sky": "#87ceeb",
+      "amber": "#ffbf00",
+      "success": "#52c41a",
+      "warning": "#faad14",
+      "danger": "#ff4d4f",
+      "info": "#1890ff"
+    },
+    "colorRoleAliases": {
+      "error": "danger"
+    },
+    "colorRoleNotes": {
+      "danger": "Canonical name is danger; the tailwind preset also emits an `error` utility pointing at the same token for legacy class names."
+    },
+    "fontRoles": {
+      "sans": "Inter",
+      "serif": "Source Han Serif SC",
+      "mono": "JetBrains Mono"
+    },
+    "fontRoleNotes": {
+      "sans": "Latin is self-hosted Inter (@fontsource). CJK is a system stack only (PingFang SC / Microsoft YaHei / Noto Sans CJK SC) — CJK webfonts exceed 2MB and are not shipped."
+    },
+    "shadowRoles": [
+      "shadow-soft",
+      "shadow-card",
+      "shadow-brand"
+    ]
+  },
+  "sharedPrimitives": [
+    {
+      "id": "brand-shell",
+      "kind": "class",
+      "role": "premium outer surface and grouped section shell",
+      "sites": ["website", "developer-site", "docs-site"],
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "hero wrappers",
+        "premium grouped sections",
+        "floating brand containers with blur and soft elevation"
+      ],
+      "whenNotToUse": [
+        "small inline cards",
+        "dense table rows",
+        "simple list items that do not need premium framing"
+      ],
+      "examples": [
+        "website hero outer frame",
+        "docs or portal top-level section container"
+      ]
+    },
+    {
+      "id": "brand-card",
+      "kind": "class",
+      "role": "default elevated content card",
+      "sites": ["website", "developer-site", "docs-site"],
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "feature cards",
+        "summary blocks",
+        "stats panels",
+        "grouped content units"
+      ],
+      "whenNotToUse": [
+        "primary page shell",
+        "code-first dark panels",
+        "unstyled markdown prose containers"
+      ],
+      "examples": [
+        "feature grid card",
+        "documentation shortcut card",
+        "developer portal summary card"
+      ]
+    },
+    {
+      "id": "brand-button-primary",
+      "kind": "class",
+      "role": "primary CTA button",
+      "sites": ["website", "developer-site", "docs-site"],
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "main page CTA",
+        "hero CTA",
+        "primary next-step action"
+      ],
+      "whenNotToUse": [
+        "secondary navigation",
+        "low-emphasis utility controls",
+        "multiple competing actions in the same cluster"
+      ],
+      "examples": [
+        "Get started",
+        "Read docs",
+        "Generate client"
+      ]
+    },
+    {
+      "id": "brand-button-secondary",
+      "kind": "class",
+      "role": "secondary CTA button",
+      "sites": ["website", "developer-site", "docs-site"],
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "supporting CTA adjacent to a primary action",
+        "learn more style actions",
+        "subordinate flow branching"
+      ],
+      "whenNotToUse": [
+        "main conversion action",
+        "dense inline docs links",
+        "navigation item replacement"
+      ],
+      "examples": [
+        "View documentation",
+        "See pricing",
+        "Compare options"
+      ]
+    },
+    {
+      "id": "brand-kicker",
+      "kind": "class",
+      "role": "uppercase section eyebrow / label",
+      "sites": ["website", "developer-site", "docs-site"],
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "section eyebrow labels",
+        "short context markers above headings",
+        "lightweight category callouts"
+      ],
+      "whenNotToUse": [
+        "paragraph text",
+        "multi-line body copy",
+        "dense metadata runs"
+      ],
+      "examples": [
+        "Platform overview",
+        "Quickstart",
+        "Documentation"
+      ]
+    },
+    {
+      "id": "brand-grid",
+      "kind": "class",
+      "role": "restrained data-oriented background grid",
+      "sites": ["website", "developer-site"],
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "data-flavored sections",
+        "dashboard mockup backdrops",
+        "hero embellishment with technical tone"
+      ],
+      "whenNotToUse": [
+        "long-form reading surfaces",
+        "every card background",
+        "footer and dense navigation regions"
+      ],
+      "examples": [
+        "hero visual support layer",
+        "product metrics backdrop"
+      ]
+    }
+  ],
+  "siteSpecificPrimitives": [
+    {
+      "id": "developer-panel",
+      "site": "developer-site",
+      "kind": "class",
+      "role": "dark premium technical panel for code, console, or platform proof surfaces",
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "hero-side code or platform mockups",
+        "technical proof sections",
+        "instrumentation or SDK showcase containers"
+      ],
+      "whenNotToUse": [
+        "long-form prose reading surfaces",
+        "standard marketing feature cards",
+        "small inline metadata components"
+      ],
+      "examples": [
+        "developer portal hero code panel",
+        "API or SDK proof block"
+      ]
+    },
+    {
+      "id": "developer-code",
+      "site": "developer-site",
+      "kind": "class",
+      "role": "high-contrast monospace code block for commands and snippets",
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "CLI install commands",
+        "SDK snippets",
+        "copyable command examples"
+      ],
+      "whenNotToUse": [
+        "rich prose content",
+        "HTML-injected JSX rendering",
+        "non-technical marketing copy"
+      ],
+      "examples": [
+        "npm install snippet",
+        "curl example",
+        "client initialization snippet"
+      ]
+    },
+    {
+      "id": "developer-chip",
+      "site": "developer-site",
+      "kind": "class",
+      "role": "small pill metadata tag for package, state, or lightweight technical labels",
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "package labels",
+        "status-like technical metadata",
+        "small taxonomy tags near content"
+      ],
+      "whenNotToUse": [
+        "primary CTA",
+        "long textual descriptions",
+        "navigation replacement"
+      ],
+      "examples": [
+        "SDK",
+        "REST",
+        "Beta"
+      ]
+    },
+    {
+      "id": "developer-nav-link",
+      "site": "developer-site",
+      "kind": "class",
+      "role": "developer portal navigation item with active-state emphasis",
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "top-level developer navigation",
+        "shared portal nav groups",
+        "lightweight section navigation"
+      ],
+      "whenNotToUse": [
+        "button CTA behavior",
+        "documentation sidebar card items",
+        "dense inline action clusters"
+      ],
+      "examples": [
+        "Quickstart",
+        "API",
+        "Migration"
+      ]
+    },
+    {
+      "id": "docs-nav-link",
+      "site": "docs-site",
+      "kind": "class",
+      "role": "documentation sidebar or list navigation item with clear active-state highlighting",
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "docs sidebar navigation",
+        "documentation section lists",
+        "navigation surfaces where current item must be obvious"
+      ],
+      "whenNotToUse": [
+        "inline prose links",
+        "hero CTA buttons",
+        "marketing feature lists"
+      ],
+      "examples": [
+        "Getting started",
+        "SDK",
+        "Authentication"
+      ]
+    },
+    {
+      "id": "docs-prose",
+      "site": "docs-site",
+      "kind": "class",
+      "role": "canonical prose container for documentation typography, spacing, tables, code blocks, and quotes",
+      "canonicalFiles": [
+        "packages/tokens/primitives.css"
+      ],
+      "whenToUse": [
+        "all long-form documentation pages",
+        "article bodies",
+        "reference content requiring consistent headings, paragraphs, tables, and code styling"
+      ],
+      "whenNotToUse": [
+        "marketing hero sections",
+        "dashboard cards",
+        "raw component showcase areas without article structure"
+      ],
+      "examples": [
+        "SDK guide body",
+        "reference documentation article",
+        "product documentation walkthrough"
+      ]
+    }
+  ],
+  "siteProfiles": [
+    {
+      "id": "console",
+      "label": "Product consoles (SPA portals)",
+      "goal": "operational density, product UI consistency, antd integration",
+      "tokenFile": "packages/tailwind-preset/index.js",
+      "styleFile": "packages/tokens/tokens.css",
+      "specificPrimitives": [],
+      "mustHavePatterns": [
+        "product surfaces consume semantic tokens (bg-surface, text-primary, border-subtle) rather than raw neutral or gray classes",
+        "antd apps register ConfigProvider with the @autional-cn/tokens antd bridge so component colors follow the brand",
+        "one icon library (lucide-react) per page",
+        "color scheme driven by .dark / [data-theme] blocks emitted from tokens.json, never by a local override file"
+      ]
+    },
+    {
+      "id": "website",
+      "label": "Main website",
+      "goal": "persuasion, product positioning, enterprise trust",
+      "tokenFile": "packages/tailwind-preset/index.js",
+      "styleFile": "packages/tokens/primitives.css",
+      "guidelineFile": "docs/guidelines/website-ui-brand-guidelines.md",
+      "caseStudyFile": "docs/case-studies/website-brand-refresh.md",
+      "specificPrimitives": [],
+      "mustHavePatterns": [
+        "clear hero with primary and secondary CTA",
+        "at least one data or dashboard flavored visual block",
+        "structured closing CTA section"
+      ]
+    },
+    {
+      "id": "developer-site",
+      "label": "Developer portal",
+      "goal": "technical confidence, onboarding clarity, platform maturity",
+      "tokenFile": "packages/tailwind-preset/index.js",
+      "styleFile": "packages/tokens/primitives.css",
+      "profileFile": "packages/tokens/profiles/developer.css",
+      "guidelineFile": "docs/guidelines/developer-site-ui-brand-guidelines.md",
+      "caseStudyFile": "docs/case-studies/developer-site-brand-refresh.md",
+      "specificPrimitives": [
+        "developer-panel",
+        "developer-code",
+        "developer-chip",
+        "developer-nav-link"
+      ],
+      "mustHavePatterns": [
+        "clear page purpose and next action",
+        "dark code or platform panel for technical proof",
+        "grouped content rather than raw text stacking"
+      ]
+    },
+    {
+      "id": "docs-site",
+      "label": "Documentation site",
+      "goal": "reading efficiency, navigation clarity, unified documentation voice",
+      "tokenFile": "packages/tailwind-preset/index.js",
+      "styleFile": "packages/tokens/primitives.css",
+      "profileFile": "packages/tokens/profiles/docs.css",
+      "guidelineFile": "docs/guidelines/docs-site-ui-brand-guidelines.md",
+      "caseStudyFile": "docs/case-studies/docs-site-brand-refresh.md",
+      "specificPrimitives": [
+        "docs-nav-link",
+        "docs-prose"
+      ],
+      "mustHavePatterns": [
+        "documentation pages must enter docs-prose",
+        "code samples must render as plain text code",
+        "layout should prioritize navigation and readability over marketing drama"
+      ]
+    }
+  ],
+  "variantProfiles": [
+    {
+      "id": "portal",
+      "kind": "css-attribute",
+      "selector": "[data-theme=\"portal\"]",
+      "note": "Shared light surface for the end-user portal family (e.g. trust portal). Loses to .dark.",
+      "emittedIn": "packages/tokens/tokens.css"
+    },
+    {
+      "id": "auth",
+      "kind": "css-attribute",
+      "selector": "[data-theme=\"auth\"]",
+      "note": "Auth pages family. Loses to .dark.",
+      "emittedIn": "packages/tokens/tokens.css"
+    },
+    {
+      "id": "authenticator",
+      "kind": "css-attribute",
+      "selector": "[data-theme=\"authenticator\"]",
+      "note": "Authenticator app — deliberately dark-first, pure black. Wins over .dark when both apply.",
+      "emittedIn": "packages/tokens/tokens.css"
+    },
+    {
+      "id": "dark",
+      "kind": "css-class",
+      "selector": ".dark, [data-theme=\"dark\"]",
+      "note": "Inverts neutrals and surfaces only; brand and semantic colors keep their identity.",
+      "emittedIn": "packages/tokens/tokens.css"
+    },
+    {
+      "id": "auth-tenant",
+      "kind": "runtime",
+      "selector": null,
+      "note": "No stylesheet emitted. Auth pages inject a tenant brand color (OKLab + WCAG contrast, see auth-pages src/lib/brand-color.ts) into these variables at page load; every brand alias follows automatically.",
+      "inject": ["--color-brand-base", "--color-brand-hover-base", "--color-on-brand-base"]
+    }
+  ],
+  "resources": {
+    "logos": [
+      {
+        "id": "logo-mark-default",
+        "path": "assets/logo/logo-mark.svg",
+        "role": "base logo mark"
+      },
+      {
+        "id": "logo-mark-color",
+        "path": "assets/logo/logo-mark.color.svg",
+        "role": "standard color logo mark"
+      },
+      {
+        "id": "logo-mark-dark",
+        "path": "assets/logo/logo-mark.dark.svg",
+        "role": "dark-background adapted logo mark"
+      },
+      {
+        "id": "logo-mark-mono-black",
+        "path": "assets/logo/logo-mark.mono-black.svg",
+        "role": "monochrome black logo mark"
+      },
+      {
+        "id": "logo-mark-mono-white",
+        "path": "assets/logo/logo-mark.mono-white.svg",
+        "role": "monochrome white logo mark"
+      }
+    ],
+    "favicons": [
+      {
+        "id": "favicon-svg-light",
+        "path": "assets/favicon/favicon-light.svg",
+        "role": "light-surface favicon"
+      },
+      {
+        "id": "favicon-svg-dark",
+        "path": "assets/favicon/favicon-dark.svg",
+        "role": "dark-surface favicon (prefers-color-scheme)"
+      },
+      {
+        "id": "favicon-svg-mono-black",
+        "path": "assets/favicon/favicon-mono-black.svg",
+        "role": "monochrome favicon for low-contrast backdrops"
+      },
+      {
+        "id": "favicon-svg-mono-white",
+        "path": "assets/favicon/favicon-mono-white.svg",
+        "role": "monochrome favicon for dark backdrops"
+      },
+      {
+        "id": "favicon-png-kit",
+        "path": "assets/favicon/png",
+        "role": "raster fallbacks (16/32/48, apple-touch-icon, android-chrome 192/512)"
+      },
+      {
+        "id": "favicon-kit-standard",
+        "path": "assets/favicon_io/site.webmanifest",
+        "role": "web app manifest; the name field must match the consuming site"
+      }
+    ]
+  },
+  "lookupOrder": [
+    "tokens/tokens.json",
+    "DESIGN.md",
+    "ASTRYX_MANIFEST.json",
+    "docs/brand-system-overview.md",
+    "site-specific guideline file",
+    "site-specific profile stylesheet",
+    "packages/tokens/primitives.css"
+  ],
+  "implementationRules": {
+    "reuseFirst": [
+      "reuse existing tokens",
+      "reuse shared brand classes",
+      "extend the shared style layer for new reusable primitives",
+      "only then add local page-level styling"
+    ],
+    "hardConstraints": [
+      "do not introduce random brand colors outside the existing primary / sky / amber system",
+      "do not use amber as a large area background",
+      "do not render JSX-like code samples via HTML injection",
+      "do not make docs pages feel like marketing landing pages",
+      "do not duplicate heavy logo usage in the footer when header already carries brand recognition",
+      "do not hand-edit generated artifacts under packages/ — change tokens/tokens.json and run `pnpm gen`",
+      "do not write local [data-theme] or .dark overrides that restate token values; fix the token instead"
+    ]
+  },
+  "contracts": {
+    "driftPolicy": {
+      "sourceOfTruth": [
+        "tokens/tokens.json",
+        "DESIGN.md",
+        "docs/guidelines/*.md"
+      ],
+      "generated": [
+        "packages/tokens/tokens.css",
+        "packages/tokens/profiles/*.css",
+        "packages/tokens/dist/*",
+        "packages/tailwind-preset/index.js",
+        "packages/tailwind-preset/index.d.ts",
+        "packages/tailwind-preset/tokens.css"
+      ],
+      "rules": [
+        "When adding new primitives, register them in sharedPrimitives or the relevant site profile.",
+        "When changing brand roles (colors, fonts, shadows), edit tokens/tokens.json, run `pnpm gen`, and update DESIGN.md prose in the same commit.",
+        "Prefer append-only ids; do not reuse an id for a different meaning.",
+        "CI asserts `pnpm gen` produces no diff; a stale generated file is a contract violation."
+      ]
+    },
+    "crossRepo": {
+      "rule": ".cn and .com twins share design files byte-for-byte; a design change lands on both sides in the same round of work.",
+      "siteConsumers": [
+        "sites/{admin,auth,user,security,status,trust,platform,authenticator} — 8 SPA consoles, profile: console",
+        "sites/web — marketing site, profile: marketing",
+        "sites/{docs,reference,wiki} — documentation sites, profile: docs",
+        "sites/developer — developer portal, profile: developer"
+      ]
+    }
+  }
+}
