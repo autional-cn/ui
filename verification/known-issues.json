@@ -6,13 +6,32 @@
     "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
   ],
   "issues": [
-    
-    
-    
-    
-    
-    
-    
-    
-    ]
+    {
+      "id": "KI-011",
+      "code": "C1",
+      "match": "antd",
+      "reason": "用 antd 的控制台没有把 antd 主题接到设计系统上，于是同一个产品的两个控制台主色不是一个。实测：admin 设了 token.colorPrimary = #003153（品牌蓝）；platform 与 security 的 ConfigProvider 只设了 algorithm、没有 token，因此在浏览器里渲染出 18 处 antd 出厂蓝 rgb(22,119,255)，其中包含侧边栏选中项 .ant-menu-item-selected。而 ui 仓库其实早已生成好 packages/tokens/dist/antd-theme.js（light/dark 两套 token，值就是各站点手写的那批），但 14 个站点里 0 个消费它——与刚修完的 KI-006 是同一种病：手抄桥接产物而不是消费它。",
+      "owner": "design-system",
+      "expires": "2026-11-30",
+      "note": "修法：① 把 antd-theme.js 纳入 sync:consumers 的交付面（随内置包下发）；② 三个控制台的 antd-app.tsx 改为从桥接产物取 token（platform/security 补上 token，admin 去掉手写色值）；③ 注意 admin 现在写的是 borderRadius: 6 而桥接产物是 8，两者的取舍要先定——这是可见变更（圆角），需视觉回归确认后再落；④ 顺带考虑桥接产物的 colorBgContainer/colorBgElevated/colorText 是否保留（三个控制台目前靠 darkAlgorithm 而非显式 token）。"
+    },
+    {
+      "id": "KI-012",
+      "code": "C2",
+      "match": "硬编码",
+      "reason": "页面里硬编码了设计系统已有同值的色。实测 68 行分布在 9 个站点，最集中在 platform 21 行、security 19 行、admin 17 行、wiki 6 行。形态以 style 内联属性（图标 color、Statistic.valueStyle）与 JS 常量（antd 主题、图表色映射、品牌默认值）为主，className 任意值 0 处（没有人用 bg-[#003153]）。典型值：#003153 = color.primary.700、#52c41a = color.success、#faad14 = color.warning、#1890ff = color.info、#ff4d4f = color.danger。另有 antd 独有值 #cf1322 / #3f8600（antd red-7 / green-7）在令牌里没有对应值，需要先决定是补令牌还是保留。",
+      "owner": "design-system",
+      "expires": "2026-12-31",
+      "note": "修法：① 令牌里已有同值的改为引用（内联 style 里可以直接写 var(--color-success)，浏览器支持）；② antd 独有值先做决策再动——补一档令牌还是保留原值；③ 判据已按实测修过假阳性：public/ 下的第三方 vendored 产物（reference/public/scalar）不扫、注释里的色值不扫、测试文件里的色值断言降为 INFO（auth 25 行）。"
+    },
+    {
+      "id": "KI-013",
+      "code": "C3",
+      "match": "packages/ui",
+      "reason": "packages/ui 是共享组件库（Button/Input/Label/StatusBadge/Toggle/Modal/Toast/PageHeader/SectionCard/EmptyState 等 29 个源文件），却在 9 个站点各存一份、分叉成 4 种实现。实测逐文件比对：以 admin 为基准，6 个站点（auth/authenticator/security/status/trust/user）只差 1 个文件（ErrorBoundary.tsx），platform 差 1 个（同一个文件），brand 差 5 个（package.json、ErrorBoundary.tsx、PageContainer.tsx、test/setup.ts、vitest.config.ts）。也就是说零件主体（原子与分子组件）本来是一致的——问题不是「长得不一样」，而是「同一份东西存了 4 份」，任何一份改了另外三份不会跟。",
+      "owner": "design-system",
+      "expires": "2026-12-31",
+      "note": "注：本条最初被误判为「组件库有 4 份不同实现」，逐文件比对后修正为 1–5 个文件的分叉，影响面比预想小，但性质与 KI-006/KI-010 相同（拷贝而非依赖）。修法：① 先确认哪一份是权威（看起来 auth/authenticator/security/status/trust/user 共用的那份是基线）；② 用与 sync:consumers 相同的手法统一并纳入 C3 逐字节比对；③ 顺带清理 tsconfig.tsbuildinfo 这类不该入库的构建产物。"
+    }
+  ]
 }
