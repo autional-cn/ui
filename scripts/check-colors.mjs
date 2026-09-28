@@ -172,6 +172,32 @@ for (const e of exemptions) {
 }
 for (const e of expiredEx) console.log('  [ERROR] 豁免已过期：' + e.match + '（' + e.expires + '）—— 要么修掉，要么重新评估并续期');
 
+// ── P1 primitives.css 的「只吃 var()」契约 ────────────────────────────────
+// primitives.css 是**手工维护**的共享组件层（不是生成物），却因为放在 packages/ 下
+// 被本脚本的「交付物副本」排除规则一并跳过了——于是它里面写死的东西没人管。
+// U66 第⑦项点名的就是这个：.developer-panel 的阴影硬编码。
+//
+// 判据刻意**不是**「一个原始值都不许有」：全文件还有 22 处 rgba(255,255,255,α) 与 #ffffff，
+// 那是玻璃拟态的加亮叠层，是渲染手法而不是品牌色——为 7 个 alpha 值造 7 个令牌是噪声。
+// 真正要守的是两类：
+//   ① box-shadow / text-shadow 写死（阴影本来就是设计令牌的一族）
+//   ② 出现非纯黑/纯白的十六进制色（说明有品牌色被写死在这里）
+const PRIM = join(ROOT, 'packages', 'tokens', 'primitives.css');
+const primProblems = [];
+if (existsSync(PRIM)) {
+  const txt = readFileSync(PRIM, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  txt.split('\n').forEach((line, i) => {
+    const sh = line.match(/(box-shadow|text-shadow)\s*:\s*([^;]+);/);
+    if (sh && !/var\(/.test(sh[2])) primProblems.push('PC1 primitives.css:' + (i + 1) + ' 阴影写死：' + sh[2].trim().slice(0, 60));
+    for (const h of (line.match(/#[0-9a-fA-F]{6}\b/g) || [])) {
+      const v = h.toLowerCase();
+      if (v === '#ffffff' || v === '#000000') continue;
+      primProblems.push('PC2 primitives.css:' + (i + 1) + ' 品牌色写死：' + h);
+    }
+  });
+}
+near.push(...primProblems.map((p) => ({ site: 'ui', hex: '', near: p, nearHex: '', dE: 0, at: 'packages/tokens/primitives.css' })));
+
 if (AS_JSON) {
   console.log(JSON.stringify({ threshold: NEAR_DUPLICATE, nearDuplicates: near, newColors: [...fresh.values()], perSite }, null, 2));
 } else {
@@ -180,6 +206,7 @@ if (AS_JSON) {
   if (near.length) {
     console.log('  [ERROR] 与已有令牌近似、应当改用令牌的色值（' + near.length + ' 个 / ' + perSite.reduce((a, b) => a + b.n, 0) + ' 处）：');
     for (const n of near.sort((a, b) => a.dE - b.dE)) {
+      if (n.site === 'ui') { console.log('    ' + n.near); continue; }   // primitives.css 的契约违规
       console.log('    ' + n.hex + '  ≈ ' + n.nearHex + ' (' + n.near + ')  dE=' + n.dE + '   ' + n.site + '  ' + n.at);
     }
     console.log('');
@@ -190,8 +217,11 @@ if (AS_JSON) {
     for (const o of others) console.log('    ' + o.hex + '  最近令牌 ' + o.nearest + ' dE=' + o.dE + '   ' + o.at);
   }
   console.log('');
-  console.log(near.length
-    ? '结论：有 ' + near.length + ' 个色值只是在重复已有令牌（' + perSite.map((p) => p.site + ' ' + p.n + ' 处').join(', ') + '）'
-    : '结论：没有「重新发明已有令牌」的色值');
+  // 两类问题分开报——把 primitives 的契约违规说成「重复发明令牌」是错的描述。
+  const dup = near.filter((n) => n.site !== 'ui');
+  const contract = near.filter((n) => n.site === 'ui');
+  if (dup.length) console.log('结论：有 ' + dup.length + ' 个色值只是在重复已有令牌（' + perSite.map((p) => p.site + ' ' + p.n + ' 处').join(', ') + '）');
+  if (contract.length) console.log('结论：primitives.css 有 ' + contract.length + ' 处违反「只吃 var()」契约');
+  if (!near.length) console.log('结论：没有「重新发明已有令牌」的色值，primitives.css 也未违反 var() 契约');
 }
 process.exit(near.length === 0 && expiredEx.length === 0 ? 0 : 1);

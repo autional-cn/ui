@@ -236,6 +236,9 @@ declare const tokens: {
       soft: string;
       card: string;
       brand: string;
+      code: string;
+      deep: string;
+      $note: string;
     };
     motion: {
       "duration-instant": string;
