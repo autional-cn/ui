@@ -87,12 +87,26 @@ function diff(actual, baseline) {
 }
 
 const cmd = process.argv[2] || 'check';
+// --target <名字> 限定单个目标（可重复）。
+// 为什么必须支持：重新采集基线是**逐个决定**的事。某个站点做了一次有意的高度调整
+// 之后应当只重采它自己；而同时另一个站点可能有别人的在飞改动，一并重采等于
+// 把未经审阅的渲染烤进基线，这道闸门从此就失去意义。实测踩过这个岔路。
+const ONLY_TARGETS = (() => {
+  const out = [];
+  process.argv.forEach((a, i) => { if (a === '--target' && process.argv[i + 1]) out.push(process.argv[i + 1]); });
+  return out;
+})();
+const TARGETS = ONLY_TARGETS.length ? CFG.targets.filter((t) => ONLY_TARGETS.includes(t.name)) : CFG.targets;
+if (ONLY_TARGETS.length && !TARGETS.length) {
+  console.log('--target 没有匹配到任何目标：' + ONLY_TARGETS.join(', ') + '（可用：' + CFG.targets.map((t) => t.name).join(', ') + '）');
+  process.exit(1);
+}
 mkdirSync(BASE_DIR, { recursive: true });
 mkdirSync(DIFF_DIR, { recursive: true });
 
 let port = 18900;
 const results = [];
-for (const target of CFG.targets) {
+for (const target of TARGETS) {
   const cap = await capture(target, port++);
   if (cap.skipped) { results.push({ name: target.name, action: 'skipped', reason: cap.reason }); continue; }
   const basePath = join(BASE_DIR, target.name + '.png');
@@ -131,7 +145,7 @@ if (cmd === 'baseline') {
 }
 
 let failed = 0, knownFail = 0, skipped = 0;
-console.log('视觉回归：' + CFG.targets.length + ' 个目标');
+console.log('视觉回归：' + TARGETS.length + ' 个目标' + (ONLY_TARGETS.length ? '（--target ' + ONLY_TARGETS.join(',') + '）' : ''));
 for (const r of results) {
   if (r.action === 'skipped') { skipped++; console.log('  [跳过] ' + r.name + '  ' + r.reason); continue; }
   if (r.action === 'no-baseline') { failed++; console.log('  [缺失] ' + r.name + '：没有基线，先运行 node scripts/visual.mjs baseline'); continue; }
