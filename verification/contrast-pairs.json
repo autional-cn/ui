@@ -118,6 +118,27 @@
       "bg": "color.bg-surface",
       "min": 4.5,
       "role": "body-text"
+    },
+    {
+      "label": "成功色文本 / 同色柔和容器（配对使用，浅深色均需达标）",
+      "fg": "color.success-text",
+      "bg": "color.success-soft",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "警告色文本 / 同色柔和容器（配对使用，浅深色均需达标）",
+      "fg": "color.warning-text",
+      "bg": "color.warning-soft",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "危险色文本 / 同色柔和容器（配对使用，浅深色均需达标）",
+      "fg": "color.danger-text",
+      "bg": "color.danger-soft",
+      "min": 4.5,
+      "role": "body-text"
     }
   ]
 }

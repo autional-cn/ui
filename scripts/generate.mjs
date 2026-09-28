@@ -454,6 +454,13 @@ const FLAT_COLORS = [
   ['success', 'success'],
   ['warning', 'warning'],
   ['danger', 'danger'],
+  // 语义柔和容器档（浅底色）。配上对应的 -text 才是完整用法：
+  //   bg-success-soft + text-success-text
+  // U66 第⑤项：原本只有实心值，各站只好写 bg-emerald-50 text-emerald-600 这类
+  // 非设计系统色的组合。
+  ['success-soft', 'success-soft'],
+  ['warning-soft', 'warning-soft'],
+  ['danger-soft', 'danger-soft'],
   ['error', 'danger'],
   ['info', 'info'],
   ['brand', 'brand'],

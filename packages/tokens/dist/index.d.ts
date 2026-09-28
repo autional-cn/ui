@@ -69,6 +69,10 @@ declare const tokens: {
       danger: string;
       "danger-text": string;
       "success-text": string;
+      "success-soft": string;
+      "warning-soft": string;
+      "danger-soft": string;
+      "$soft-note": string;
       "warning-text": string;
       "text-disabled": string;
       "$semantic-text-note": string;
@@ -160,6 +164,12 @@ declare const tokens: {
       "4xl": {
         size: string;
         lineHeight: string;
+      };
+      "display-2xl": {
+        size: string;
+        lineHeight: string;
+        fontWeight: string;
+        letterSpacing: string;
       };
       "display-xl": {
         size: string;
@@ -320,6 +330,9 @@ declare const tokens: {
         border: string;
         "danger-text": string;
         "success-text": string;
+        "success-soft": string;
+        "warning-soft": string;
+        "danger-soft": string;
         "warning-text": string;
         "text-disabled": string;
         brand: string;
