@@ -43,11 +43,25 @@
       "role": "body-text"
     },
     {
-      "label": "危险色作文本 / 卡片底",
-      "fg": "color.danger",
+      "label": "危险色作文本 / 卡片底（用 danger-text，不是 danger）",
+      "fg": "color.danger-text",
       "bg": "color.bg-surface",
       "min": 4.5,
       "role": "body-text"
+    },
+    {
+      "label": "危险色作文本 / 页面底",
+      "fg": "color.danger-text",
+      "bg": "color.bg-primary",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "危险语义色（填充/图标）作非文本用 / 页面底",
+      "fg": "color.danger",
+      "bg": "color.bg-primary",
+      "min": 3,
+      "role": "non-text"
     },
     {
       "label": "按钮文字 / 品牌底",

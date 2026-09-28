@@ -67,6 +67,7 @@ declare const tokens: {
       success: string;
       warning: string;
       danger: string;
+      "danger-text": string;
       info: string;
       chart: {
         "1": string;
@@ -307,6 +308,7 @@ declare const tokens: {
         "border-subtle": string;
         "border-strong": string;
         border: string;
+        "danger-text": string;
         brand: string;
         "brand-hover": string;
         "on-brand": string;

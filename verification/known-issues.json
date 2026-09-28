@@ -7,33 +7,9 @@
   ],
   "issues": [
     
-    {
-      "id": "KI-002",
-      "code": "T08",
-      "match": "color.text-muted",
-      "reason": "DESIGN.md 第 7 章 Known contrast debt 已记录的债：--color-text-muted 在明暗两套下都是 #64748d，深色底上约 3.6:1，低于 AA 正文要求。本次把这条文字描述变成机器检查。",
-      "owner": "design-system",
-      "expires": "2026-12-31",
-      "note": "修法：把深色模式的 text-muted 上移到 sky/neutral 阶梯（例如 sky-300 或 neutral-400 一档），并同步 DESIGN.md。"
-    },
-    {
-      "id": "KI-003",
-      "code": "T08",
-      "match": "color.danger",
-      "reason": "语义色（danger #ff4d4f）在设计上用于填充/图标，不是正文色。浅色底上作正文仅 3.27:1。新代码不得把语义色直接当正文色使用。",
-      "owner": "design-system",
-      "expires": "2026-12-31",
-      "note": "若确需语义色作正文，应在 core 增加一档更深的语义文本色（例如 danger-text），而不是降低本条要求。"
-    },
-    {
-      "id": "KI-004",
-      "code": "T08",
-      "match": "color.border-strong",
-      "reason": "border-strong 目前是装饰性分隔线（浅色 1.81:1 / 深色 2.87:1），不满足 WCAG 1.4.11 对「用于识别组件的视觉信息」3:1 的要求。只要它不被用作唯一边界指示（例如输入框唯一的边框），就属于装饰性。",
-      "owner": "design-system",
-      "expires": "2026-12-31",
-      "note": "需要确认：表单控件边界是否使用 border-strong？若使用，必须提升到 3:1 或改用 border + 背景对比共同表达。"
-    },
+    
+    
+    
     
     {
       "id": "KI-006",
