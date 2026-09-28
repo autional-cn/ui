@@ -24,6 +24,8 @@ import { createHash } from 'node:crypto';
 import { ROOT } from './lib/tokens.mjs';
 
 const WRITE = process.argv.includes('--write');
+// 一次一站：迁移会改变站点渲染，必须逐站构建 + 跑视觉回归，所以支持 --site 限定。
+const ONLY = (() => { const i = process.argv.indexOf('--site'); return i >= 0 ? process.argv[i + 1] : null; })();
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
 
 // 写入站点的那份 tokens.css 用**完整内联产物**而不是转发文件，
@@ -46,6 +48,7 @@ for (const site of readdirSync(SITES)) {
   const sitePath = join(SITES, site);
   if (!statSync(sitePath).isDirectory()) continue;
   if (!existsSync(join(sitePath, 'packages', 'tailwind-preset'))) continue;
+  if (ONLY && site !== ONLY) continue;
   targets.push({ site, sitePath });
 }
 
@@ -71,7 +74,7 @@ for (const { site, sitePath } of targets) {
   }
 }
 
-console.log('站点内置副本同步：' + targets.length + ' 个站点 / ' + SOURCES.length + ' 个文件');
+console.log('站点内置副本同步：' + targets.length + ' 个站点 / ' + SOURCES.length + ' 个文件' + (ONLY ? '（--site ' + ONLY + '）' : ''));
 console.log('  逐字节一致 ' + same + ' 个 / 需要更新 ' + changed + ' 个');
 if (rows.length) {
   console.log('');
