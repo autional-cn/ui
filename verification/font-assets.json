@@ -44,7 +44,7 @@
       "family": "Inter",
       "role": "sans 首项（拉丁）",
       "delivery": "webfont",
-      "package": "@fontsource/inter",
+      "package": "@fontsource-variable/inter",
       "license": "SIL Open Font License 1.1",
       "licenseUrl": "https://github.com/rsms/inter/blob/master/LICENSE.txt",
       "scope": {
@@ -54,7 +54,7 @@
         "redistribute": true
       },
       "expires": null,
-      "note": "OFL 允许再分发与嵌入，因此是唯一可以随包分发的字体。ASTRYX_MANIFEST.brandCore.fontRoleNotes 写明「Latin is self-hosted Inter (@fontsource)」。"
+      "note": "OFL 允许再分发与嵌入，因此是唯一可以随包分发的字体。ASTRYX_MANIFEST.brandCore.fontRoleNotes 写明「Latin is self-hosted Inter (@fontsource)」。\n交付方式（2026-09 改）：此前靠各站点自行 `pnpm add @fontsource/inter`，实测 14 个站点只有 2 个装了，而 tokens.css 里 @font-face 声明为 0——声明与交付不一致（KI-007）。现在字体**随 tokens.css 一起分发**：文件在 packages/tokens/fonts/inter-latin-wght-normal.woff2（可变字体，一份 47KB 覆盖 wght 100–900），生成器把 @font-face 写进 tokens.css，用相对路径 url(./fonts/…)；pnpm sync:consumers 把它一并写入站点的 packages/tailwind-preset/fonts/，消费方打包器再复制进产物。因此 A4 的判据从「站点是否装了 npm 包」改为「站点是否拿到了字体文件」。"
     },
     {
       "family": "Noto Sans CJK SC",

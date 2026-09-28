@@ -9,7 +9,8 @@
     "dist",
     "tokens.css",
     "primitives.css",
-    "profiles"
+    "profiles",
+    "fonts"
   ],
   "exports": {
     ".": {

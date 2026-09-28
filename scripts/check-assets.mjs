@@ -80,8 +80,14 @@ if (existsSync(sitesDir)) {
     let deps = {};
     try { const j = JSON.parse(readFileSync(pkgPath, 'utf8')); deps = Object.assign({}, j.dependencies, j.devDependencies); } catch (e) { continue; }
     for (const f of webfonts) {
-      const hit = Object.keys(deps).some((k) => k === f.package || (f.family && k.toLowerCase().indexOf(f.family.toLowerCase()) >= 0));
-      if (hit) consumer.installed.push(s); else consumer.missing.push(s);
+      // 交付判据（2026-09 改）：字体现在随 tokens.css 分发，不再要求站点自装 npm 包。
+      // 认为「已交付」当且仅当二者之一成立：
+      //   ① 站点 package.json 里装了该包（旧路径，仍然接受）；
+      //   ② 站点的内置副本里有字体文件（新路径：fonts/ 目录随 sync:consumers 一起分发）。
+      const declared = Object.keys(deps).some((k) => k === f.package || (f.family && k.toLowerCase().indexOf(f.family.toLowerCase()) >= 0));
+      const fontDir = join(sitesDir, s, 'packages', 'tailwind-preset', 'fonts');
+      const delivered = existsSync(fontDir) && readdirSync(fontDir).some((n) => /\.woff2?$/.test(n));
+      if (declared || delivered) consumer.installed.push(s); else consumer.missing.push(s);
     }
   }
   const uniqMissing = Array.from(new Set(consumer.missing));

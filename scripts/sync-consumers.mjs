@@ -19,7 +19,7 @@
 // 对每个站点都应先构建并跑视觉回归再接受。
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
-import { join, resolve, relative } from 'node:path';
+import { join, resolve, relative, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT } from './lib/tokens.mjs';
 
@@ -34,6 +34,12 @@ const SOURCES = [
   { from: 'packages/tokens/tokens.css', to: 'packages/tailwind-preset/tokens.css' },
   { from: 'packages/tailwind-preset/index.js', to: 'packages/tailwind-preset/index.js' },
   { from: 'packages/tailwind-preset/index.d.ts', to: 'packages/tailwind-preset/index.d.ts' },
+];
+// 字体与 tokens.css 同级分发：tokens.css 里的 @font-face 用相对路径 ./fonts/…，
+// 消费方的打包器会把它复制进产物。缺了这些文件，Inter 就只是「声明」而非「交付」（KI-007）。
+const FONT_SOURCES = [
+  { from: 'packages/tokens/fonts/inter-latin-wght-normal.woff2', to: 'packages/tailwind-preset/fonts/inter-latin-wght-normal.woff2' },
+  { from: 'packages/tokens/fonts/LICENSE-Inter-OFL.txt', to: 'packages/tailwind-preset/fonts/LICENSE-Inter-OFL.txt' },
 ];
 
 const sha = (buf) => createHash('sha256').update(buf).digest('hex').slice(0, 12);
@@ -56,7 +62,7 @@ let changed = 0;
 let same = 0;
 const rows = [];
 for (const { site, sitePath } of targets) {
-  for (const { from, to } of SOURCES) {
+  for (const { from, to } of SOURCES.concat(FONT_SOURCES)) {
     const src = join(ROOT, from);
     const dst = join(sitePath, to);
     if (!existsSync(src)) { rows.push('  [缺失源] ' + from); continue; }
@@ -68,7 +74,10 @@ for (const { site, sitePath } of targets) {
     rows.push('  ' + site.padEnd(15) + to.replace('packages/tailwind-preset/', '') .padEnd(13) +
       before.padEnd(22) + ' -> ' + a.length + 'B/' + sha(a));
     if (WRITE) {
-      mkdirSync(join(sitePath, 'packages', 'tailwind-preset'), { recursive: true });
+      // 必须按目标文件的**父目录**建目录：字体在 fonts/ 子目录里，
+      // 只 mkdir 到 tailwind-preset 会让字体写入抛 ENOENT，
+      // 而错误被调用方吞掉后表现为「@font-face 在、woff2 404」——实测踩过。
+      mkdirSync(dirname(dst), { recursive: true });
       writeFileSync(dst, a);
     }
   }

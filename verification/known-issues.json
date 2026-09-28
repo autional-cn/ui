@@ -19,7 +19,7 @@
       "reason": "品牌字体只在少数站点真正交付。实测：ASTRYX_MANIFEST.brandCore.fontRoleNotes 声明「Latin is self-hosted Inter (@fontsource)」，但 ui/package.json 的 dependencies 为空、仓库内 @font-face 声明为 0；扫描 14 个站点，只有 reference 与 wiki 装了 @fontsource/inter@^5.2.8，其余站点声明的是一款它们并不交付的字体。叠加 KI-006（站点自带旧副本，--font-sans 首项是 Noto Sans SC），结论是：**大多数站点根本没有渲染在 canonical 声明的字体栈上**。",
       "owner": "design-system",
       "expires": "2026-11-30",
-      "note": "修法：① 在 ui/ 内提供字体交付入口（例如 @autional-cn/tokens 附带 @font-face 片段 + 把 @fontsource/inter 列为 peerDependency）；② 或修改 canonical 的 fontRole：若决定不分发 Latin webfont，就把 Inter 从 no-restore 栈里去掉，并在 DESIGN.md/manifest 里改掉「self-hosted」的说法。两条路都必须让「声明」与「交付」一致——现状是两者不一致且无人察觉。"
+      "note": "修法：① 在 ui/ 内提供字体交付入口（例如 @autional-cn/tokens 附带 @font-face 片段 + 把 @fontsource/inter 列为 peerDependency）；② 或修改 canonical 的 fontRole：若决定不分发 Latin webfont，就把 Inter 从 no-restore 栈里去掉，并在 DESIGN.md/manifest 里改掉「self-hosted」的说法。两条路都必须让「声明」与「交付」一致。\n\n进展（2026-09，本轮）：走「真的交付」这条路，覆盖已从 2/14 提升到 11/14。做法：把 Inter 可变字体放进 packages/tokens/fonts/inter-latin-wght-normal.woff2（48KB，wght 100–900；静态五档约 115KB），生成器把 @font-face 写进 tokens.css（相对路径 url(./fonts/…)），sync:consumers 连同字体写入站点内置副本，消费方打包器再复制进产物。9 个内置站点的实测证据：woff2 进入产物、请求 HTTP 200、document.fonts.load('16px Inter') 返回 loaded、canvas 宽度探针与 sans-serif 相差 4.52px（确认不是回退）。\n\n仍未覆盖：docs / developer / web 这 3 个 Astro 站点——仓库里没有 packages/tailwind-preset，拿不到随包分发的字体；A4b 也仍在报 web-home 与 developer-home 未生效。下一步给这 3 个建立同样的内置交付路径（同时解掉 KI-010 在那 3 个站点的部分）。\n\n另两点：trust 自带 29 个 @font-face（自己的 fontsource 配置），与新路径并存未冲突；A4b 对 admin-console 报「未生效」，但其 @font-face 声明已为 true、woff2 实测 200/loaded——该断言在会跳转的页面上会误报，应改成与强制加载探针一致的判据。"
     },
     {
       "id": "KI-009",

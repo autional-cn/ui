@@ -180,6 +180,20 @@ const REDUCED_MOTION = `@media (prefers-reduced-motion: reduce) {
   }
 }`;
 
+// ── 品牌正文字体 Inter（拉丁）─────────────────────────────────────────────
+// 实测（2026-09）：ASTRYX_MANIFEST 与 DESIGN.md 都声明「Latin is self-hosted Inter
+// (@fontsource)」，但 ui/ 内 @font-face 声明数为 0、14 个站点里只有 2 个装了 @fontsource ——
+// 声明与交付不一致，浏览器直接回退到系统字体（KI-007）。
+// 现在字体随 tokens.css 一起分发：这里是相对路径，消费方的打包器会把它复制进产物。
+// 用可变字体而不是 5 个静态字重：一份 47KB 覆盖 wght 100–900，静态五档约 115KB。
+// Inter 为 SIL OFL 1.1，允许再分发；许可证随字体放在 fonts/LICENSE-Inter-OFL.txt。
+const FONT_FACE = `@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/inter-latin-wght-normal.woff2') format('woff2');
+}`;
 function themeBlock(selector, body) {
   return `${selector} {\n${body}\n}`;
 }
@@ -245,6 +259,8 @@ for (const name of ordered) {
 outputs.set(
   'packages/tokens/tokens.css',
   `/**\n * Autional Design Tokens — ${GENERATED('tokens/tokens.json')}\n */\n\n` +
+    FONT_FACE +
+    '\n\n' +
     themeBlock(':root', emitVars(TOKENS.core)) +
     '\n\n' +
     BASE_LAYER +
