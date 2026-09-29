@@ -71,6 +71,32 @@ for (const f of ledger.families) {
 // A4 跨仓库：webfont 是否真的被消费方交付
 const sitesDir = resolve(ROOT, '..', 'sites');
 const consumer = { scanned: 0, installed: [], missing: [] };
+
+// 站点里所有可能出现 node_modules 的位置。pnpm 是严格隔离布局：只有**声明了**某个依赖的包，
+// 才会在它自己的 node_modules 下拿到该依赖的符号链接，所以逐层枚举就足以判定「装没装」。
+function installRoots(site) {
+  const roots = [join(sitesDir, site, 'node_modules')];
+  for (const g of ['apps', 'packages']) {
+    const gd = join(sitesDir, site, g);
+    if (!existsSync(gd)) continue;
+    for (const e of readdirSync(gd)) roots.push(join(gd, e, 'node_modules'));
+  }
+  return roots;
+}
+
+// npm 交付判据：字体随 @autional-cn/tokens 从 npm 下发，tokens.css 里的 @font-face 用相对路径
+// url('./fonts/...') 引用同一个包内的 fonts/。站点装了这个包，字体文件就真实存在于磁盘上——
+// 这是「真的交付了」，与「package.json 里写了名字」是两件事，所以按文件判定而不是按声明判定。
+function npmDelivered(site) {
+  for (const pkg of ['@autional-cn/tokens', '@autional-cn/tailwind-preset']) {
+    for (const nm of installRoots(site)) {
+      const f = join(nm, pkg, 'fonts');
+      if (existsSync(f) && readdirSync(f).some((n) => /\.woff2?$/.test(n))) return true;
+    }
+  }
+  return false;
+}
+
 if (existsSync(sitesDir)) {
   const webfonts = ledger.families.filter((f) => f.delivery === 'webfont');
   for (const s of readdirSync(sitesDir)) {
@@ -81,13 +107,16 @@ if (existsSync(sitesDir)) {
     try { const j = JSON.parse(readFileSync(pkgPath, 'utf8')); deps = Object.assign({}, j.dependencies, j.devDependencies); } catch (e) { continue; }
     for (const f of webfonts) {
       // 交付判据（2026-09 改）：字体现在随 tokens.css 分发，不再要求站点自装 npm 包。
-      // 认为「已交付」当且仅当二者之一成立：
+      // 认为「已交付」当且仅当下列之一成立：
       //   ① 站点 package.json 里装了该包（旧路径，仍然接受）；
-      //   ② 站点的内置副本里有字体文件（新路径：fonts/ 目录随 sync:consumers 一起分发）。
+      //   ② 站点的内置副本里有字体文件（vendored 路径：fonts/ 目录随 sync:consumers 一起分发）；
+      //   ③ 站点安装的依赖树里有字体文件（npm 路径：P4 之后 9 个 SPA 站点走的就是这条）。
+      // ③ 是 2026-09 P4 换轨后补的：原先只认 ①②，于是把「已改成从 npm 交付、且构建产物里
+      // 确实打出了 woff2」的 9 个站点判成了「没交付」——判据没跟上交付方式，是闸门的错，不是站点的错。
       const declared = Object.keys(deps).some((k) => k === f.package || (f.family && k.toLowerCase().indexOf(f.family.toLowerCase()) >= 0));
       const fontDir = join(sitesDir, s, 'packages', 'tailwind-preset', 'fonts');
       const delivered = existsSync(fontDir) && readdirSync(fontDir).some((n) => /\.woff2?$/.test(n));
-      if (declared || delivered) consumer.installed.push(s); else consumer.missing.push(s);
+      if (declared || delivered || npmDelivered(s)) consumer.installed.push(s); else consumer.missing.push(s);
     }
   }
   const uniqMissing = Array.from(new Set(consumer.missing));
