@@ -157,34 +157,24 @@ for (const r of c2rows) {
     '）。这些颜色应引用 var(--color-*) 或令牌，否则改令牌不会传导、各 portal 会各自漂移。');
 }
 
-// ── C3 packages/ui 的份数 ───────────────────────────────────────────────
-// 只有带库入口（src/index.ts）的目录才算「组件库的一份」。
-// 交付通道 sync:consumers 会往**每个**站点放 packages/ui/src/molecules/ErrorBoundary.tsx，
-// 于是 5 个 Astro 站点也有了一个只含单个文件的 packages/ui。那不是组件库的第二份实现，
-// 而是「交付了一个共享文件」。把两者混为一谈会让 C3 报一个并不存在的分叉。
-// 那些被交付文件的正确性由「消费者副本漂移」闸门逐字节负责，不归 C3。
-const uiGroups = new Map();
-const uiPartial = [];
+// ── C3 packages/ui 的本地副本 ───────────────────────────────────────────
+// 判据变过一次，跟着**交付方式**变：
+//   · 2026-09 之前：组件库以 9 份逐字节相同的副本存在，C3 守的是「它们不许分叉」；
+//   · 2026-09 起：组件库发布为 @autional-cn/ui@0.1.0-rc，14 个站点全部改为 npm 依赖，
+//     本地副本清零。于是判据从「N 份里只有 1 种实现」改成 **「0 份」** ——与 P4 对
+//     packages/tailwind-preset 的处理完全同构。
+// 为什么要改而不是留着：留着「1 种实现」会让副本悄悄长回来时**照样全绿**
+// （副本只要彼此一致就没问题），而那时「站点真的从 npm 消费组件库」已经没人看了。
+const uiCopies = [];
 for (const site of readdirSync(SITES)) {
-  const ui = join(SITES, site, 'packages', 'ui');
-  if (!existsSync(ui)) continue;
-  if (!existsSync(join(ui, 'src', 'index.ts'))) { uiPartial.push(site); continue; }
-  const files = walk(ui, [], () => true, (e) => ['node_modules', '.git', 'dist'].includes(e.name));
-  const h = createHash('sha256');
-  // 归一化行尾再比对：不归一化会把「同一份内容、行尾一个是 LF 一个是 CRLF」算成两个版本。
-  // 实测：brand 的 PageContainer.tsx / package.json / test/setup.ts / vitest.config.ts
-  // 与其余 8 个站点逐字节不同，归一化后**内容完全相同**——那是行尾符噪声，不是真分叉。
-  for (const f of files.sort()) { h.update(relative(ui, f)); h.update(readFileSync(f, 'utf8').replace(/\r\n/g, '\n')); }
-  const key = h.digest('hex').slice(0, 12);
-  if (!uiGroups.has(key)) uiGroups.set(key, []);
-  uiGroups.get(key).push(site);
+  if (existsSync(join(SITES, site, 'packages', 'ui'))) uiCopies.push(site);
 }
-info.push('C3 packages/ui 的实现份数：' + uiGroups.size + ' 份（' + [...uiGroups.values()].map((v) => v.length + ' 站点: ' + v.join('/')).join(' | ') + '）');
-if (uiPartial.length) info.push('C3b 只收到交付文件、没有组件库入口的站点 ' + uiPartial.length + ' 个（' + uiPartial.join('/') + '）——这些文件由消费者副本漂移闸门比对，不计入 C3。');
-if (uiGroups.size > 1) {
-  problems.push('C3 packages/ui 是共享组件库，却在 ' + uiGroups.size + ' 种实现间分叉（' +
-    [...uiGroups.values()].map((v) => v.join('/')).join(' | ') +
-    '）。这是又一处「拷贝而非依赖」——零件（Button/Input/Modal/Toast…）本该只有一份。');
+info.push('C3 packages/ui 的本地副本：' + uiCopies.length + ' 个站点' +
+  (uiCopies.length ? '（' + uiCopies.join('/') + '）' : '——全部走已发布的 @autional-cn/ui'));
+if (uiCopies.length) {
+  problems.push('C3 有 ' + uiCopies.length + ' 个站点还留着组件库副本 packages/ui（' + uiCopies.join('/') +
+    '）。组件库已发布为 @autional-cn/ui@0.1.0-rc，站点应声明 npm 依赖、删除副本——' +
+    '「拷贝而非依赖」正是这一层要消灭的东西。');
 }
 
 // ── C4 站点本地覆盖设计系统令牌（同名、不同值）──────────────────────────

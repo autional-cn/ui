@@ -282,7 +282,9 @@ if (existsSync(sitesDir)) {
   for (const site of readdirSync(sitesDir)) {
     const sp = join(sitesDir, site);
     if (!statSync(sp).isDirectory()) continue;
-    if (!existsSync(join(sp, 'packages', 'ui', 'src', 'index.ts'))) continue;   // 没有组件库入口的站点不参与
+    // 2026-09 起组件库走 npm，判据不再依赖「站点里有 packages/ui」——那个目录已经全部删除。
+    // 改为直接问：这个站点的源码真的 import 了 @autional-cn/ui 吗？import 了而产物里没有它，
+    // 才是要抓的病（声明了但不交付）。
     const src = collectSrc(sp, []).filter((f) => !SRC_SKIP.test(f));
     const uses = src.some((f) => SHARED_UI_IMPORT.test(readFileSync(f, 'utf8')));
     if (!uses) { info.push('TY6 ' + site + '：声明了 @autional-cn/ui 但源码里没有任何 import —— 未参与（基底层由 CDN 的 tokens.css 提供）'); continue; }

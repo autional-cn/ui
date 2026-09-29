@@ -53,9 +53,11 @@ const SOURCES = [
 // 共享组件层（KI-013）：packages/ui 是共享组件库，却在 9 个站点各存一份、
 // 29 个文件里只有 ErrorBoundary.tsx 不同，且差异只在默认文案。
 // 以 ui 仓库的 shared/ui/ErrorBoundary.tsx 为权威统一下发。
-const SHARED_UI_SOURCES = [
-  { from: 'shared/ui/ErrorBoundary.tsx', to: 'packages/ui/src/molecules/ErrorBoundary.tsx' },
-];
+// 2026-09：共享组件层已发布为 @autional-cn/ui@0.1.0-rc，这一项随之退役。
+// 之前它把 ErrorBoundary.tsx 下发给**全部 14 个站点**，其中 5 个 Astro 站的源码里
+// 0 处引用它（实测 grep），9 个 SPA 站则有完整的 packages/ui 副本、现在改为 npm 依赖。
+// 保留一个空数组是为了让下面的调用点不必改，语义是「共享组件层不再走拷贝通道」。
+const SHARED_UI_SOURCES = [];
 // antd 主题桥接（KI-011）：ui 早已生成 packages/tokens/dist/antd-theme.*，但 14 个站点 0 个消费它，
 // 三个控制台各自手写 colorPrimary 等值——platform/security 更是只设 algorithm、
 // 渲染出 antd 出厂蓝。下发 ESM 变体（站点应用是 ESM，原来的 .js 是 CJS）。

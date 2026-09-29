@@ -128,6 +128,26 @@ for (const bt of (cfg.byteTargets || [])) {
 // 「每个站点都真的从 npm 消费设计系统」这件事本身没有任何闸门在看。
 const SITES_DIR = resolve(ROOT, '..', 'sites');
 const NPM_REQUIRED = ['@autional-cn/tailwind-preset', '@autional-cn/tokens'];
+// @autional-cn/ui 是**条件必需**：只有源码真的 import 了组件库的站点才必须声明它。
+// 实测：brand 与 5 个 Astro 站（developer/docs/reference/web/wiki）的源码里 0 处引用组件库，
+// 强制它们声明等于制造假依赖（brand 原来那个未使用的依赖就是本轮删掉的）。
+const UI_IMPORT_RE = /from\s+['"]@autional-cn\/ui['"]|require\(\s*['"]@autional-cn\/ui['"]\s*\)/;
+function siteImportsUi(sitePath) {
+  const stack = [join(sitePath, 'apps'), join(sitePath, 'src')];
+  while (stack.length) {
+    const d = stack.pop();
+    let es; try { es = readdirSync(d, { withFileTypes: true }); } catch (e) { continue; }
+    for (const e of es) {
+      if (e.name === 'node_modules' || e.name === 'dist' || e.name === '.git' || e.name === 'public') continue;
+      const q = join(d, e.name);
+      if (e.isDirectory()) stack.push(q);
+      else if (/\.(ts|tsx|js|jsx|astro)$/.test(e.name)) {
+        try { if (UI_IMPORT_RE.test(readFileSync(q, 'utf8'))) return true; } catch (err) {}
+      }
+    }
+  }
+  return false;
+}
 let channelChecked = 0;
 let channelBad = 0;
 let vendorFound = 0;
@@ -136,6 +156,14 @@ if (existsSync(SITES_DIR)) {
     const sitePath = join(SITES_DIR, site);
     if (!statSync(sitePath).isDirectory()) continue;
     channelChecked++;
+    // 组件库与令牌一样：交付方式是 npm 依赖，本地副本（packages/ui）同样不得残留。
+    // 2026-09：@autional-cn/ui 已发布，14 个站点的 packages/ui 全部删除（5 个 Astro 站
+    // 那份 ErrorBoundary 也是死文件——源码里 0 处引用）。
+    if (existsSync(join(sitePath, 'packages', 'ui'))) {
+      channelBad++;
+      vendorFound++;
+      console.log('  [DRIFT] ' + site + '：仍有内置副本 packages/ui/ —— 组件库已发布为 @autional-cn/ui，副本必须删除');
+    }
     if (existsSync(join(sitePath, 'packages', 'tailwind-preset'))) {
       channelBad++;
       vendorFound++;
@@ -157,7 +185,8 @@ if (existsSync(SITES_DIR)) {
         for (const [k, v] of Object.entries(j[key] || {})) if (k.indexOf('@autional-cn/') === 0) decl[k] = v;
       }
     }
-    for (const pkg of NPM_REQUIRED) {
+    const required = NPM_REQUIRED.concat(siteImportsUi(sitePath) ? ['@autional-cn/ui'] : []);
+    for (const pkg of required) {
       if (!(pkg in decl)) {
         channelBad++;
         console.log('  [DRIFT] ' + site + '：未声明 ' + pkg + ' —— 设计系统必须从 npm 消费');

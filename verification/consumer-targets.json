@@ -3,7 +3,7 @@
   "$note": "设计系统有**两条**交付面，别混为一谈：**构建期**走 npm（@autional-cn/tailwind-preset 与 @autional-cn/tokens 已发布 0.1.0-rc）；**运行期**走 CDN（2026-09 轮次 42 起，14 站 <head> link cdn.autional.cn）。站点自带 packages/tailwind-preset/ 的形态已全部删除，下表中的 targets/byteTargets 因此**降级为回滚通道**：仅当显式执行 pnpm sync:consumers --rollback-vendor --write 时才重新写入，用于 npm 或 CDN 不可用时临时退回自包含形态。这些路径仍然会被 check-consumers 校验——一旦回滚，副本必须与权威逐字节一致。",
   "$modes": {
     "targets": "回滚通道。按 :root 变量逐条比对——能给出「缺哪些/哪些值不同」的可读诊断，用于 tokens.css",
-    "byteTargets": "回滚通道。直接比 sha256——非 CSS 产物没有 :root 可比，且它们是纯生成物，逐字节一致才是正确判据。其中 shared/ui/ErrorBoundary.tsx 例外：它是共享组件层的**常开**交付物，与内置副本无关。",
+    "byteTargets": "回滚通道。直接比 sha256——非 CSS 产物没有 :root 可比，且它们是纯生成物，逐字节一致才是正确判据。原来这里还有一项 shared/ui/ErrorBoundary.tsx（共享组件层的常开交付物）；2026-09 组件库发布为 @autional-cn/ui 之后，这一项随本地副本一起退役——9 个 SPA 站从 npm 取，5 个 Astro 站源码里 0 处引用它。",
     "profiles": "回滚通道用。声明各站点应加载的 profile 样式表（docs/developer 有；web 用 marketing，其覆盖为 0，生成器不产出文件，故为 null）。常规交付下站点 <link> 的是 cdn.autional.cn 的 profiles/<x>.css，不经此处。",
     "runtime": "运行期通道（轮次 42 起）：14 个站点的 <head> 直接 <link> cdn.autional.cn 的 tokens.css / profiles/<x>.css / primitives.css / icons/*。构建期代码（Tailwind preset、antd 主题桥、React 组件）仍走 npm —— preset 是被 bundler 解析的 JS 模块，CDN 给不了解析阶段的东西。",
     "runtimeSheets": "运行期样式表能不能直接 <link>，逐份登记。判据不是「能不能取到」，而是**位置无关性**：从 CDN 直接加载时整个文件排在站点 bundle 之前，而经 bundler @import 时 Tailwind 会把 @layer 片段按层重新定位。两者只有在样式表不依赖那个位置时才等价。tokens/profile 实测与 bundler 导入逐像素相同（developer/docs/web 0.000%）；primitives 不成立（实测整页偏移 3–4.5%）。新增样式表必须在这里显式分类，闸门 check-icons I22 按此断言。",
@@ -28,10 +28,6 @@
     {
       "auth": "packages/tokens/dist/antd-theme.d.mts",
       "copy": "../sites/*/packages/tailwind-preset/antd-theme.d.mts"
-    },
-    {
-      "auth": "shared/ui/ErrorBoundary.tsx",
-      "copy": "../sites/*/packages/ui/src/molecules/ErrorBoundary.tsx"
     }
   ],
   "profiles": [
