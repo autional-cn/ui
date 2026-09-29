@@ -30,7 +30,8 @@ const STEPS = [
   { key: 'publish', label: '发布一致性（npm 已发布内容是否仍等于当前 SSOT）', cmd: ['node', 'scripts/check-publish.mjs'] },
   { key: 'non-tenant', label: '业务路由名单（各 portal 注册的非租户首段 vs 自己的路由表）', cmd: ['node', 'scripts/check-non-tenant.mjs'] },
   { key: 'consistency', label: '跨 portal 视觉一致性（antd 主题 / 硬编码色 / 组件库份数 / 令牌覆盖）', cmd: ['node', 'scripts/check-consistency.mjs'] },
-  { key: 'visual', label: '站点视觉回归（无产物/无浏览器时自动跳过）', cmd: ['node', 'scripts/visual.mjs', 'check'] }
+  { key: 'visual', label: '站点视觉回归（无产物/无浏览器时自动跳过）', cmd: ['node', 'scripts/visual.mjs', 'check'] },
+  { key: 'contrast', label: '对比度 AA（真实页面渲染出来的前景/背景）', cmd: ['node', 'scripts/check-contrast.mjs'] }
 ];
 
 const results = [];

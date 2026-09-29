@@ -191,18 +191,61 @@ if (uiGroups.size > 1) {
 // 与 C2 的区别：C2 查「硬编码了某个等于令牌的色值」；C4 查「把设计系统已有的变量名
 // 在本地重新定义成别的值」——后者更隐蔽，因为它看起来在「用令牌」，实际把令牌改掉了。
 // 实测（2026-09）：全舰队只有 3 处，都在 admin 的图表色上。
-const dsVars = new Map();
-{
-  const css = readFileSync(join(ROOT, 'packages', 'tokens', 'tokens.css'), 'utf8');
-  const i0 = css.indexOf(':root');
-  const open0 = css.indexOf('{', i0);
-  let dep = 0; let end0 = open0;
-  for (let j = open0; j < css.length; j++) {
-    if (css[j] === '{') dep++;
-    else if (css[j] === '}') { dep--; if (!dep) { end0 = j; break; } }
+// ⚠️ 判据必须**分上下文**：站点在 [data-theme="dark"] 里写 --color-bg-primary 本就该与 :root 不同，
+// 正确的参照是设计系统的 .dark 块，不是 :root。早期版本只取 :root 作参照，又用
+// `if (/^var\(/.test(val)) continue;` 把「用 var() 引了错令牌」整类跳过——
+// 于是 5 个站把暗色底色写成中性灰（--color-neutral-900/800），而设计系统是品牌深蓝
+// （--color-primary-900 / #0a2940），**一处都没报**，全绿了整整几轮。
+// 「看起来在引用令牌」正是最隐蔽的一种分叉，判据不能把它排除在外。
+const DS_CSS = readFileSync(join(ROOT, 'packages', 'tokens', 'tokens.css'), 'utf8');
+// 去掉 @layer/@media/@supports 外壳（保留内部规则）与 @keyframes（整块丢弃），
+// 这样下面按「选择器 { 声明 }」逐块扫描时，选择器就是真正的选择器。
+// 按**配对花括号**摘块，不用正则：第一版用贪婪的 /@layer[^{]*\{([\s\S]*)\n\}/，
+// 它一路吃到文件里最后一个 \n}，把紧随其后的站点暗色块连外层一起吞掉，
+// 结果是 platform 的 6 处分叉一处都没报（而同一份内容在 admin 上报了）。
+// 「闸门少报」比「闸门误报」危险得多——它看起来是绿的。
+const AT_WRAPPER = /^@(layer|media|supports|container)\b/;
+const AT_KEYFRAMES = /^@(-webkit-)?keyframes\b/;
+function spliceBlocks(css, pred, keepInner) {
+  let out = '';
+  let i = 0;
+  let changed = 0;
+  while (i < css.length) {
+    const open = css.indexOf('{', i);
+    if (open < 0) { out += css.slice(i); break; }
+    const sel = css.slice(i, open);
+    if (!pred(sel.trim())) { out += css.slice(i, open + 1); i = open + 1; continue; }
+    let depth = 0; let j = open;
+    for (; j < css.length; j++) {
+      if (css[j] === '{') depth++;
+      else if (css[j] === '}') { depth--; if (!depth) break; }
+    }
+    out += keepInner ? css.slice(open + 1, j) : '';
+    i = j + 1;
+    changed++;
   }
-  for (const m of css.slice(open0 + 1, end0).matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;]+);/g)) dsVars.set(m[1], m[2].trim());
+  return { out, changed };
 }
+function shellOut(css) {
+  let out = spliceBlocks(css, (s) => AT_KEYFRAMES.test(s), false).out;
+  for (let i = 0; i < 12; i++) {
+    const r = spliceBlocks(out, (s) => AT_WRAPPER.test(s), true);
+    if (!r.changed) break;
+    out = r.out;
+  }
+  return out;
+}
+function varMapOf(css, wantDark) {
+  const m = new Map();
+  for (const r of shellOut(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const dark = /\.dark|\[data-theme=["']?dark/.test(r[1]);
+    if (dark !== wantDark) continue;
+    for (const d of r[2].matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;]+);/g)) m.set(d[1], d[2].trim());
+  }
+  return m;
+}
+const dsVars = varMapOf(DS_CSS, false);
+const dsDarkVars = varMapOf(DS_CSS, true);
 const c4rows = [];
 {
   for (const site of readdirSync(SITES)) {
@@ -212,13 +255,21 @@ const c4rows = [];
       .filter((f) => !relative(sp, f).replace(/\\/g, '/').startsWith('public/'));
     for (const f of files) {
       const rel = relative(sp, f).replace(/\\/g, '/');
-      const text = stripComments(readFileSync(f, 'utf8'));
-      for (const m of text.matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;\n}]+)/g)) {
-        const name = m[1]; const val = m[2].trim();
-        if (!dsVars.has(name)) continue;
-        if (val === dsVars.get(name)) continue;
-        if (/^var\(/.test(val)) continue;
-        c4rows.push({ site, rel, name, val, ds: dsVars.get(name) });
+      const text = shellOut(stripComments(readFileSync(f, 'utf8')));
+      for (const r of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        const sel = r[1].trim().replace(/\s+/g, ' ');
+        if (!sel || sel.startsWith('@')) continue;
+        // 站点自己的暗色块 → 与设计系统的 .dark 比；其余 → 与 :root 比
+        const dark = /\.dark|\[data-theme=["']?dark/.test(sel);
+        const ref = dark ? dsDarkVars : dsVars;
+        for (const d of r[2].matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;]+);/g)) {
+          const name = d[1]; const val = d[2].trim();
+          if (!ref.has(name)) continue;
+          if (val === ref.get(name)) continue;
+          // 自引用（--x: var(--x)）不是分叉，跳过；其余一律算。
+          if (new RegExp('^var\\(\\s*' + name.replace(/[-]/g, '\\-') + '\\s*[,)]').test(val)) continue;
+          c4rows.push({ site, rel, sel, dark, name, val, ds: ref.get(name) });
+        }
       }
     }
   }
@@ -227,10 +278,13 @@ info.push('C4 本地覆盖设计系统令牌且值不同的处数：' + c4rows.l
   new Set(c4rows.map((r) => r.site)).size + ' 个站点');
 for (const s of new Set(c4rows.map((r) => r.site))) {
   const list = c4rows.filter((r) => r.site === s);
-  problems.push('C4 ' + s + '：' + list.length + ' 处把设计系统已有的变量名在本地重新定义成了别的值（' +
-    list.slice(0, 4).map((r) => r.name + ' = ' + r.val + '，设计系统为 ' + r.ds).join('；') +
+  const darkN = list.filter((r) => r.dark).length;
+  problems.push('C4 ' + s + '：' + list.length + ' 处把设计系统已有的变量名在本地重新定义成了别的值' +
+    (darkN ? '（其中 ' + darkN + ' 处在暗色/主题选择器里，参照的是设计系统的 .dark 块）' : '') + '（' +
+    list.slice(0, 4).map((r) => r.sel.slice(0, 24) + ' ' + r.name + ' = ' + r.val + '，设计系统为 ' + r.ds).join('；') +
     '）。这看起来像在用令牌，实际把令牌改掉了——各 portal 因此会各自漂移。' +
-    '修法二选一：改用设计系统的值，或把该站点确实需要的差异补成设计系统里的新令牌。');
+    '修法二选一：改用设计系统的值（暗色块通常直接删掉即可，tokens.css 的 .dark 已经定义），' +
+    '或把该站点确实需要的差异补成设计系统里的新令牌。');
 }
 
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────

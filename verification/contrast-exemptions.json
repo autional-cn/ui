@@ -1,0 +1,8 @@
+{
+  "$description": "对比度 AA 闸门的豁免登记。每条必须有 id / target / match / reason / owner / expires。到期未处理即构建失败。",
+  "$rules": [
+    "match 是对「元素标识」的子串匹配（如 .hero-subtitle），或用 * 表示整页",
+    "豁免只允许用于「静态算不出来但实测达标」或「刻意的低对比装饰文本」，不允许用来压住真问题"
+  ],
+  "entries": []
+}

@@ -263,6 +263,44 @@ if (existsSync(sitesDir)) {
   }
 }
 
+// ── TY6 共享组件库的样式表是否真的进了产物 ──────────────────────────────
+// 实测（2026-09 轮次 43）：packages/ui/package.json 里写的是
+// `"sideEffects": ["**/*.css"]`，而在 Windows 上 Rollup 的 sideEffects 过滤器**匹配不上**
+// （路径是反斜杠，picomatch 的 `**/*.css` 不命中）—— 于是 `import './styles/globals.css'`
+// 被摇掉：**共享组件层的样式表从未进过任何一个站点的产物**。
+// 9 个站点各自在 app 级 CSS 里手写了一份一模一样的 html/body base 块来补偿，
+// 这正是「看起来是共享的、其实是 9 份拷贝」的来源。改成 `sideEffects: true` 后产物里才有了它。
+//
+// 「声明了但从没交付」与 KI-007（字体只声明不交付）是同一类问题：两边看起来都对，
+// 而浏览器什么都没拿到。所以这一条只问一件事：**产物里到底有没有它**。
+// 指纹用共享层独有的那条规则（html { font-family: var(--font-sans) }）——站点的 app 级 CSS
+// 已不再重复它，CDN 的 tokens.css 也不进 bundle，所以它只可能来自共享层。
+const SHARED_CSS_MARK = /font-family:\s*var\(--font-sans\)/;
+const SHARED_UI_IMPORT = /from\s+['"]@autional-cn\/ui['"]|require\(\s*['"]@autional-cn\/ui['"]\s*\)/;
+if (existsSync(sitesDir)) {
+  const rows = [];
+  for (const site of readdirSync(sitesDir)) {
+    const sp = join(sitesDir, site);
+    if (!statSync(sp).isDirectory()) continue;
+    if (!existsSync(join(sp, 'packages', 'ui', 'src', 'index.ts'))) continue;   // 没有组件库入口的站点不参与
+    const src = collectSrc(sp, []).filter((f) => !SRC_SKIP.test(f));
+    const uses = src.some((f) => SHARED_UI_IMPORT.test(readFileSync(f, 'utf8')));
+    if (!uses) { info.push('TY6 ' + site + '：声明了 @autional-cn/ui 但源码里没有任何 import —— 未参与（基底层由 CDN 的 tokens.css 提供）'); continue; }
+    const css = collectCss(sp, []).filter((f) => /[\\/]dist[\\/]/.test(f));
+    if (!css.length) { info.push('TY6 ' + site + '：没有构建产物，跳过'); continue; }
+    const text = css.map((f) => readFileSync(f, 'utf8')).join('\n');
+    rows.push({ site, ok: SHARED_CSS_MARK.test(text) });
+  }
+  const bad = rows.filter((r) => !r.ok);
+  if (rows.length) info.push('TY6 共享组件库 packages/ui 的样式表进入产物的站点：' + (rows.length - bad.length) + '/' + rows.length);
+  for (const b of bad) {
+    problems.push('TY6 ' + b.site + '：构建产物里找不到共享组件库 packages/ui 的 base 层' +
+      '（指纹 html { font-family: var(--font-sans) }）—— 它被声明了却没有交付。' +
+      '先查 packages/ui/package.json 的 sideEffects：写成 ["**/*.css"] 时 Windows 上匹配不上，' +
+      'Rollup 会把 import "./styles/globals.css" 摇掉（实测）。');
+  }
+}
+
 // ── TY4b 站点是否真的被品牌排版管辖（编译产物指纹）──────────────────────
 // 判据要能区分「站点的字号来自品牌 preset」与「来自 Tailwind 默认」。编译产物里可精确判别：
 //   品牌 preset 的 text-3xl 是 30px/36px **且带 font-weight:700**（定义在 core.font-size.3xl）；

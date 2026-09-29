@@ -5,5 +5,14 @@
     "到期后 lint 会直接失败：要么修掉，要么重新评估并续期（续期必须改 expires 并写理由）",
     "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
   ],
-  "issues": []
+  "issues": [
+    {
+      "id": "KI-015",
+      "code": "AA1",
+      "match": "AA1 admin-console",
+      "reason": "admin-console 上 3 处对比度不达 AA 的文本都来自 antd 自己派生的颜色，而不是站点写死：antd 的 colorTextDescription / colorTextSecondary 是从 colorText 按透明度派生的（#003153 @45% → #8c9aa8，对白底 3.36:1），Avatar 的默认底色也没有吃到 ConfigProvider 的 colorPrimary（实测 #3B82F6）。正确修法在**共享的 antd 桥**（ui/scripts/generate.mjs 的 antdToken）里显式写 colorTextSecondary / colorTextDescription，指向设计系统已有的 text-secondary / text-muted —— 但那要改生成物 → 必须重新发布 @autional-cn/tokens 并做一次 CDN 版本号级联，属于发版工作流，不在本轮。现状由第 18 道闸门（check-contrast）逐条看得见。",
+      "owner": "ui-platform",
+      "expires": "2026-10-31"
+    }
+  ]
 }
