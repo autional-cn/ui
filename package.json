@@ -21,6 +21,8 @@
     "headers": "node scripts/check-headers.mjs",
     "capabilities": "node scripts/check-preset-capabilities.mjs",
     "classnames": "node scripts/check-classnames.mjs",
+    "publish:check": "node scripts/check-publish.mjs",
+    "release": "node scripts/release.mjs",
     "consistency": "node scripts/check-consistency.mjs",
     "sync:consumers": "node scripts/sync-consumers.mjs",
     "build:cdn": "node scripts/build-cdn.mjs",
