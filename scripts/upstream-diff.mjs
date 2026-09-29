@@ -55,6 +55,15 @@ function walk(dir, out = []) {
 // 是**测量口径**错了，不是代码有问题。跨仓库比对不能假设行尾策略一致。
 const sha = (p) => createHash('sha256').update(readFileSync(p, 'utf8').split('\r\n').join('\n')).digest('hex').slice(0, 12);
 
+// 命名空间归一化。为什么需要（第 43 轮实测）：舰队是上游 authms/web 的**换牌分叉**，
+// 绝大多数文件只差 AuthMS→Autional / @authms→@autional-cn。第一版报告把这类文件
+// 也算成「上游与舰队之间真正的差」，于是 39 个里混进了 14 个**等价**文件，
+// 真正需要人评估的 29 个被淹没。判据先把噪声去掉，人再看剩下的。
+const canon = (p) => readFileSync(p, 'utf8').split('\r\n').join('\n')
+  .replace(/@authms\//g, '@autional-cn/')
+  .replace(/\bAuthMS\b/g, 'Autional')
+  .replace(/\bauthms\b/g, 'autional');
+
 const sites = readdirSync(SITES).filter((s) => statSync(join(SITES, s)).isDirectory());
 let totalFiles = 0;
 let totalSame = 0;
@@ -74,6 +83,7 @@ for (const pkg of PACKAGES) {
 	// 只按「有多少文件不同」报总数，会让这两类问题看起来是同一件事。
 	const identical = [];
 	const upstreamGap = [];
+	const namespaceOnly = [];
 	const split = [];
 	let absent = 0;
 	for (const f of files) {
@@ -89,15 +99,26 @@ for (const pkg of PACKAGES) {
 		}
 		if (!present) absent++;
 		else if (diffSites.length === 0) { identical.push(rel); totalSame++; }
-		else if (diffSites.length === present) upstreamGap.push(rel);
+		else if (diffSites.length === present) {
+			// 全部持有站点都与上游不同 —— 再看归一化之后是否其实等价（只是换牌）
+			const g = join(SITES, diffSites[0], 'packages', pkg, rel);
+			if (canon(f) === canon(g)) namespaceOnly.push(rel);
+			else upstreamGap.push(rel);
+		}
 		else split.push({ rel, diffSites, present });
 	}
 	if (absent === files.length && files.length) {
 		console.log('   舰队里没有任何站点持有这个包 —— 若它已改为从 npm 消费（P4 之后 tailwind-preset 就是如此），这属正常。');
 	}
-	console.log('   与上游逐字节相同：' + identical.length + ' / 全部站点都与上游不同：' + upstreamGap.length + ' / 仅部分站点不同（舰队内部分叉）：' + split.length + ' / 无人持有：' + absent);
+	console.log('   与上游逐字节相同：' + identical.length +
+		' / 仅命名空间差异（AuthMS→Autional，等价）：' + namespaceOnly.length +
+		' / 归一化后仍有真差异：' + upstreamGap.length +
+		' / 仅部分站点不同（舰队内部分叉）：' + split.length + ' / 无人持有：' + absent);
+	if (namespaceOnly.length) {
+		console.log('   · 仅命名空间差异的文件（等价，不需要评估）：' + namespaceOnly.length + ' 个');
+	}
 	if (upstreamGap.length) {
-		console.log('   ↑ 全部站点都与上游不同的文件（上游与舰队之间真正的差）：');
+		console.log('   ↑ 归一化后**仍有真差异**的文件（需要人工评估）：');
 		for (const rel of upstreamGap.slice(0, 30)) console.log('     ' + rel);
 		if (upstreamGap.length > 30) console.log('     …另有 ' + (upstreamGap.length - 30) + ' 个');
 	}
@@ -106,7 +127,7 @@ for (const pkg of PACKAGES) {
 		for (const d of split.slice(0, 15)) console.log('     ' + d.rel.padEnd(52) + '与上游不同的站点 ' + d.diffSites.length + '/' + d.present);
 		if (split.length > 15) console.log('     …另有 ' + (split.length - 15) + ' 个');
 	}
-	rows.push({ pkg, identical: identical.length, upstreamGap: upstreamGap.length, split: split.length, total: files.length });
+	rows.push({ pkg, identical: identical.length, namespaceOnly: namespaceOnly.length, upstreamGap: upstreamGap.length, split: split.length, total: files.length });
 }
 
 console.log('');
