@@ -171,6 +171,58 @@ if (existsSync(SITES_DIR)) {
 }
 drifted += channelBad;
 
+// ── 跨站点共享模块：同一份实现不该在多个站点里各自演化 ──────────────────────────
+// packages/shared 不是 npm 依赖，而是**每个站点各存一份**，所以同名模块天然会漂移。
+// 实测过两次：branding 模块曾经只有 4/9 个站点有（auth 自己另造了一整套，两套并行维护）；
+// slug-from-url 曾经有 9 份「彼此一致、但都错」的拷贝——一致不等于正确，但分叉一定更糟。
+// 这里把已经统一过的模块钉住：要么各站点逐字节相同，要么明确不参与（站点没有该模块）。
+const SHARED_MODULES = ['src/branding', 'src/auth/slug-from-url.ts'];
+function filesUnder(p) {
+  if (!statSync(p).isDirectory()) return [p];
+  const out = [];
+  for (const e of readdirSync(p, { withFileTypes: true })) {
+    if (e.name === 'node_modules') continue;
+    out.push(...filesUnder(join(p, e.name)));
+  }
+  return out.sort();
+}
+function moduleHash(root, rel) {
+  const h = createHash('sha256');
+  for (const f of filesUnder(join(root, rel))) {
+    h.update(f.slice(join(root, rel).length).replace(/\\/g, '/'));
+    h.update(readFileSync(f));
+  }
+  return h.digest('hex').slice(0, 12);
+}
+let moduleChecked = 0;
+let moduleBad = 0;
+if (existsSync(SITES_DIR)) {
+  for (const rel of SHARED_MODULES) {
+    const groups = new Map();
+    let present = 0;
+    for (const site of readdirSync(SITES_DIR)) {
+      const sitePath = join(SITES_DIR, site);
+      if (!statSync(sitePath).isDirectory()) continue;
+      const root = join(sitePath, 'packages', 'shared');
+      if (!existsSync(join(root, rel))) continue;
+      present++;
+      const k = moduleHash(root, rel);
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(site);
+    }
+    if (!present) continue;
+    moduleChecked++;
+    if (groups.size > 1) {
+      moduleBad++;
+      console.log('  [DRIFT] 共享模块 packages/shared/' + rel + ' 有 ' + groups.size + ' 个版本：');
+      for (const [k, v] of groups) console.log('           ' + k + '  [' + v.length + ']  ' + v.join(', '));
+    } else {
+      console.log('  [OK]    共享模块 packages/shared/' + rel + '：' + present + ' 个站点逐字节一致');
+    }
+  }
+}
+drifted += moduleBad;
+
 console.log('');
 if (!checked) {
   console.log('消费者检查：未发现配置里的目标路径（当前工作区只有 ui/ 时属正常）。');
@@ -183,6 +235,7 @@ if (expiredKnown.length) {
 }
 console.log('消费者检查：' + checked + ' 个副本，' + drifted + ' 个未登记不一致，' + knownDrift + ' 个已登记');
 console.log('  交付通道：' + channelChecked + ' 个站点（设计系统走 npm；内置副本 ' + vendorFound + ' 个）' + (channelBad ? '，' + channelBad + ' 处不合规' : '，全部合规'));
+console.log('  共享模块：' + moduleChecked + ' 个模块已统一' + (moduleBad ? '，' + moduleBad + ' 个分叉' : '，无分叉'));
 if (drifted) {
   console.log('');
   console.log('这些站点运行的不是 SSOT 生成的令牌。gen:check / lint-tokens / token-lock 都看不见这件事，');
