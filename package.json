@@ -25,6 +25,7 @@
     "release": "node scripts/release.mjs",
     "consistency": "node scripts/check-consistency.mjs",
     "sync:consumers": "node scripts/sync-consumers.mjs",
+    "upstream:diff": "node scripts/upstream-diff.mjs",
     "build:cdn": "node scripts/build-cdn.mjs",
     "visual": "node scripts/visual.mjs check",
     "visual:baseline": "node scripts/visual.mjs baseline"
