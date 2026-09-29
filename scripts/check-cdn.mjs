@@ -13,9 +13,11 @@
 //
 // 用法: node scripts/check-cdn.mjs [--cdn <dir>] [--live]
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { ROOT } from './lib/tokens.mjs';
 
 const argv = process.argv.slice(2);
@@ -109,7 +111,52 @@ if (manifest) {
   if (badPath.length) bad('有 ' + badPath.length + ' 个文件不在版本化路径下（例如 ' + badPath[0].path + '）—— 不可变缓存的前提是路径带版本号');
 }
 
-// ── ③ 线上回验（可选）──────────────────────────────────────────────────────
+// ── ③ CDN 产物是否与**当前 SSOT** 一致 ────────────────────────────────────
+// 这一段是补上一个实际发生过的缺口：令牌侧改了半个多月，而 CDN 还是旧的——
+// 而当时 15 道闸门**全绿**。因为本闸门原本只校验「已发布内容与自己的 manifest 一致」，
+// 不校验「manifest 与当前 SSOT 一致」。前者回答「发布出去的有没有坏」，
+// 后者回答「发布出去的还是不是最新的」。两个问题不同，缺了后者就会静默落后。
+//
+// 做法就是「生成物一致性」的 CDN 版：把当前 SSOT 重新构建到一个临时目录，
+// 与已发布的 manifest 逐文件比 sha384。
+if (manifest && !LIVE) {
+  const tmp = mkdtempSync(join(tmpdir(), 'cdn-freshness-'));
+  try {
+    execFileSync(process.execPath, [join(ROOT, 'scripts', 'build-cdn.mjs'), '--out', tmp], { stdio: 'pipe' });
+    const freshPath = join(tmp, 'ui', 'v' + manifest.version, 'manifest.json');
+    if (!existsSync(freshPath)) bad('用当前 SSOT 重新构建后没有产出 v' + manifest.version + ' 的 manifest —— 版本号可能已变，CDN 需要重新发布');
+    else {
+      const fresh = JSON.parse(readFileSync(freshPath, 'utf8'));
+      const freshByPath = new Map(fresh.files.map((f) => [f.path, f]));
+      // 路径前缀从 manifest 自己带的 base 取，不要引用 build-cdn.mjs 里的常量
+      // （第一版写成了 BASE，那个变量只存在于 build-cdn.mjs —— 运行时才炸）。
+      const strip = (p) => String(p).replace(/^\/ui\/v[^/]+\//, '');
+      const stale = [];
+      const missingInFresh = [];
+      for (const f of manifest.files) {
+        const g = freshByPath.get(f.path);
+        if (!g) { missingInFresh.push(f.path); continue; }
+        if (g.sha384 !== f.sha384) stale.push(strip(f.path));
+      }
+      const added = fresh.files.filter((f) => !manifest.files.some((o) => o.path === f.path)).map((f) => strip(f.path));
+      if (stale.length) {
+        bad('CDN 落后于当前 SSOT：' + stale.length + ' 个文件的 sha384 与重新构建的结果不一致 —— ' + stale.slice(0, 6).join(', ') +
+            (stale.length > 6 ? ' …' : '') + '。重新发布：node scripts/build-cdn.mjs 然后在 ../cdn 提交推送');
+      }
+      if (added.length) bad('当前 SSOT 会多产出 ' + added.length + ' 个文件，CDN 里没有：' + added.slice(0, 6).join(', '));
+      if (missingInFresh.length) bad('CDN 里有 ' + missingInFresh.length + ' 个文件当前 SSOT 已不再产出：' + missingInFresh.slice(0, 6).join(', '));
+      if (!stale.length && !added.length && !missingInFresh.length) {
+        infos.push('CDN 与当前 SSOT 一致（' + manifest.files.length + ' 个文件重新构建后逐字节相同）');
+      }
+    }
+  } catch (e) {
+    bad('无法用当前 SSOT 重新构建以比对：' + String(e.message || e).slice(0, 160));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+// ── ④ 线上回验（可选）──────────────────────────────────────────────────────
 if (LIVE) {
   // 区分两种失败，否则这道闸门会变成噪声：
   //   「连不上网」是环境条件（本机 Node 出网被重置；PowerShell 能通，同一台机器同一时刻）
