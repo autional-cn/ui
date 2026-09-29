@@ -7,7 +7,7 @@
 // 实测 admin 的拷贝只有 89 个变量，权威版本有 186 个，缺 97 个（含整组 chart-* 与 method-*）。
 // gen:check / lint-tokens / token-lock 都只看 ui/ 内部，看不见这件事。
 
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -120,6 +120,57 @@ for (const bt of (cfg.byteTargets || [])) {
   }
 }
 
+// ── 交付通道：设计系统必须走 npm，不得回退成内置副本（2026-09 P4 收口）────────────
+// 此前 14 个站点各存一份 packages/tailwind-preset/ 拷贝，命名空间是伪造的：读起来像在消费
+// 设计系统，实际用的是自己仓库里的分支（KI-006）。P4 已把 14 个站点改成依赖已发布的
+// @autional-cn/*，内置副本全部删除。这条断言防的是「又退回去」——而且它同时补上了上面
+// 那些拷贝比对的**盲区**：副本删光后 targets/byteTargets 只匹配到共享组件层，
+// 「每个站点都真的从 npm 消费设计系统」这件事本身没有任何闸门在看。
+const SITES_DIR = resolve(ROOT, '..', 'sites');
+const NPM_REQUIRED = ['@autional-cn/tailwind-preset', '@autional-cn/tokens'];
+let channelChecked = 0;
+let channelBad = 0;
+let vendorFound = 0;
+if (existsSync(SITES_DIR)) {
+  for (const site of readdirSync(SITES_DIR)) {
+    const sitePath = join(SITES_DIR, site);
+    if (!statSync(sitePath).isDirectory()) continue;
+    channelChecked++;
+    if (existsSync(join(sitePath, 'packages', 'tailwind-preset'))) {
+      channelBad++;
+      vendorFound++;
+      console.log('  [DRIFT] ' + site + '：仍有内置副本 packages/tailwind-preset/ —— 设计系统已由 npm 交付，副本必须删除');
+    }
+    // 收集该站点所有 package.json 里对 @autional-cn/* 的声明
+    const decl = {};
+    const pjs = [join(sitePath, 'package.json')];
+    for (const g of ['apps', 'packages']) {
+      const gd = join(sitePath, g);
+      if (!existsSync(gd)) continue;
+      for (const e of readdirSync(gd)) pjs.push(join(gd, e, 'package.json'));
+    }
+    for (const p of pjs) {
+      if (!existsSync(p)) continue;
+      let j;
+      try { j = JSON.parse(readFileSync(p, 'utf8')); } catch (e) { continue; }
+      for (const key of ['dependencies', 'devDependencies']) {
+        for (const [k, v] of Object.entries(j[key] || {})) if (k.indexOf('@autional-cn/') === 0) decl[k] = v;
+      }
+    }
+    for (const pkg of NPM_REQUIRED) {
+      if (!(pkg in decl)) {
+        channelBad++;
+        console.log('  [DRIFT] ' + site + '：未声明 ' + pkg + ' —— 设计系统必须从 npm 消费');
+      } else if (String(decl[pkg]).indexOf('workspace:') === 0) {
+        channelBad++;
+        console.log('  [DRIFT] ' + site + '：' + pkg + ' 仍声明为 ' + decl[pkg] + '（内置副本式），应指向已发布版本');
+      }
+    }
+  }
+  if (!channelBad) console.log('  [OK]    交付通道：' + channelChecked + ' 个站点均从 npm 消费设计系统，无内置副本');
+}
+drifted += channelBad;
+
 console.log('');
 if (!checked) {
   console.log('消费者检查：未发现配置里的目标路径（当前工作区只有 ui/ 时属正常）。');
@@ -131,6 +182,7 @@ if (expiredKnown.length) {
   drifted += expiredKnown.length;
 }
 console.log('消费者检查：' + checked + ' 个副本，' + drifted + ' 个未登记不一致，' + knownDrift + ' 个已登记');
+console.log('  交付通道：' + channelChecked + ' 个站点（设计系统走 npm；内置副本 ' + vendorFound + ' 个）' + (channelBad ? '，' + channelBad + ' 处不合规' : '，全部合规'));
 if (drifted) {
   console.log('');
   console.log('这些站点运行的不是 SSOT 生成的令牌。gen:check / lint-tokens / token-lock 都看不见这件事，');

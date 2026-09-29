@@ -3,7 +3,15 @@
 // 用法:
 //   node scripts/sync-consumers.mjs           # 只报告会改什么（默认，不写盘）
 //   node scripts/sync-consumers.mjs --write   # 实际写入
+//   node scripts/sync-consumers.mjs --write --rollback-vendor   # 回滚通道：把内置副本写回去
 //
+// 2026-09 P4：设计系统改由 npm 交付，14 个站点的 packages/tailwind-preset/ 已全部删除，
+// 站点改为依赖已发布的 @autional-cn/tailwind-preset 与 @autional-cn/tokens。
+// 因此本脚本保留两个**常开**职责——共享组件层（packages/ui/src/molecules/ErrorBoundary.tsx）
+// 与图标套件（站点 public/）；内置副本降级为**回滚通道**，只在显式 --rollback-vendor 时执行。
+// 目标发现也不再以「站点里有内置副本」为条件：那个条件在副本删光后会让 targets 变成 0，
+// 连带把图标套件与共享组件层一起停掉（实测踩过）。
+
 // 为什么需要它（实测 2026-09）：
 //   9 个站点各自在**自己仓库内**有一个 packages/tailwind-preset，锁文件解析为
 //     '@autional-cn/tailwind-preset': { specifier: workspace:*, version: link:../../packages/tailwind-preset }
@@ -26,6 +34,9 @@ import { ROOT, loadTokens, resolvedIn } from './lib/tokens.mjs';
 const CONFIG = join(ROOT, 'verification', 'consumer-targets.json');
 
 const WRITE = process.argv.includes('--write');
+// 回滚通道：npm 不可用时，把内置副本写回站点，让站点可以退回「自包含」形态。
+// 默认关闭——设计系统的唯一交付通道是 npm。
+const VENDOR = process.argv.includes('--rollback-vendor');
 // 一次一站：迁移会改变站点渲染，必须逐站构建 + 跑视觉回归，所以支持 --site 限定。
 const ONLY = (() => { const i = process.argv.indexOf('--site'); return i >= 0 ? process.argv[i + 1] : null; })();
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -85,17 +96,15 @@ if (!existsSync(SITES)) {
   process.exit(0);
 }
 
+// 目标 = sites/ 下的**全部**站点，与「有没有内置副本」无关。
+// profiles 映射只服务回滚通道：回滚时要把正确的 profile.css 写进 packages/tailwind-preset/。
 const targets = [];
-// bootstrap 列表：仓库里没有 packages/tailwind-preset 的站点（5 个 Astro 站点），
-// 它们此前完全不消费设计系统。为它们建立交付路径。
-const BOOTSTRAP = new Map(((JSON.parse(readFileSync(CONFIG, 'utf8')).bootstrap) || []).map((b) => [b.site, b]));
+const PROFILES = new Map(((JSON.parse(readFileSync(CONFIG, 'utf8')).profiles) || []).map((b) => [b.site, b]));
 for (const site of readdirSync(SITES)) {
   const sitePath = join(SITES, site);
   if (!statSync(sitePath).isDirectory()) continue;
-  const has = existsSync(join(sitePath, 'packages', 'tailwind-preset'));
-  if (!has && !BOOTSTRAP.has(site)) continue;
   if (ONLY && site !== ONLY) continue;
-  targets.push({ site, sitePath, bootstrap: !has, profile: BOOTSTRAP.get(site) ? BOOTSTRAP.get(site).profile : null });
+  targets.push({ site, sitePath, profile: PROFILES.get(site) ? PROFILES.get(site).profile : null });
 }
 
 let changed = 0;
@@ -103,8 +112,12 @@ let same = 0;
 const rows = [];
 const missing = [];
 for (const { site, sitePath, profile } of targets) {
-  const sources = SOURCES.concat(COMPONENT_SOURCES, FONT_SOURCES, ANTD_SOURCES, SHARED_UI_SOURCES);
-  if (profile) sources.push({ from: 'packages/tokens/profiles/' + profile + '.css', to: 'packages/tailwind-preset/profile.css' });
+  // 共享组件层常开；内置副本只在回滚通道里写回。
+  const sources = SHARED_UI_SOURCES.slice();
+  if (VENDOR) {
+    sources.push(...SOURCES, ...COMPONENT_SOURCES, ...FONT_SOURCES, ...ANTD_SOURCES);
+    if (profile) sources.push({ from: 'packages/tokens/profiles/' + profile + '.css', to: 'packages/tailwind-preset/profile.css' });
+  }
   for (const { from, to } of sources) {
     const src = join(ROOT, from);
     const dst = join(sitePath, to);
@@ -177,8 +190,9 @@ for (const { site, sitePath } of targets) {
   }
 }
 
-console.log('站点内置副本同步：' + targets.length + ' 个站点' + (ONLY ? '（--site ' + ONLY + '）' : ''));
-console.log('  逐字节一致 ' + same + ' 个 / 需要更新 ' + changed + ' 个');
+console.log('交付同步：' + targets.length + ' 个站点' + (ONLY ? '（--site ' + ONLY + '）' : ''));
+console.log('  模式：' + (VENDOR ? '回滚通道（含内置副本 packages/tailwind-preset/）' : '常规（设计系统走 npm；内置副本已退役）'));
+console.log('  共享组件层/回滚产物：逐字节一致 ' + same + ' 个 / 需要更新 ' + changed + ' 个');
 if (rows.length) {
   console.log('');
   console.log('  站点'.padEnd(17) + '文件'.padEnd(15) + '当前'.padEnd(24) + '权威');

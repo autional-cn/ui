@@ -1,10 +1,10 @@
 {
   "$description": "消费者副本位置与交付方式。ui/ 是独立 git 仓库，sites/ 是同级目录；CI 里只 checkout ui/ 时该检查自动跳过。",
-  "$note": "交付方式目前是「手工拷贝」：站点自带 packages/tailwind-preset/{tokens.css,index.js,index.d.ts}，且不声明 @autional-cn/* 依赖。副本由 pnpm sync:consumers 生成。",
+  "$note": "2026-09 P4 起，设计系统的交付通道是 npm（@autional-cn/tailwind-preset 与 @autional-cn/tokens 已发布 0.1.0-rc）。站点自带 packages/tailwind-preset/ 的形态已全部删除，下表中的 targets/byteTargets 因此**降级为回滚通道**：仅当显式执行 pnpm sync:consumers --rollback-vendor --write 时才重新写入，用于 npm 不可用时临时退回自包含形态。这些路径仍然会被 check-consumers 校验——一旦回滚，副本必须与权威逐字节一致。",
   "$modes": {
-    "targets": "按 :root 变量逐条比对——能给出「缺哪些/哪些值不同」的可读诊断，用于 tokens.css",
-    "byteTargets": "直接比 sha256——非 CSS 产物没有 :root 可比，且它们是纯生成物，逐字节一致才是正确判据",
-    "bootstrap": "仓库里没有 packages/tailwind-preset 的站点（5 个 Astro 站点）。它们此前完全不消费设计系统，而是在 tailwind.config.cjs 里内联整套色阶。此处声明如何为它们建立交付路径：profile 指定该站点应加载的 profile 样式表（docs/developer 有；web 用 marketing，其覆盖为 0）。"
+    "targets": "回滚通道。按 :root 变量逐条比对——能给出「缺哪些/哪些值不同」的可读诊断，用于 tokens.css",
+    "byteTargets": "回滚通道。直接比 sha256——非 CSS 产物没有 :root 可比，且它们是纯生成物，逐字节一致才是正确判据。其中 shared/ui/ErrorBoundary.tsx 例外：它是共享组件层的**常开**交付物，与内置副本无关。",
+    "profiles": "回滚通道用。声明各站点应加载的 profile 样式表（docs/developer 有；web 用 marketing，其覆盖为 0，生成器不产出文件，故为 null）。常规交付下站点直接 import '@autional-cn/tokens/profiles/<x>.css'，不经此处。"
   },
   "targets": [
     "../sites/*/packages/tailwind-preset/tokens.css"
@@ -31,7 +31,7 @@
       "copy": "../sites/*/packages/ui/src/molecules/ErrorBoundary.tsx"
     }
   ],
-  "bootstrap": [
+  "profiles": [
     {
       "site": "docs",
       "profile": "docs"
