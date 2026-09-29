@@ -28,6 +28,7 @@ const STEPS = [
   { key: 'capabilities', label: '预设能力契约（模板用了需要插件的类，插件是否真的在）', cmd: ['node', 'scripts/check-preset-capabilities.mjs'] },
   { key: 'classnames', label: '类名可达性（裸色阶类名写了但生成不出来）', cmd: ['node', 'scripts/check-classnames.mjs'] },
   { key: 'publish', label: '发布一致性（npm 已发布内容是否仍等于当前 SSOT）', cmd: ['node', 'scripts/check-publish.mjs'] },
+  { key: 'non-tenant', label: '业务路由名单（各 portal 注册的非租户首段 vs 自己的路由表）', cmd: ['node', 'scripts/check-non-tenant.mjs'] },
   { key: 'consistency', label: '跨 portal 视觉一致性（antd 主题 / 硬编码色 / 组件库份数 / 令牌覆盖）', cmd: ['node', 'scripts/check-consistency.mjs'] },
   { key: 'visual', label: '站点视觉回归（无产物/无浏览器时自动跳过）', cmd: ['node', 'scripts/visual.mjs', 'check'] }
 ];
