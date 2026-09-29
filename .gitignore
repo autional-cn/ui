@@ -27,3 +27,6 @@ learned/
 gits/
 # 瑙嗚鍥炲綊鐨勫樊寮傚浘锛堜复鏃朵骇鐗╋紝姣忔 check 鍙噸鏂扮敓鎴愶級
 verification/diffs/
+
+# pnpm pack 的产物（publish 前本地验证用）
+*.tgz
