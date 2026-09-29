@@ -14,6 +14,13 @@
 // 这道闸门没有假阳性：命中即错——裸的 {utility}-{palette} 在任何情况下都不可能有规则。
 // 它读的是 SSOT 的实际构造而非写死的名单，所以将来谁给某个色阶补了 DEFAULT，会自动放行。
 //
+// 「不补 DEFAULT」是**刻意的决定**（2026-09-29 拍板，理由写在 DESIGN.md
+// § Tailwind overrides →「Ramp families have no DEFAULT」）。关键的反直觉点：
+//   --color-bg-primary 是**页面底色**（--color-neutral-50），不是品牌蓝；
+//   品牌蓝是 primary-700（#003153，与源头 autional/ui 的 DESIGN.md primary 完全一致）。
+// 补 DEFAULT 只可能命中其中一个语义，对另一个语义的作者就是**静默的错色**——
+// 那比构建期报错更糟。所以这里宁可不补，靠本闸门把失败变响并教正确写法。
+//
 // 用法: node scripts/check-classnames.mjs [--json]
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
@@ -135,7 +142,10 @@ for (const site of readdirSync(SITES)) {
   for (const h of hits) { if (!byCls.has(h.cls)) byCls.set(h.cls, []); byCls.get(h.cls).push(h); }
   perSite.push({ site, total: hits.length, classes: [...byCls.entries()].map(([c, v]) => ({ cls: c, n: v.length, first: v[0].file + ':' + v[0].line })) });
   for (const [cls, v] of byCls) {
-    problems.push('K1 ' + site + '：' + cls + ' × ' + v.length + '（首处 ' + v[0].file + ':' + v[0].line + '）—— 色阶没有 DEFAULT 键，这个类生成不出来；应改用色阶档位（如 primary-600）或任意值 text-[var(--color-…)]');
+    problems.push('K1 ' + site + '：' + cls + ' × ' + v.length + '（首处 ' + v[0].file + ':' + v[0].line +
+      '）—— 色阶没有 DEFAULT 键（刻意如此，见 DESIGN.md「Ramp families have no DEFAULT」），这个类生成不出来。' +
+      '品牌蓝写 <utility>-primary-700（#003153）；页面底色写 bg-[var(--color-bg-primary)]；' +
+      '正文色写 text-[var(--color-text-primary)]——注意 --color-bg-primary 是页面底色，不是品牌蓝');
   }
 }
 

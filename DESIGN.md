@@ -118,6 +118,36 @@ titles (`text-4xl` appears 68× across all 14 sites, alongside 63× `text-3xl` a
 weight or tracking), so switching an existing `text-4xl` onto the token is a no-op
 by construction. Rationale is recorded in `core.font-size.$font-size-note`.
 
+#### Ramp families have no `DEFAULT` — spell the step
+
+`primary`, `sky`, `amber`, `neutral`, `chart`, and `method` are exposed as **ramp
+objects** with numbered steps only. There is deliberately **no `DEFAULT` key**, so bare
+`bg-primary`, `text-primary`, `border-primary` — and the same with any other utility
+prefix — generate **no CSS at all**. The build succeeds, the page silently keeps
+whatever it had. `scripts/check-classnames.mjs` fails the build on any such class.
+
+This is a decision, not an oversight (settled 2026-09-29). Two unambiguous spellings
+already exist, and a `DEFAULT` could only pick one of them and silently mistranslate
+the other:
+
+| You mean | Write this | Resolves to |
+|---|---|---|
+| The brand blue, `#003153` | `bg-primary-700`, `text-primary-700` | `--color-primary-700` |
+| The page background | `bg-[var(--color-bg-primary)]` | `--color-bg-primary` (= `--color-neutral-50`) |
+| Body text | `text-[var(--color-text-primary)]` | `--color-text-primary` (= `--color-primary-900`) |
+
+The trap is specific and worth stating plainly: **`--color-bg-primary` is the page
+background, not the brand blue**, while `primary-700` *is* the brand blue. A
+`colors.primary.DEFAULT` would have to mean one of them and would be wrong — and
+invisible — for everyone who meant the other. That trades a loud build failure for a
+quiet wrong colour, which is the exact failure mode this rule exists to end.
+
+Nothing is lost by omitting it: the source design system (`autional/ui`, `DESIGN.md`)
+defines `primary: "#003153"`, which is exactly `primary-700`, and the ramp already
+addresses that step. If a `DEFAULT` is ever added on purpose, the gate above reads the
+palette list out of the SSOT rather than hard-coding it, so those classes start
+passing automatically — the rule follows the tokens, not a written-down list.
+
 ## 3. Color
 
 One deep brand blue, one sky accent, one amber accent, a neutral ramp, four
