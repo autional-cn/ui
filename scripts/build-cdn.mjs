@@ -69,6 +69,41 @@ const CSS = [
   ['packages/tokens/tokens.css', 'tokens.css'],
   ['packages/tokens/primitives.css', 'primitives.css'],
 ];
+// profiles 是**按站点**覆盖调色板的样式表（docs / developer）。此前只经 npm 下发，
+// 站点从 @import '@autional-cn/tokens/profiles/x.css' 取；CDN 上没有它们，
+// 于是「CDN 作为运行期唯一来源」这个前提不成立（少了它 Astro 站会变配色）。
+const PROFILES = [
+  ['packages/tokens/profiles/docs.css', 'profiles/docs.css'],
+  ['packages/tokens/profiles/developer.css', 'profiles/developer.css'],
+];
+
+// ── 摊平 @layer ─────────────────────────────────────────────────────────────
+// 为什么必须做：tokens.css 与 primitives.css 的顶层都是 @layer base/components { … }。
+// 经 Tailwind/PostCSS 处理时，Tailwind 3 会把这些 @layer **摊平**成普通规则按序输出；
+// 而 CDN 是**直接托管原文件**的，浏览器会按**原生 CSS 级联层**处理。两者优先级规则不同：
+// 原生层内的规则**输给任何未分层的规则，且与选择器特异性无关**。
+// 后果静默且严重：站点自己的 Tailwind 产物是未分层的，于是 preflight 的
+// button { background-color: transparent } 会盖掉层内的 .brand-button —— 按钮背景没了。
+// 摊平后 CDN 产物与站点经 Tailwind 得到的结果一致（层内顺序原样保留：base 先、components 后）。
+function flattenLayers(css) {
+  const re = /@layer\s+[a-zA-Z0-9_,\s-]+\s*\{/;
+  let out = css;
+  for (let guard = 0; guard < 16; guard++) {
+    const m = re.exec(out);
+    if (!m) break;
+    const start = m.index;
+    const open = start + m[0].length - 1;
+    let depth = 0;
+    let end = -1;
+    for (let i = open; i < out.length; i++) {
+      if (out[i] === '{') depth++;
+      else if (out[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end < 0) break;
+    out = out.slice(0, start) + out.slice(open + 1, end) + out.slice(end + 1);
+  }
+  return out;
+}
 
 // ── 生成 site.webmanifest ───────────────────────────────────────────────────
 // 不从 favicon_io 直接拷：那份用的是相对路径，放到 CDN 上就成了死链。
@@ -124,7 +159,23 @@ function emit(srcRel, destRel, transform) {
   });
 }
 
-for (const [s, d] of CSS) emit(s, d);
+// 自我断言：摊平必须真的发生。第一版把正则在字符串里多转义了一层，写进文件的是匹配
+// 字面反斜杠的 /@layer\\s+/，于是什么都没摊平——而 check-cdn 仍然全绿，
+// 因为 manifest 与产物是一起生成的，闸门看不出「变换是空操作」。
+// 「脚本报成功」必须等于「我要的结果发生了」，所以这里直接断言。
+function emitCss(srcRel, destRel) {
+  const src = join(ROOT, srcRel);
+  if (!existsSync(src)) { missing.push(srcRel); return; }
+  const raw = readFileSync(src, 'utf8');
+  const flat = flattenLayers(raw);
+  if (/@layer/.test(raw) && /@layer/.test(flat)) {
+    console.error('摊平失败：' + srcRel + ' 仍含 @layer —— 变换没生效，拒绝产出语义不同的样式表');
+    process.exit(1);
+  }
+  emit(srcRel, destRel, () => flat);
+}
+for (const [s, d] of CSS) emitCss(s, d);
+for (const [s, d] of PROFILES) emitCss(s, d);
 for (const [s, d] of FONTS) emit(s, d);
 for (const [s, d] of ICONS) emit(s, d);
 for (const [s, d] of LOGOS) emit(s, d);
