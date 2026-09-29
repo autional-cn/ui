@@ -1,0 +1,27 @@
+{
+  "name": "@autional-cn/react",
+  "version": "0.1.0-rc",
+  "description": "Autional React SDK — React hooks and components for Autional authentication",
+  "license": "AGPL-3.0",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@autional-cn/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  }
+}

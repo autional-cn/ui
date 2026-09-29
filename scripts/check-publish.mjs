@@ -50,6 +50,8 @@ const PAIRS = [
 // 组件库有 20+ 个源文件，手列一份清单必然随文件增删而腐烂，所以这一条直接走目录。
 const DIR_PAIRS = [
   ['@autional-cn/ui', 'packages/ui/src'],
+  ['@autional-cn/shared', 'packages/shared/src'],
+  ['@autional-cn/react', 'packages/react/src'],
 ];
 
 const version = JSON.parse(readFileSync(join(ROOT, 'packages', 'tokens', 'package.json'), 'utf8')).version;
