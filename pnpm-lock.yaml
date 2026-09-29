@@ -78,6 +78,8 @@ importers:
 
   packages/tokens: {}
 
+  packages/tsconfig: {}
+
   packages/ui:
     dependencies:
       antd:

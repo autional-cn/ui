@@ -1,0 +1,11 @@
+{
+  "name": "@autional-cn/tsconfig",
+  "version": "0.1.0-rc",
+  "description": "Shared TypeScript configurations for the Autional fleet",
+  "license": "AGPL-3.0",
+  "files": [
+    "base.json",
+    "nextjs.json",
+    "react.json"
+  ]
+}

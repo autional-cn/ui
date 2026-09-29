@@ -174,6 +174,11 @@ if (existsSync(SITES_DIR)) {
     // 组件库与令牌一样：交付方式是 npm 依赖，本地副本（packages/ui）同样不得残留。
     // 2026-09：@autional-cn/ui 已发布，14 个站点的 packages/ui 全部删除（5 个 Astro 站
     // 那份 ErrorBoundary 也是死文件——源码里 0 处引用）。
+    if (existsSync(join(sitePath, 'packages', 'tsconfig'))) {
+      channelBad++;
+      vendorFound++;
+      console.log('  [DRIFT] ' + site + '：仍有内置副本 packages/tsconfig/ —— @autional-cn/tsconfig 已发布，副本必须删除');
+    }
     if (existsSync(join(sitePath, 'packages', 'ui'))) {
       channelBad++;
       vendorFound++;
