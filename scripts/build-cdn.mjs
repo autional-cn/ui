@@ -78,13 +78,23 @@ const PROFILES = [
 ];
 
 // ── 摊平 @layer ─────────────────────────────────────────────────────────────
-// 为什么必须做：tokens.css 与 primitives.css 的顶层都是 @layer base/components { … }。
-// 经 Tailwind/PostCSS 处理时，Tailwind 3 会把这些 @layer **摊平**成普通规则按序输出；
-// 而 CDN 是**直接托管原文件**的，浏览器会按**原生 CSS 级联层**处理。两者优先级规则不同：
-// 原生层内的规则**输给任何未分层的规则，且与选择器特异性无关**。
-// 后果静默且严重：站点自己的 Tailwind 产物是未分层的，于是 preflight 的
-// button { background-color: transparent } 会盖掉层内的 .brand-button —— 按钮背景没了。
-// 摊平后 CDN 产物与站点经 Tailwind 得到的结果一致（层内顺序原样保留：base 先、components 后）。
+// 为什么做：primitives.css 的顶层是 @layer base { … } / @layer components { … }。
+// 若原样托管，浏览器会按**原生 CSS 级联层**处理，而原生层内的规则**输给任何未分层规则且
+// 与特异性无关** —— 站点自己未分层的 preflight 会盖掉层内的 .brand-button。摊平后至少
+// 「层内 vs 层外」的优先级不再反向（层内顺序原样保留：base 先、components 后）。
+//
+// ⚠️ **但摊平并不等于等价，所以 14 个门户不从这个文件加载 primitives。**
+// Tailwind 处理 @layer base/components 时不是就地摊平，而是把内容**按层重新定位**：
+// base 段落会落到 preflight **之后**。CDN 作为普通外部样式表加载时，整个文件排在站点
+// bundle 之前，于是 base 段落落到 preflight **之前**，preflight 的
+// body { line-height: inherit } 反过来盖掉 primitives 的 body { line-height: var(--line-height-body-md) }。
+// 实测（轮次 42）：developer-home 3.025% / docs 3.035% / wiki 4.478% 的整页偏移；
+// 把 primitives 放回 bundler @import 后三站均为 **0.000%**。
+//
+// 结论（已固化成闸门 check-icons I22）：**含 Tailwind @layer 语义的样式表不能当运行期
+// 外部样式表用**，必须由消费方的构建器处理。CDN 上这份 primitives.css 是留给
+// 非 Tailwind 消费方（Go demo 等）的尽力版本，门户不走它。
+// 令牌与 profile 没有这个问题：它们是纯 :root 变量块，与顺序无关。
 function flattenLayers(css) {
   const re = /@layer\s+[a-zA-Z0-9_,\s-]+\s*\{/;
   let out = css;
@@ -107,9 +117,17 @@ function flattenLayers(css) {
 
 // ── 生成 site.webmanifest ───────────────────────────────────────────────────
 // 不从 favicon_io 直接拷：那份用的是相对路径，放到 CDN 上就成了死链。
-// 这里按 CDN 绝对路径重新生成，theme_color 取自令牌（不是手填的心情值）。
+// 这里按 CDN 绝对路径重新生成。
+//
+// **刻意不写 theme_color。** 它是一个**每站不同**的值：DESIGN.md §13 规定
+// 「theme_color 必须等于 PWA chrome 所在的表面色」——品牌面 #003153、浅色内容站 #ffffff、
+// authenticator（暗色优先）#0a0a0a。一份 14 站共用的文件不可能同时正确，
+// 而写死其中一个就是对另外三个站说谎。实测踩过：把 <link rel="manifest"> 指向 CDN 之后，
+// authenticator 的页面 meta 是 #0a0a0a、manifest 却是 #003153 —— 同一个值两个来源且互相矛盾。
+// 正确分层：**共享文件只放共享字段**，theme_color 的唯一来源是各站 <head> 的
+// <meta name="theme-color">（其值登记在 verification/consumer-targets.json，
+// 由 check-icons I11 断言一致）。
 const R = resolvedIn(T, {});
-const brand = R['color.brand'] || R['color.primary-700'];
 const bg = R['color.neutral-0'] || '#ffffff';
 const manifestWeb = {
   name: 'Autional',
@@ -118,7 +136,6 @@ const manifestWeb = {
     { src: ABS + '/icons/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
     { src: ABS + '/icons/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' }
   ],
-  theme_color: brand,
   background_color: bg,
   display: 'standalone'
 };
@@ -217,8 +234,10 @@ const rows = entries.map((e) => {
 const SNIPPETS = [
   ['预编译令牌 CSS（Go demo / 任何非 Node 构建的消费方）',
    '<link rel="stylesheet" href="' + ABS + '/tokens.css">'],
-  ['字体（跨站共用同一 URL 才会命中同一份缓存）',
-   '<link rel="preload" as="font" type="font/woff2" crossorigin\n      href="' + ABS + '/fonts/inter-latin-wght-normal.woff2">'],
+  ['字体：**不要 preload**。tokens.css 里的 @font-face 已经引用它，浏览器自己会取。',
+   '/* 实测（2026-09）：给 9 个 SPA 站点加这条 preload 后，admin-console 的视觉回归从\n' +
+   '   基线 1063px / 0.082% 变成 5412px / 0.418%（SSIM 0.9791），重跑三次逐位相同——\n' +
+   '   是确定性差异，不是网络抖动。它换不来可证明的收益，所以不写进接入片段。 */'],
   ['站点图标套件（5 条 link，含 32x32 与 apple-touch）',
    '<link rel="icon" href="' + ABS + '/icons/favicon.ico" sizes="any">\n' +
    '<link rel="icon" type="image/png" sizes="32x32" href="' + ABS + '/icons/favicon-32x32.png">\n' +
@@ -274,4 +293,4 @@ console.log('  文件   ' + entries.length + ' 个 / ' + (total / 1024).toFixed(
 console.log('  入口   ' + ABS + '/tokens.css');
 console.log('  字体   ' + ABS + '/fonts/inter-latin-wght-normal.woff2');
 console.log('  图标   ' + ABS + '/icons/favicon.svg');
-console.log('  主题色 site.webmanifest theme_color = ' + brand + '（取自令牌）');
+console.log('  site.webmanifest 刻意不含 theme_color（每站不同值，唯一来源是各站 <meta>，由 check-icons I11 断言）');

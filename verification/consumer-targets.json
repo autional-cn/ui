@@ -1,10 +1,13 @@
 {
   "$description": "消费者副本位置与交付方式。ui/ 是独立 git 仓库，sites/ 是同级目录；CI 里只 checkout ui/ 时该检查自动跳过。",
-  "$note": "2026-09 P4 起，设计系统的交付通道是 npm（@autional-cn/tailwind-preset 与 @autional-cn/tokens 已发布 0.1.0-rc）。站点自带 packages/tailwind-preset/ 的形态已全部删除，下表中的 targets/byteTargets 因此**降级为回滚通道**：仅当显式执行 pnpm sync:consumers --rollback-vendor --write 时才重新写入，用于 npm 不可用时临时退回自包含形态。这些路径仍然会被 check-consumers 校验——一旦回滚，副本必须与权威逐字节一致。",
+  "$note": "设计系统有**两条**交付面，别混为一谈：**构建期**走 npm（@autional-cn/tailwind-preset 与 @autional-cn/tokens 已发布 0.1.0-rc）；**运行期**走 CDN（2026-09 轮次 42 起，14 站 <head> link cdn.autional.cn）。站点自带 packages/tailwind-preset/ 的形态已全部删除，下表中的 targets/byteTargets 因此**降级为回滚通道**：仅当显式执行 pnpm sync:consumers --rollback-vendor --write 时才重新写入，用于 npm 或 CDN 不可用时临时退回自包含形态。这些路径仍然会被 check-consumers 校验——一旦回滚，副本必须与权威逐字节一致。",
   "$modes": {
     "targets": "回滚通道。按 :root 变量逐条比对——能给出「缺哪些/哪些值不同」的可读诊断，用于 tokens.css",
     "byteTargets": "回滚通道。直接比 sha256——非 CSS 产物没有 :root 可比，且它们是纯生成物，逐字节一致才是正确判据。其中 shared/ui/ErrorBoundary.tsx 例外：它是共享组件层的**常开**交付物，与内置副本无关。",
-    "profiles": "回滚通道用。声明各站点应加载的 profile 样式表（docs/developer 有；web 用 marketing，其覆盖为 0，生成器不产出文件，故为 null）。常规交付下站点直接 import '@autional-cn/tokens/profiles/<x>.css'，不经此处。"
+    "profiles": "回滚通道用。声明各站点应加载的 profile 样式表（docs/developer 有；web 用 marketing，其覆盖为 0，生成器不产出文件，故为 null）。常规交付下站点 <link> 的是 cdn.autional.cn 的 profiles/<x>.css，不经此处。",
+    "runtime": "运行期通道（轮次 42 起）：14 个站点的 <head> 直接 <link> cdn.autional.cn 的 tokens.css / profiles/<x>.css / primitives.css / icons/*。构建期代码（Tailwind preset、antd 主题桥、React 组件）仍走 npm —— preset 是被 bundler 解析的 JS 模块，CDN 给不了解析阶段的东西。",
+    "runtimeSheets": "运行期样式表能不能直接 <link>，逐份登记。判据不是「能不能取到」，而是**位置无关性**：从 CDN 直接加载时整个文件排在站点 bundle 之前，而经 bundler @import 时 Tailwind 会把 @layer 片段按层重新定位。两者只有在样式表不依赖那个位置时才等价。tokens/profile 实测与 bundler 导入逐像素相同（developer/docs/web 0.000%）；primitives 不成立（实测整页偏移 3–4.5%）。新增样式表必须在这里显式分类，闸门 check-icons I22 按此断言。",
+    "themeColor": "site.webmanifest 是 14 站**共用**的一份，因此**刻意不含 theme_color**：它是每站不同的值（DESIGN.md §13：品牌面 #003153 / 浅色内容站 #ffffff / authenticator #0a0a0a）。唯一来源是各站 <meta name=\"theme-color\">，值在本表的 themeColors 里登记，由 check-icons I11 断言一致、I18 断言共享清单里没有它。实测踩过：清单改由 CDN 提供后 authenticator 的 meta 是 #0a0a0a 而清单是 #003153。"
   },
   "targets": [
     "../sites/*/packages/tailwind-preset/tokens.css"
@@ -70,6 +73,25 @@
     "web": "public",
     "wiki": "public"
   },
+  "runtimeSheets": {
+    "$note": "各运行期样式表能否被站点直接 <link>（见 $modes.runtimeSheets）。未列出的路径会被 check-icons I22 判为「未分类」。",
+    "tokens.css": {
+      "linkable": true,
+      "why": "纯 :root 变量块 + 一段 base 层规则（html font-family / body 背景色·文字色·margin / :focus-visible），与 preflight 无实质冲突；实测 developer/docs/web 与 bundler 导入逐像素相同（0.000%）。"
+    },
+    "profiles/docs.css": {
+      "linkable": true,
+      "why": "纯 :root 调色板覆盖，只要求排在 tokens.css 之后——link 顺序与 @import 顺序一致。实测 0.000%。"
+    },
+    "profiles/developer.css": {
+      "linkable": true,
+      "why": "同 profiles/docs.css。实测 0.000%。"
+    },
+    "primitives.css": {
+      "linkable": false,
+      "why": "含 Tailwind 的 @layer base / @layer components。Tailwind 会把 base 段落重新定位到 preflight **之后**；当普通外部样式表加载时整个文件排在 bundle 之前，base 段落落到 preflight **之前**，于是 preflight 的 body { line-height: inherit } 盖掉 primitives 的 body { line-height: var(--line-height-body-md) }。实测 developer-home 3.025% / docs 3.035% / wiki 4.478%，放回 bundler 后均为 0.000%。必须 @import '@autional-cn/tokens/primitives.css'。"
+    }
+  },
   "themeColors": {
     "$note": "每站 theme-color 的**单一来源**。theme-color 由浏览器消费、必须写字面量（写 var() 会被直接忽略），所以它无法直接引用 CSS 变量——这里的做法是：在这里声明一次（值可以是 {令牌路径} 引用），sync-consumers 解析后写进 site.webmanifest，check-icons 闸门再断言各站 <meta> 与之一致。三处非默认值是刻意的平台差异，不是心情：authenticator 是纯黑底暗色应用、user 是 indigo 品牌体系、web 是白底营销站。",
     "default": "{color.primary.700}",
@@ -78,7 +100,7 @@
     "web": "{color.neutral.0}"
   },
   "iconSources": {
-    "$note": "图标套件的权威来源 → 站点 public/ 内的目标名。sync-consumers 按此下发，check-icons 按此做逐字节漂移校验。favicon 在修复前**完全没有交付通道**（U65④）：14 站各自手工放置，实测只有 3 站有完整图标组。",
+    "$note": "图标套件的权威来源 → 站点 public/ 内的目标名。favicon 在修复前**完全没有交付通道**（U65④）：14 站各自手工放置，实测只有 3 站有完整图标组。2026-09 轮次 42 起，运行期交付改为 CDN（14 站 <head> 直接 link https://cdn.autional.cn/ui/v<ver>/icons/…），站点 public/ 里的这一份降级为**回滚通道**：sync-consumers 默认不再写入（加 --rollback-vendor 才写）。check-icons 同时守两条：I16/I17 校验**浏览器实际会取的那一份**（CDN 上的字节 vs 本表 from 指向的权威），I12–I14 校验回滚副本不漂移。只守后者会在换轨后照样全绿——而浏览器早就拿到别的东西了。",
     "files": [
       {
         "from": "assets/favicon_io/favicon.ico",

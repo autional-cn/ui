@@ -235,7 +235,12 @@ if (existsSync(sitesDir)) {
     let sb = 0; let sn = 0; let imports = false;
     for (const file of files) {
       const text = readFileSync(file, 'utf8');
-      if (/primitives\.css/.test(text)) imports = true;
+      // 「消费」= 真的把它加载进来：@import '…/primitives.css' 或
+      // <link href="https://cdn.autional.cn/ui/v<ver>/primitives.css">（轮次 42 起站点走 CDN）。
+      // 早期版本只匹配裸文件名 primitives.css，于是**注释里提到它**也会被算成消费
+      // （实测站点里有这样的说明性注释），那是假阳性——判据必须盯「加载」而不是「提到」。
+      if (/@import\s+['"][^'"]*primitives\.css/.test(text) ||
+          /<link\b[^>]*\bhref=["'][^"']*primitives\.css["']/.test(text)) imports = true;
       for (const n of BRAND_STEP_NAMES) sb += countClass(text, n);
       for (const n of NEUTRAL_STEP_NAMES) sn += countClass(text, n);
     }
@@ -248,12 +253,13 @@ if (existsSync(sitesDir)) {
   // 语义名（body-md / heading-lg / …）只是额外的角色别名，且两者取值大量重合。
   // 站点写 text-base 并不等于它不受品牌管辖。真正的判据见下方 TY4b（编译产物指纹）。
   info.push('TY4a 语义角色名的采用情况（信息级，不判失败）：品牌语义档 ' + brandHits + ' 处 / 通用档 ' + neutralHits + ' 处');
-  info.push('TY5 共享组件层 packages/tokens/primitives.css 的消费方：' + importers.length + '/' + siteCount +
-    ' 个站点' + (importers.length ? '（' + importers.join(', ') + '）' : ''));
+  info.push('TY5 共享组件层 primitives.css 的消费方：' + importers.length + '/' + siteCount +
+    ' 个站点（@import 或 CDN <link> 均计入）' + (importers.length ? '：' + importers.join(', ') : ''));
   if (siteCount > 0 && importers.length === 0) {
     problems.push('TY5 packages/tokens/primitives.css 被 DESIGN.md 与 ASTRYX_MANIFEST.json 声明为共享组件层' +
       '（brand-shell / brand-card / brand-button-* / brand-kicker / docs-prose / developer-*），但 ' + siteCount +
-      ' 个站点里 0 个 import 它；这些类在各站点 global.css 里被逐份手写重实现。声明为「复用它，别再造一个按钮」的契约，实际消费方为零。');
+      ' 个站点里 0 个真正加载它（@import 或 CDN <link>）；这些类在各站点 global.css 里被逐份手写重实现。' +
+      '声明为「复用它，别再造一个按钮」的契约，实际消费方为零。');
   }
 }
 

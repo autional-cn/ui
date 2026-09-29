@@ -68,33 +68,52 @@ for (const f of ledger.families) {
   }
 }
 
-// A4 跨仓库：webfont 是否真的被消费方交付
-const sitesDir = resolve(ROOT, '..', 'sites');
-const consumer = { scanned: 0, installed: [], missing: [] };
+// A4 跨仓库：webfont 是否真的被消费方交付。
+// AUTIONAL_SITES_DIR 用于测试注入（与 check-icons / check-typography 同一套约定）。
+const sitesDir = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
+const consumer = { scanned: 0, installed: [], missing: [], channels: new Map() };
 
-// 站点里所有可能出现 node_modules 的位置。pnpm 是严格隔离布局：只有**声明了**某个依赖的包，
-// 才会在它自己的 node_modules 下拿到该依赖的符号链接，所以逐层枚举就足以判定「装没装」。
-function installRoots(site) {
-  const roots = [join(sitesDir, site, 'node_modules')];
-  for (const g of ['apps', 'packages']) {
-    const gd = join(sitesDir, site, g);
-    if (!existsSync(gd)) continue;
-    for (const e of readdirSync(gd)) roots.push(join(gd, e, 'node_modules'));
-  }
-  return roots;
-}
-
-// npm 交付判据：字体随 @autional-cn/tokens 从 npm 下发，tokens.css 里的 @font-face 用相对路径
-// url('./fonts/...') 引用同一个包内的 fonts/。站点装了这个包，字体文件就真实存在于磁盘上——
-// 这是「真的交付了」，与「package.json 里写了名字」是两件事，所以按文件判定而不是按声明判定。
-function npmDelivered(site) {
-  for (const pkg of ['@autional-cn/tokens', '@autional-cn/tailwind-preset']) {
-    for (const nm of installRoots(site)) {
-      const f = join(nm, pkg, 'fonts');
-      if (existsSync(f) && readdirSync(f).some((n) => /\.woff2?$/.test(n))) return true;
+// CDN 交付判据（2026-09 轮次 42 起，唯一通道）。（2026-09 轮次 42 起的主通道）。站点的 <head> 直接 <link> CDN 的 tokens.css，
+// 而 tokens.css 里的 @font-face 用相对路径 url('./fonts/…') 引用同一目录下的 woff2。
+// 判据必须落在**这条真实路径**上：只看 node_modules 里有没有字体文件会误判——
+// 换轨之后站点依旧装着 @autional-cn/tokens（antd-theme 还要用），依赖树里也依旧有 fonts/，
+// 但没有任何东西会把它打进产物（实测：9 个 SPA 站点换轨后 dist 里 woff2 引用数为 0）。
+// 「依赖树里有文件」与「浏览器会去取那个文件」是两件事，判据要盯后者。
+const CDN_DIR = process.env.AUTIONAL_CDN_DIR || resolve(ROOT, '..', 'cdn');
+const HEAD_EXT = new Set(['.html', '.astro']);
+const HEAD_SKIP = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'build', 'coverage']);
+function headFiles(dir, out, depth) {
+  if (depth > 4) return out;
+  let es; try { es = readdirSync(dir, { withFileTypes: true }); } catch (e) { return out; }
+  for (const e of es) {
+    if (HEAD_SKIP.has(e.name)) continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) headFiles(p, out, depth + 1);
+    else {
+      const i = e.name.lastIndexOf('.');
+      if (i >= 0 && HEAD_EXT.has(e.name.slice(i))) out.push(p);
     }
   }
-  return false;
+  return out;
+}
+// 返回命中的 CDN 版本，或 null。
+function cdnDelivered(sitePath) {
+  const re = /cdn\.autional\.cn\/ui\/(v[^/'"]+)\/tokens\.css/;
+  for (const f of headFiles(sitePath, [], 0)) {
+    let t; try { t = readFileSync(f, 'utf8'); } catch (e) { continue; }
+    const m = re.exec(t);
+    if (!m) continue;
+    const css = join(CDN_DIR, 'ui', m[1], 'tokens.css');
+    if (!existsSync(css)) return { version: m[1], ok: false, why: 'CDN 工作区里没有 ui/' + m[1] + '/tokens.css' };
+    const body = readFileSync(css, 'utf8');
+    if (!/@font-face/.test(body)) return { version: m[1], ok: false, why: 'CDN 的 tokens.css 里没有 @font-face' };
+    const rel = /url\(\s*['"]?\.\/fonts\/([^'")]+)['"]?\s*\)/.exec(body);
+    if (!rel) return { version: m[1], ok: false, why: 'CDN 的 @font-face 没有指向 ./fonts/ 的相对路径' };
+    const font = join(CDN_DIR, 'ui', m[1], 'fonts', rel[1]);
+    if (!existsSync(font)) return { version: m[1], ok: false, why: 'CDN 上没有 fonts/' + rel[1] };
+    return { version: m[1], ok: true, why: m[1] + ' → fonts/' + rel[1] + '（@font-face 与文件都在）' };
+  }
+  return null;
 }
 
 if (existsSync(sitesDir)) {
@@ -103,27 +122,34 @@ if (existsSync(sitesDir)) {
     const pkgPath = join(sitesDir, s, 'package.json');
     if (!existsSync(pkgPath)) continue;
     consumer.scanned++;
-    let deps = {};
-    try { const j = JSON.parse(readFileSync(pkgPath, 'utf8')); deps = Object.assign({}, j.dependencies, j.devDependencies); } catch (e) { continue; }
     for (const f of webfonts) {
-      // 交付判据（2026-09 改）：字体现在随 tokens.css 分发，不再要求站点自装 npm 包。
-      // 认为「已交付」当且仅当下列之一成立：
-      //   ① 站点 package.json 里装了该包（旧路径，仍然接受）；
-      //   ② 站点的内置副本里有字体文件（vendored 路径：fonts/ 目录随 sync:consumers 一起分发）；
-      //   ③ 站点安装的依赖树里有字体文件（npm 路径：P4 之后 9 个 SPA 站点走的就是这条）。
-      // ③ 是 2026-09 P4 换轨后补的：原先只认 ①②，于是把「已改成从 npm 交付、且构建产物里
-      // 确实打出了 woff2」的 9 个站点判成了「没交付」——判据没跟上交付方式，是闸门的错，不是站点的错。
-      const declared = Object.keys(deps).some((k) => k === f.package || (f.family && k.toLowerCase().indexOf(f.family.toLowerCase()) >= 0));
-      const fontDir = join(sitesDir, s, 'packages', 'tailwind-preset', 'fonts');
-      const delivered = existsSync(fontDir) && readdirSync(fontDir).some((n) => /\.woff2?$/.test(n));
-      if (declared || delivered || npmDelivered(s)) consumer.installed.push(s); else consumer.missing.push(s);
+      // 判据（2026-09 轮次 42）：**浏览器会不会去取那个字体文件**。
+      // 历史上这里叠过三条判据 —— 站点声明依赖 / stations 内置副本 / 依赖树里有字体文件。
+      // 换轨到 CDN 之后每一条都变成「成立，但不再代表交付」：站点依旧装着 @autional-cn/tokens
+      // （antd-theme 还要用），依赖树里也依旧有 fonts/，而**产物里一个 woff2 都没有**。
+      // 判据叠得越多，闸门越容易因为**过时的理由**而全绿——P4 那次误判 9 个站点就是这个病。
+      // 所以这一轮不再往上叠第 ④ 条，而是收敛成一条：<head> 必须 link CDN 的 tokens.css，
+      // 且 CDN 上那份 tokens.css 真的带 @font-face、它引用的 woff2 真的存在。
+      const cdn = cdnDelivered(join(sitesDir, s));
+      if (!cdn) {
+        problems.push('A4 ' + s + '：<head> 里没有 link CDN 的 tokens.css —— 轮次 42 起令牌与字体由 ' +
+          'cdn.autional.cn 单一来源提供；缺了它字体不会到达浏览器（依赖树里有 fonts/ 不等于产物会打进去）。' +
+          '若是刚做过 --rollback-vendor，请同步改回 CDN 链接。');
+        consumer.missing.push(s);
+      } else if (!cdn.ok) {
+        problems.push('A4 ' + s + '：<head> link 了 CDN 的 tokens.css，但字体交付链断了 —— ' + cdn.why);
+        consumer.missing.push(s);
+      } else {
+        consumer.installed.push(s);
+        consumer.channels.set(s, 'CDN ' + cdn.why);
+      }
     }
   }
   const uniqMissing = Array.from(new Set(consumer.missing));
   const uniqInstalled = Array.from(new Set(consumer.installed));
   if (consumer.scanned) {
-    const line = 'A4 声明为 webfont 的字体里，消费方实际安装的站点 ' + uniqInstalled.length + '/' + consumer.scanned +
-      '（已装: ' + (uniqInstalled.join(', ') || '无') + '）';
+    const line = 'A4 webfont 交付链成立（<head> → CDN tokens.css → @font-face → woff2）的站点 ' +
+      uniqInstalled.length + '/' + consumer.scanned + '（' + (uniqInstalled.join(', ') || '无') + '）';
     // 只有真的没交付齐才算问题。原先写成「只要登记存在就记一笔」，
     // 于是 14/14 全交付时仍报 [KNOWN]，把已修好的事说成还没修——判据必须跟着事实走。
     if (uniqInstalled.length < consumer.scanned) {
@@ -131,6 +157,13 @@ if (existsSync(sitesDir)) {
       if (k) knownHits.push({ msg: line, issue: k }); else problems.push(line + ' —— 其余站点声明的是一款它们并不交付的字体，浏览器会直接回退');
     } else {
       console.log('  [OK]    ' + line);
+    }
+    // 逐站报交付通道：只报「N/N 都交付了」会把「恰好还留着旧的交付路径」也算通过。
+    // 实测教训：换轨后 ③（依赖树里有字体文件）仍然成立，于是闸门全绿——
+    // 而站点的产物里一个 woff2 都没有，字体其实来自 CDN。判据对了，但**理由**是过时的。
+    console.log('  [INFO]  A4 各站字体交付通道：');
+    for (const s of Array.from(consumer.channels.keys()).sort()) {
+      console.log('            ' + s.padEnd(15) + consumer.channels.get(s));
     }
   }
 } else {

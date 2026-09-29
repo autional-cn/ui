@@ -81,12 +81,16 @@ const FONT_SOURCES = [
 // status 的 /favicon-32x32.png 返回的是 SPA fallback（text/html 947B）——文件根本不存在，
 // 被前端路由掩盖了，肉眼看不出来。
 //
-// 为什么下发到站点 public/ 而不是让 <link> 指向 cdn.autional.cn：
-//   favicon 是最基础的品牌资产，不该依赖一个外部源站的可用性；
-//   相对路径写进 <head> 后，设计系统换版本也不需要改 14 个站的 HTML。
-//   CDN 侧仍保留一份，供 Go 服务 demo 与 og:image 这类需要绝对 URL 的场景。
-// 来源清单放在 consumer-targets.json 里，sync（下发）与 check-icons（漂移校验）共用同一份，
-// 避免两处各写一份列表又慢慢对不上。
+// 2026-09 轮次 42：**运行期交付已改为 CDN**。14 个站点的 <head> 现在直接
+// <link href="https://cdn.autional.cn/ui/v<ver>/icons/…">，站点 public/ 里的这一份
+// 因此降级为**回滚通道**，默认不再写入（与 P4 对 packages/tailwind-preset 的处理同构）。
+//
+// 原先的理由是「favicon 是最基础的品牌资产，不该依赖一个外部源站的可用性」。
+// **这条已被明确推翻**（用户定调）：纯静态 CDN 的可用性不是主要风险，**一致性才是**；
+// 做「CDN 挂了回退本地」等于又造一个来源，那正是要消灭的东西。
+// 网络侧的异常（含 DNS 记录）不在本项目范围内。
+//
+// 来源清单仍放在 consumer-targets.json 里，sync（回滚下发）与 check-icons（漂移校验）共用同一份。
 const ICON_SOURCES = (JSON.parse(readFileSync(CONFIG, 'utf8')).iconSources || {}).files || [];
 
 const sha = (buf) => createHash('sha256').update(buf).digest('hex').slice(0, 12);
@@ -172,7 +176,9 @@ const iconManifest = (site) => JSON.stringify({
 let iconChanged = 0;
 let iconSame = 0;
 const iconRows = [];
-for (const { site, sitePath } of targets) {
+// 默认不写：图标与 site.webmanifest 的运行期来源已是 CDN，本站 public/ 只是回滚通道。
+// 目标发现与执行都收在 VENDOR 里，避免「回滚通道」被误当成常规交付。
+for (const { site, sitePath } of (VENDOR ? targets : [])) {
   const pub = PUBLIC_DIRS[site];
   if (!pub) { missing.push('consumer-targets.json 的 publicDirs 缺少站点 ' + site); continue; }
   const pubPath = join(sitePath, pub);
@@ -191,7 +197,7 @@ for (const { site, sitePath } of targets) {
 }
 
 console.log('交付同步：' + targets.length + ' 个站点' + (ONLY ? '（--site ' + ONLY + '）' : ''));
-console.log('  模式：' + (VENDOR ? '回滚通道（含内置副本 packages/tailwind-preset/）' : '常规（设计系统走 npm；内置副本已退役）'));
+console.log('  模式：' + (VENDOR ? '回滚通道（含内置副本 packages/tailwind-preset/ 与图标套件 public/）' : '常规（设计系统走 npm，运行期资产走 CDN；内置副本与 public/ 图标均已退役为回滚通道）'));
 console.log('  共享组件层/回滚产物：逐字节一致 ' + same + ' 个 / 需要更新 ' + changed + ' 个');
 if (rows.length) {
   console.log('');
@@ -199,7 +205,9 @@ if (rows.length) {
   for (const r of rows) console.log(r);
 }
 console.log('');
-console.log('图标套件下发（public/）：逐字节一致 ' + iconSame + ' 个 / 需要更新 ' + iconChanged + ' 个');
+console.log(VENDOR
+  ? '图标套件下发（public/，回滚通道）：逐字节一致 ' + iconSame + ' 个 / 需要更新 ' + iconChanged + ' 个'
+  : '图标套件下发（public/）：已退役为回滚通道，本次未写入（需要时加 --rollback-vendor）');
 if (iconRows.length) for (const r of iconRows) console.log(r);
 if (missing.length) {
   console.log('');

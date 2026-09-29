@@ -8,11 +8,23 @@
 //   status 的 /favicon-32x32.png 返回的是 SPA fallback（text/html 947B）——
 //   文件根本不存在，被前端路由掩盖，肉眼与普通抓取都看不出来。
 //
-// 断言四件事：
+// 断言（2026-09 轮次 42 起，运行期资产改由 cdn.autional.cn 交付）：
 //   ① 每站声明 standard 图标组（>=4 个 rel=icon + apple-touch + manifest）
-//   ② 引用的本地文件**真的存在**于该站 public/（这正是 status 那种「被路由掩盖的 404」）
+//   ② 这些 <link> 的 href 必须是 **CDN 的 canonical 形态**（I15），
+//      且 CDN 上真有这个文件（I16）、字节与 ui/assets 的权威一致（I17）。
+//      ②是这一轮换轨的核心：过去断言的是「站点 public/ 的拷贝与权威逐字节一致」，
+//      而站点的 <link> 现在指向 CDN —— 拷贝再一致也不代表浏览器拿到的是那一份。
+//      **闸门必须看着交付路径本身，而不是看着一个已经不被使用的副本。**
 //   ③ theme-color 是**字面量**：它由浏览器消费、不经过 CSS，写 var() 等于没写
-//   ④ site.webmanifest 的 theme_color 与页面 meta 一致（同一个值不该有两个来源）
+//   ④ 共享清单不得携带每站不同的字段（theme_color）：同一个值不该有两个来源（I18）
+//   ⑤ 14 个站点引用的 CDN 版本必须完全相同（I19）—— 版本漂了就不是「同一个来源」
+//   ⑥ 样式表 <link> 同样是 CDN canonical 形态（I21），且**只能 link 位置无关的那些**（I22）、
+//      必须 link tokens.css 且 profile 与 consumer-targets.json 声明一致（I23）。
+//      I22 是本轮真实踩出来的：primitives.css 含 Tailwind @layer 片段，直链会让 base 段落
+//      掉到 preflight 之前，实测三站整页偏移 3–4.5%，而当时所有闸门全绿。
+//
+// 离线：CDN 侧的内容从同级 ../cdn 仓库的工作区读，不联网。
+// 「CDN 能否连上」不在这里断言：网络可用性不是本项目的判据（用户已定调）。
 //
 // 用法: node scripts/check-icons.mjs [--json]
 
@@ -26,8 +38,14 @@ const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
 const CONFIG = join(ROOT, 'verification', 'consumer-targets.json');
 
 const REQUIRED_ICON = 4;   // ico + 32 + 16 + svg
+// 运行期资产的 CDN 落点（同级仓库）。只读文件系统，不联网。
+const CDN_DIR = process.env.AUTIONAL_CDN_DIR || resolve(ROOT, '..', 'cdn');
+const CDN_URL_RE = /^https:\/\/cdn\.autional\.cn\/ui\/(v[^/]+)\/(icons\/([^/?#]+))\s*$/;
 const problems = [];
+const warns = [];
+const info = [];
 const rows = [];
+const cdnVersions = new Map();   // version -> [site]
 
 if (!existsSync(SITES)) {
   console.log('check-icons：本次工作区没有 sites/，跳过（CI 里同样跳过）');
@@ -36,6 +54,9 @@ if (!existsSync(SITES)) {
 
 const CT = JSON.parse(readFileSync(CONFIG, 'utf8'));
 const publicDirs = CT.publicDirs || {};
+const RUNTIME_SHEETS = Object.fromEntries(Object.entries(CT.runtimeSheets || {}).filter(([k]) => k[0] !== '$'));
+const PROFILE_BY_SITE = {};
+for (const b of (CT.profiles || [])) if (b.site) PROFILE_BY_SITE[b.site] = b.profile || null;
 const THEME_COLORS = CT.themeColors || {};
 const ICON_SOURCES = (CT.iconSources || {}).files || [];
 // 与 sync-consumers 用同一份声明，这样「theme-color 的唯一来源」是 consumer-targets.json，
@@ -86,37 +107,158 @@ for (const site of readdirSync(SITES)) {
   if (!tc) problems.push('I5 ' + site + '：没有 theme-color（' + rel + '）');
   else if (/var\(/.test(tc)) problems.push('I6 ' + site + '：theme-color 是 var()（' + tc + '）——该值由浏览器消费、不经过 CSS，写 var() 等于没写');
 
-  // 引用的本地文件是否真的存在（catch 掉「被 SPA fallback 掩盖的 404」）
+  // 图标 / apple-touch / manifest 的 href
   const hrefs = [...text.matchAll(/<link\b[^>]*\brel=["']?(?:shortcut )?icon["']?[^>]*\bhref=["']([^"']+)["']/gi)]
     .concat([...text.matchAll(/<link\b[^>]*\bhref=["']([^"']+)["'][^>]*\brel=["']?(?:shortcut )?icon["']?/gi)])
     .map((m) => m[1]);
   const appleHref = (text.match(/<link\b[^>]*rel=["']?apple-touch-icon["']?[^>]*href=["']([^"']+)["']/i) || [])[1];
   if (appleHref) hrefs.push(appleHref);
+  const manifestHref = (text.match(/<link\b[^>]*rel=["']?manifest["']?[^>]*href=["']([^"']+)["']/i) || [])[1]
+                    || (text.match(/<link\b[^>]*href=["']([^"']+)["'][^>]*rel=["']?manifest["']?/i) || [])[1];
+  if (manifestHref) hrefs.push(manifestHref);
+
+  // 两类来源分开处理：CDN 的现交付路径，与 public/ 的回滚副本。
   const missingFiles = [];
+  const cdnRefs = [];
   for (const h of new Set(hrefs)) {
-    if (/^https?:/i.test(h)) continue;               // 外部绝对 URL（CDN）不查本地
+    const isExternal = /^https?:/i.test(h);
+    if (isExternal) {
+      const m = CDN_URL_RE.exec(h);
+      if (!m) { problems.push('I15 ' + site + '：图标类 <link> 指向了非 canonical 的外部地址 ' + h +
+        ' —— 运行期资产必须来自 https://cdn.autional.cn/ui/<版本>/icons/<文件>（' + rel + '）'); continue; }
+      cdnRefs.push({ href: h, version: m[1], rel: m[2], name: m[3] });
+      continue;
+    }
     const clean = h.split('?')[0].split('#')[0];
     if (!clean.startsWith('/')) { missingFiles.push(h + '(非绝对路径)'); continue; }
     if (!existsSync(join(pubDir, clean.slice(1)))) missingFiles.push(h);
   }
   if (missingFiles.length) problems.push('I7 ' + site + '：引用的文件在 ' + pubRel + '/ 里不存在 → ' + missingFiles.join(', ') + '（浏览器会拿到 SPA fallback 的 text/html，肉眼看不出来）');
 
-  // site.webmanifest 与 meta 的 theme_color 一致性
+  // ── I16/I17 CDN 侧真的有、且与权威逐字节一致 ──────────────────────────────
+  // 只断言 URL 形态等于什么都没断言：URL 可以写得完全正确而没有对应文件，
+  // 也可以有一个内容已经过期的文件。所以要把 CDN 工作区里的字节也读出来比。
+  if (cdnRefs.length) {
+    const versions = new Set(cdnRefs.map((r) => r.version));
+    for (const v of versions) {
+      if (!cdnVersions.has(v)) cdnVersions.set(v, []);
+      cdnVersions.get(v).push(site);
+    }
+    for (const r of cdnRefs) {
+      const onDisk = join(CDN_DIR, 'ui', r.version, r.rel);
+      if (!existsSync(onDisk)) {
+        problems.push('I16 ' + site + '：' + r.href + ' 在 CDN 产物里不存在（' +
+          join('cdn', 'ui', r.version, r.rel).replace(/\\/g, '/') + '）—— 浏览器会拿到 404' +
+          (existsSync(CDN_DIR) ? '' : '；CDN 工作区 ' + CDN_DIR + ' 也不存在'));
+        continue;
+      }
+      const src = ICON_SOURCES.find((s) => s.to === r.name);
+      if (!src) continue;                       // site.webmanifest 是生成物，没有 ui/assets 对应源
+      const authPath = join(ROOT, src.from);
+      if (!existsSync(authPath)) continue;      // 权威缺失已由 I12 报出
+      const a = createHash('sha256').update(readFileSync(authPath)).digest('hex').slice(0, 12);
+      const b = createHash('sha256').update(readFileSync(onDisk)).digest('hex').slice(0, 12);
+      if (a !== b) problems.push('I17 ' + site + '：CDN 上的 ' + r.name + '（' + b + '）与权威 ui/' + src.from +
+        '（' + a + '）不一致 —— 浏览器取的正是 CDN 那一份，重新发布：pnpm build:cdn');
+    }
+  }
+  // 站点仍然直连本地图标 = 没有真的换轨（回滚通道是显式动作，不该是默认形态）
+  const localIconRefs = [...new Set(hrefs)].filter((h) => !/^https?:/i.test(h));
+  if (localIconRefs.length) {
+    problems.push('I20 ' + site + '：仍有 ' + localIconRefs.length + ' 个图标类 <link> 指向本站相对路径（' +
+      localIconRefs.slice(0, 3).join(', ') + '）—— 运行期资产已改为 CDN 单一来源，' +
+      pubRel + '/ 里的副本只是回滚通道。');
+  }
+
+  // 回滚副本 site.webmanifest（public/）：它不参与运行期交付，但回滚时必须自洽。
   const wmPath = join(pubDir, 'site.webmanifest');
   let wmTc = null;
-  if (!existsSync(wmPath)) problems.push('I8 ' + site + '：' + pubRel + '/site.webmanifest 不存在');
+  if (!existsSync(wmPath)) problems.push('I8 ' + site + '：' + pubRel + '/site.webmanifest 不存在（回滚通道需要它）');
   else {
     try { wmTc = JSON.parse(readFileSync(wmPath, 'utf8')).theme_color || null; } catch (e) { problems.push('I9 ' + site + '：site.webmanifest 不是合法 JSON'); }
-    if (wmTc && tc && wmTc !== tc) problems.push('I10 ' + site + '：site.webmanifest 的 theme_color=' + wmTc + ' 与页面 meta 的 ' + tc + ' 不一致——同一个值不该有两个来源');
+    if (wmTc && tc && wmTc !== tc) problems.push('I10 ' + site + '：回滚副本 site.webmanifest 的 theme_color=' + wmTc + ' 与页面 meta 的 ' + tc + ' 不一致——同一个值不该有两个来源');
+  }
+
+  // ── I21–I23 样式表交付：令牌 / profile 走 CDN，且不得把 Tailwind 层片段当普通样式表 ──
+  // I22 是这一轮真实踩出来的：primitives.css 的来源里有 @layer base/components，
+  // 而 Tailwind 处理它们时会把内容**按层重新定位**（base 段落到 preflight 之后）。
+  // 当成普通外部样式表从 CDN 加载时整个文件排在站点 bundle 之前，base 段落于是落到
+  // preflight **之前**，preflight 的 body { line-height: inherit } 反过来盖掉
+  // primitives 的 body { line-height: var(--line-height-body-md) } ——
+  // 实测 developer/docs/wiki 三站整页偏移 3.0% / 3.0% / 4.5%，而所有既有闸门全绿。
+  // 判据：**能否直链取决于位置无关性**，逐份登记在 consumer-targets.json 的 runtimeSheets 里；
+  // 未登记的样式表一律判失败——新增一份运行期样式表时必须显式做这个判断。
+  const sheetHrefs = [...text.matchAll(/<link\b[^>]*\brel=["']?stylesheet["']?[^>]*\bhref=["']([^"']+)["']/gi)]
+    .concat([...text.matchAll(/<link\b[^>]*\bhref=["']([^"']+)["'][^>]*\brel=["']?stylesheet["']?/gi)])
+    .map((m) => m[1]);
+  const SHEET_RE = /^https:\/\/cdn\.autional\.cn\/ui\/(v[^/]+)\/((?:profiles\/)?[A-Za-z0-9._-]+\.css)$/;
+  const cdnSheets = [];
+  for (const h of new Set(sheetHrefs)) {
+    const m = SHEET_RE.exec(h);
+    if (!m) {
+      problems.push('I21 ' + site + '：样式表 <link> 不是 CDN canonical 形态 → ' + h +
+        ' —— 运行期资产必须来自 https://cdn.autional.cn/ui/<版本>/<文件>.css（' + rel + '）');
+      continue;
+    }
+    cdnSheets.push({ href: h, version: m[1], rel: m[2] });
+    // 逐份登记「能不能直接 link」——判据是**位置无关性**，不是「取不取得到」。
+    // 未分类 = 失败：新增一份运行期样式表时必须显式做这个判断，不能默认它安全。
+    const rs = RUNTIME_SHEETS[m[2]];
+    if (!rs) {
+      problems.push('I22 ' + site + '：' + h + ' 未在 consumer-targets.json 的 runtimeSheets 里分类 —— ' +
+        '运行期样式表能否直接 <link> 取决于它是否**位置无关**（CDN 加载时整文件在站点 bundle 之前；' +
+        '经 bundler 导入时 Tailwind 会把 @layer 片段按层重定位）。请显式登记。');
+    } else if (!rs.linkable) {
+      problems.push('I22 ' + site + '：' + h + ' 不能直接 <link> —— ' + rs.why);
+    }
+  }
+  if (!cdnSheets.some((s) => s.rel === 'tokens.css')) {
+    problems.push('I23 ' + site + '：<head> 里没有 link CDN 的 tokens.css —— 令牌（含字体 @font-face）的唯一来源就是它');
+  }
+  const wantProfile = PROFILE_BY_SITE[site] || null;
+  const gotProfiles = cdnSheets.filter((s) => s.rel.indexOf('profiles/') === 0).map((s) => s.rel);
+  if (wantProfile) {
+    const want = 'profiles/' + wantProfile + '.css';
+    if (gotProfiles.indexOf(want) < 0) {
+      problems.push('I23 ' + site + '：consumer-targets.json 声明本站加载 ' + want + '，实际 [' + (gotProfiles.join(', ') || '无') + ']');
+    }
+  } else if (gotProfiles.length) {
+    problems.push('I23 ' + site + '：consumer-targets.json 声明本站没有 profile（覆盖数为 0，生成器不产出文件），却加载了 ' + gotProfiles.join(', '));
+  }
+  for (const s of cdnSheets) {
+    if (!cdnVersions.has(s.version)) cdnVersions.set(s.version, []);
+    if (cdnVersions.get(s.version).indexOf(site) < 0) cdnVersions.get(s.version).push(site);
+  }
+
+  // ── I18 浏览器**真正读到**的那份清单里不得出现每站不同的值 ─────────────────
+  // theme_color 在 DESIGN.md §13 里是「等于 PWA chrome 所在的表面色」，各站不同
+  // （品牌面 #003153 / 浅色站 #ffffff / authenticator #0a0a0a）。
+  // 一旦清单改由 14 站共用的 CDN 提供，它就只能装共享字段；写死其中一个值，
+  // 就等于对另外两个站说谎，而且页面 meta 与清单会互相矛盾。实测踩过。
+  let linkedTc = null;
+  let linkedManifestPath = null;
+  if (manifestHref) {
+    const cm = CDN_URL_RE.exec(manifestHref);
+    if (cm) linkedManifestPath = join(CDN_DIR, 'ui', cm[1], cm[2]);
+    else if (!/^https?:/i.test(manifestHref)) linkedManifestPath = join(pubDir, manifestHref.split('?')[0].split('#')[0].replace(/^\//, ''));
+  }
+  if (linkedManifestPath && existsSync(linkedManifestPath)) {
+    try { linkedTc = JSON.parse(readFileSync(linkedManifestPath, 'utf8')).theme_color || null; } catch (e) { /* I16 已覆盖不存在的情况 */ }
+    if (linkedTc) {
+      problems.push('I18 ' + site + '：共享的 site.webmanifest 声明了 theme_color=' + linkedTc +
+        ' —— 它是**每站不同**的值，只能由各站 <meta name="theme-color">（当前 ' + tc + '）承担；' +
+        '一份 14 站共用的文件写死其中一个就是对其他的说谎。见 DESIGN.md §13。');
+    }
   }
 
   const declared = declaredThemeColor(site);
   if (declared && tc && tc !== declared) {
     problems.push('I11 ' + site + '：页面 theme-color=' + tc + ' 与 consumer-targets.json 声明的 ' + declared + ' 不一致——theme-color 只能有一个来源');
   }
-  // 逐字节漂移校验：站点 public/ 里的图标必须与 ui/assets 的权威产物完全一致。
-  // 这是「有交付通道」与「有交付通道且不漂移」的区别——没有这一步，
-  // 手工放进去的图标仍然会在下一次被人悄悄换掉。
+  // I12–I14 回滚通道副本的逐字节漂移校验：站点 public/ 里的图标必须与 ui/assets 权威一致。
+  // 这一条**不**再代表运行期交付（那是 I16/I17 的事）——它守的是「回滚通道随时可用且不漂移」。
+  // 实测教训：把交付路径换掉之后，只看着旧副本的闸门会**照样全绿**，
+  // 而浏览器早就拿到别的东西了。所以 I16/I17 与这里是两条独立的断言，缺一不可。
   for (const s of ICON_SOURCES) {
     const authPath = join(ROOT, s.from);
     const copyPath = join(pubDir, s.to);
@@ -124,22 +266,42 @@ for (const site of readdirSync(SITES)) {
     if (!existsSync(copyPath)) { problems.push('I13 ' + site + '：' + s.to + ' 未下发到 ' + pubRel + '/'); continue; }
     const a = createHash('sha256').update(readFileSync(authPath)).digest('hex').slice(0, 12);
     const b = createHash('sha256').update(readFileSync(copyPath)).digest('hex').slice(0, 12);
-    if (a !== b) problems.push('I14 ' + site + '：' + s.to + ' 与权威不一致（' + b + ' != ' + a + '）——重新生成：pnpm sync:consumers --write');
+    if (a !== b) problems.push('I14 ' + site + '：回滚副本 ' + s.to + ' 与权威不一致（' + b + ' != ' + a + '）——重新生成：pnpm sync:consumers --rollback-vendor --write');
   }
 
-  rows.push({ site, icons: icons.length, apple, manifest, themeColor: tc, manifestThemeColor: wmTc, declared, head: rel });
+  rows.push({
+    site, icons: icons.length, apple, manifest, themeColor: tc, manifestThemeColor: wmTc, declared, head: rel,
+    cdnVersion: cdnRefs.length ? [...new Set(cdnRefs.map((r) => r.version))].join(',') : null,
+    cdnRefs: cdnRefs.length, linkedThemeColor: linkedTc
+  });
 }
 
-if (AS_JSON) console.log(JSON.stringify({ rows, problems }, null, 2));
+// ── I19 全舰队必须引用**同一个** CDN 版本 ──────────────────────────────────
+// 「单一来源」的前提是 14 个站指向同一份。分成两个版本就退化成两个来源，
+// 而它们看起来都对——这类漂移不会自己暴露。
+if (cdnVersions.size > 1) {
+  problems.push('I19 站点引用的 CDN 版本不止一个：' +
+    [...cdnVersions.entries()].map(([v, s]) => v + '（' + s.join('/') + '）').join(' | ') +
+    ' —— 版本不一致等于又多了一个来源，逐站查 <head> 里的 stylesheet/icons link。');
+} else if (cdnVersions.size === 1) {
+  const [v] = [...cdnVersions.keys()];
+  info.push('I19 全部 ' + rows.length + ' 个站点引用同一个 CDN 版本 ' + v);
+}
+
+if (AS_JSON) console.log(JSON.stringify({ rows, problems, warns, info }, null, 2));
 else {
-  console.log('图标套件闸门：' + rows.length + ' 个站点');
+  console.log('运行期资产交付闸门（图标 / 清单）：' + rows.length + ' 个站点');
   console.log('');
-  console.log('  站点'.padEnd(17) + 'icon  apple  manifest  theme-color   webmanifest');
+  console.log('  站点'.padEnd(17) + 'icon  apple  manifest  走CDN  CDN版本        theme-color');
   for (const r of rows) {
-    console.log('  ' + r.site.padEnd(15) + String(r.icons).padStart(4) + String(r.apple ? 'Y' : 'N').padStart(7) + String(r.manifest ? 'Y' : 'N').padStart(10) + '  ' + String(r.themeColor || '（无）').padEnd(12) + (r.manifestThemeColor || '（无）'));
+    console.log('  ' + r.site.padEnd(15) + String(r.icons).padStart(4) + String(r.apple ? 'Y' : 'N').padStart(7) +
+      String(r.manifest ? 'Y' : 'N').padStart(10) + String(r.cdnRefs + '/6').padStart(7) + '  ' +
+      String(r.cdnVersion || '（无）').padEnd(13) + String(r.themeColor || '（无）'));
   }
   console.log('');
+  for (const i of info) console.log('  [INFO ] ' + i);
+  for (const w of warns) console.log('  [WARN ] ' + w);
   for (const p of problems) console.log('  [ERROR] ' + p);
-  console.log(problems.length ? '结论：图标套件有 ' + problems.length + ' 项不达标' : '结论：图标套件一致（' + rows.length + ' 站）');
+  console.log(problems.length ? '结论：运行期资产交付有 ' + problems.length + ' 项不达标' : '结论：运行期资产交付一致（' + rows.length + ' 站，全部走 CDN）');
 }
 process.exit(problems.length ? 1 : 0);
