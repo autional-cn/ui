@@ -131,8 +131,19 @@ const NPM_REQUIRED = ['@autional-cn/tailwind-preset', '@autional-cn/tokens'];
 // @autional-cn/ui 是**条件必需**：只有源码真的 import 了组件库的站点才必须声明它。
 // 实测：brand 与 5 个 Astro 站（developer/docs/reference/web/wiki）的源码里 0 处引用组件库，
 // 强制它们声明等于制造假依赖（brand 原来那个未使用的依赖就是本轮删掉的）。
-const UI_IMPORT_RE = /from\s+['"]@autional-cn\/ui['"]|require\(\s*['"]@autional-cn\/ui['"]\s*\)/;
-function siteImportsUi(sitePath) {
+// 条件必需：只有源码真的 import 了某个 @autional-cn 包的站点，才必须声明它。
+// 实测：brand 与 5 个 Astro 站源码里 0 处引用组件库；Astro 站的文档页虽然写着
+// `'@autional-cn/react'`，但那是**文案里的字符串**，不是 import —— 所以判据必须是
+// `from '<pkg>'` 这种形态，不能用 includes(pkg)。
+const CONDITIONAL_NPM = ['@autional-cn/ui', '@autional-cn/react'];
+// 引号写进字符类时用 \u0027 / \u0022，避免在字符串里再转义引号——
+// 第一版就是在这里被转义坑了：生成出来的正则里引号没转义，整个文件语法错误。
+const Q = "[\\u0027\\u0022]";
+function importsPkg(text, pkg) {
+  return new RegExp('from\\s+' + Q + pkg + Q).test(text) ||
+         new RegExp('require\\(\\s*' + Q + pkg + Q).test(text);
+}
+function siteImportsUi(sitePath, pkg) {
   const stack = [join(sitePath, 'apps'), join(sitePath, 'src')];
   while (stack.length) {
     const d = stack.pop();
@@ -141,8 +152,12 @@ function siteImportsUi(sitePath) {
       if (e.name === 'node_modules' || e.name === 'dist' || e.name === '.git' || e.name === 'public') continue;
       const q = join(d, e.name);
       if (e.isDirectory()) stack.push(q);
-      else if (/\.(ts|tsx|js|jsx|astro)$/.test(e.name)) {
-        try { if (UI_IMPORT_RE.test(readFileSync(q, 'utf8'))) return true; } catch (err) {}
+      // 只扫 ts/tsx/js/jsx：.astro 里大量出现**文档代码示例**
+      // （实测 web/src/pages/sdk.astro 的模板字符串里就写着 import { AuthProvider } from '@autional-cn/react'），
+      // 那是文案不是 import，扫进去会得到假阳性。这几个包在 Astro 站里本来 0 处真实引用，
+      // 所以这个收窄不会漏掉真问题；真正无条件必需的 tokens / tailwind-preset 仍由 NPM_REQUIRED 覆盖全部 14 站。
+      else if (/\.(ts|tsx|js|jsx)$/.test(e.name)) {
+        try { if (importsPkg(readFileSync(q, 'utf8'), pkg)) return true; } catch (err) {}
       }
     }
   }
@@ -185,7 +200,7 @@ if (existsSync(SITES_DIR)) {
         for (const [k, v] of Object.entries(j[key] || {})) if (k.indexOf('@autional-cn/') === 0) decl[k] = v;
       }
     }
-    const required = NPM_REQUIRED.concat(siteImportsUi(sitePath) ? ['@autional-cn/ui'] : []);
+    const required = NPM_REQUIRED.concat(CONDITIONAL_NPM.filter((p) => siteImportsUi(sitePath, p)));
     for (const pkg of required) {
       if (!(pkg in decl)) {
         channelBad++;
