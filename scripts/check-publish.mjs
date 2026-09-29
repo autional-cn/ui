@@ -43,8 +43,17 @@ const PAIRS = [
   ['@autional-cn/tailwind-preset', 'index.d.ts',             'packages/tailwind-preset/index.d.ts'],
 ];
 
+// 目录级比对：整包逐文件比，而不是手写清单。
+// 为什么加（2026-09 轮次 47）：组件库 @autional-cn/ui 是在轮次 45 才发布的，
+// 而 PAIRS 是手列的 —— 于是它**发布之后没有任何闸门在看**：改了 ui/packages/ui 的源码、
+// 忘了重新发布，17 道门照样全绿，而 9 个站点拿到的还是旧包。
+// 组件库有 20+ 个源文件，手列一份清单必然随文件增删而腐烂，所以这一条直接走目录。
+const DIR_PAIRS = [
+  ['@autional-cn/ui', 'packages/ui/src'],
+];
+
 const version = JSON.parse(readFileSync(join(ROOT, 'packages', 'tokens', 'package.json'), 'utf8')).version;
-const pkgs = [...new Set(PAIRS.map((p) => p[0]))];
+const pkgs = [...new Set(PAIRS.map((p) => p[0]).concat(DIR_PAIRS.map((p) => p[0])))];
 
 const tmp = mkdtempSync(join(tmpdir(), 'publish-freshness-'));
 try {
@@ -56,7 +65,17 @@ try {
   execFileSync('npm', ['install', ...pkgs.map((p) => p + '@' + version)], { cwd: tmp, stdio: 'pipe', env, shell: process.platform === 'win32' });
 
   const sha = (f) => createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 12);
+  const walk = (d, base, out) => {
+    let es; try { es = readdirSync(d, { withFileTypes: true }); } catch (e) { return out; }
+    for (const e of es) {
+      const p = join(d, e.name);
+      if (e.isDirectory()) walk(p, base, out);
+      else out.push(p.slice(base.length + 1).replace(/\\/g, '/'));
+    }
+    return out;
+  };
   let same = 0;
+  let total = PAIRS.length;
   for (const [pkg, rel, localRel] of PAIRS) {
     const installed = join(tmp, 'node_modules', ...pkg.split('/'), rel);
     const local = join(ROOT, localRel);
@@ -66,7 +85,26 @@ try {
       problems.push('npm 上的 ' + pkg + '@' + version + ' 的 ' + rel + ' 与当前 SSOT 不一致（包 ' + sha(installed) + ' vs 本地 ' + sha(local) + '）');
     } else same++;
   }
-  infos.push('已发布内容与当前 SSOT：' + same + '/' + PAIRS.length + ' 个文件逐字节一致（按 @' + version + ' 无凭据安装核验）');
+  for (const [pkg, localDirRel] of DIR_PAIRS) {
+    const localDir = join(ROOT, localDirRel);
+    const pkgRoot = join(tmp, 'node_modules', ...pkg.split('/'));
+    if (!existsSync(localDir)) { problems.push('本地目录缺失：' + localDirRel); continue; }
+    // 测试文件是**刻意不发**的（packages/ui/package.json 的 files 里有 "!src/test" / "!src/__tests__"），
+    // 拿它们比会得到两条假阳性。判据要跟着「发布口径」走，不是跟着目录里有什么走。
+    const files = walk(localDir, localDir, []).filter((f) => !/^(test|__tests__)\//.test(f));
+    let dirSame = 0;
+    for (const rel of files) {
+      total++;
+      const installed = join(pkgRoot, localDirRel.split('/').pop(), rel);
+      const local = join(localDir, rel);
+      if (!existsSync(installed)) { problems.push('包 ' + pkg + ' 里没有 ' + rel + '（本地有）——该文件是发布之后新加的，需要重新发布'); continue; }
+      if (sha(installed) !== sha(local)) {
+        problems.push('npm 上的 ' + pkg + '@' + version + ' 的 ' + rel + ' 与当前 SSOT 不一致（包 ' + sha(installed) + ' vs 本地 ' + sha(local) + '）——改了源码就要重新发布');
+      } else dirSame++;
+    }
+    infos.push('目录比对 ' + pkg + ' · ' + localDirRel + '：' + dirSame + '/' + files.length + ' 个文件逐字节一致');
+  }
+  infos.push('已发布内容与当前 SSOT：' + same + '/' + total + ' 个文件逐字节一致（按 @' + version + ' 无凭据安装核验）');
 
   // 版本号本身也要对得上
   for (const pkg of pkgs) {
