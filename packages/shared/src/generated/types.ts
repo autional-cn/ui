@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-08-22 06:50:43
+// Generated: 2026-09-30 17:04:31
 
 // ============================================================
 // Shared generic types
@@ -7516,6 +7516,71 @@ export type COSEAlgorithmIdentifier = "-7" | "-8" | "-9" | "-19" | "-35" | "-36"
 // notification-service
 // ============================================================
 
+export interface DataResponsegitee_com_autional_servicenotification_internal_handler_dto_EventMappingResponse {
+  code?: number;
+  data?: EventMappingResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsegitee_com_autional_servicenotification_internal_handler_dto_ExportUserDataResponse {
+  code?: number;
+  data?: ExportUserDataResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsegitee_com_autional_servicenotification_internal_handler_dto_NotificationPreferencesResponse {
+  code?: number;
+  data?: NotificationPreferencesResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsegitee_com_autional_servicenotification_internal_handler_dto_NotificationResponse {
+  code?: number;
+  data?: NotificationResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsegitee_com_autional_servicenotification_internal_handler_dto_StreamTicketResponse {
+  code?: number;
+  data?: StreamTicketResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsegitee_com_autional_servicenotification_internal_handler_dto_TemplateResponse {
+  code?: number;
+  data?: TemplateResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsehandler_HealthErrorResponse {
+  code?: number;
+  data?: HealthErrorResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsemap_string_string {
+  code?: number;
+  data?: Map_string_string;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface ListResponsegitee_com_autional_servicenotification_internal_handler_dto_NotificationResponse {
+  code?: number;
+  items?: NotificationResponse[];  // 统一使用 items
+  message?: string;
+  pagination?: PageInfo;  // 分页信息（嵌套对象）
+  timestamp?: string;
+  total?: number;  // 总条数（平铺，便于直接读取）
+}
+
 export interface AnnouncementDetailResponse {
   code?: number;
   data?: AnnouncementResponse;
@@ -7641,48 +7706,6 @@ export interface CreateGlobalVariableRequest {
   value: string;
 }
 
-export interface DataResponsedto_ExportUserDataResponse {
-  code?: number;
-  data?: ExportUserDataResponse;
-  message?: string;
-  timestamp?: string;
-}
-
-export interface DataResponsedto_NotificationPreferencesResponse {
-  code?: number;
-  data?: NotificationPreferencesResponse;
-  message?: string;
-  timestamp?: string;
-}
-
-export interface DataResponsedto_NotificationResponse {
-  code?: number;
-  data?: NotificationResponse;
-  message?: string;
-  timestamp?: string;
-}
-
-export interface DataResponsedto_TemplateResponse {
-  code?: number;
-  data?: TemplateResponse;
-  message?: string;
-  timestamp?: string;
-}
-
-export interface DataResponsehandler_HealthErrorResponse {
-  code?: number;
-  data?: HealthErrorResponse;
-  message?: string;
-  timestamp?: string;
-}
-
-export interface DataResponsemap_string_string {
-  code?: number;
-  data?: Map_string_string;
-  message?: string;
-  timestamp?: string;
-}
-
 export interface DeleteNotificationDetailResponse {
   code?: number;
   data?: DeleteNotificationResponse;
@@ -7776,13 +7799,20 @@ export interface InternalPushSendRequest {
   userId?: string;  // @example user-001
 }
 
-export interface ListResponsedto_NotificationResponse {
-  code?: number;
-  items?: NotificationResponse[];  // 统一使用 items
-  message?: string;
-  pagination?: PageInfo;  // 分页信息（嵌套对象）
-  timestamp?: string;
-  total?: number;  // 总条数（平铺，便于直接读取）
+export interface InternalSendExternalRequest {
+  channel: string;  // @example email
+  locale?: string;  // @example en-US
+  recipient: string;  // @example user@example.com
+  templateCode: string;  // @example status_subscription_confirm
+  variables?: Record<string, string>;
+}
+
+export interface InternalUpsertEventMappingRequest {
+  channel?: string;  // 空 → in_app | @example in_app
+  eventType: string;  // @example user.registered
+  isEnabled?: boolean;  // 空 → true
+  priority?: string;  // 空 → medium | @example medium
+  templateCode: string;  // @example welcome
 }
 
 export interface MarkReadDetailResponse {
@@ -8006,6 +8036,12 @@ export interface SendNotificationRequest {
   title: string;  // 标题 | @example 系统通知
   type?: string;  // 类型 | @example system
   userId: string;  // 用户ID | @example usr_abc123
+}
+
+/** 一次性 SSE 票据：60s 内有效、消费一次即失效；以 ?ticket= 建立 EventSource 流 */
+export interface StreamTicketResponse {
+  expiresIn?: number;  // 有效期（秒） | @example 60
+  ticket?: string;  // 一次性票据 | @example 1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0u1V2
 }
 
 export interface TestNotificationDetailResponse {
@@ -8869,6 +8905,13 @@ export interface CreatePointRuleRequest {
 export interface DataResponsedomain_PointIntegrityResult {
   code?: number;
   data?: PointIntegrityResult;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsedto_ExportUserDataResponse {
+  code?: number;
+  data?: ExportUserDataResponse;
   message?: string;
   timestamp?: string;
 }

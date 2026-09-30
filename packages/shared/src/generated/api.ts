@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-08-22 19:20:02
+// Generated: 2026-09-30 17:04:31
 
 // @ts-nocheck — auto-generated; validated by check-generated-api.py
 import type * as Types from './types';
@@ -6856,6 +6856,20 @@ export async function mfaWebauthnCredentialsByCredentialsPut(webauthnCredentialI
 // ============================================================
 
 /**
+ * 管理端列出公告
+ * 管理端分页查询本租户公告列表，支持按状态过滤和关键词搜索；与用户面 /announcements 同体（同租户范围），走 admin 受众供控制台读取 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
+ */
+export async function adminAnnouncements(params?: {
+  page?: number;  // 页码
+  page_size?: number;  // 每页条数
+  status?: string;  // 状态过滤: draft/scheduled/published/expired
+  search?: string;  // 搜索关键词
+}) {
+  const res = await api.get(`/notification/api/v1/admin/announcements`, { params });
+  return res.data;
+}
+
+/**
  * 创建公告
  * 创建新的公告，支持草稿/定时发布，可指定目标租户和角色 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
  */
@@ -7224,12 +7238,22 @@ export async function notificationsStats() {
 
 /**
  * SSE实时通知流
- * 通过Server-Sent Events实时推送通知，客户端需传入user_id查询参数进行订阅 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
+ * 通过Server-Sent Events实时推送通知。P5-4：经 POST /notifications/stream-ticket 换取一次性票据后以 ?ticket= 建流（浏览器 EventSource 主路径）；非浏览器客户端可走 Authorization 头 JWT（?token= 兼容回退已删除）。订阅身份以认证上下文（票据/JWT claims）为准。 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
  */
 export async function notificationsStream(params?: {
-  user_id: string;  // 用户ID
+  ticket?: string;  // 一次性短期票据（P5-4 主路径，60s 内一次性消费）
+  user_id?: string;  // 用户ID（已弃用回退：仅在认证上下文无用户时使用）
 }) {
   const res = await api.get(`/notification/api/v1/notifications/stream`, { params });
+  return res.data;
+}
+
+/**
+ * 签发 SSE 短期票据
+ * 为 /notifications/stream 签发一次性票据（P5-4）：浏览器 EventSource 不能携带 Authorization 头，故以 JWT 保护的本端点换取 60s 一次性票据，再以 ?ticket= 建流，避免 access token 进入 URL/接入日志。需 JWT 认证（正常 Authorization 头调用）。
+ */
+export async function notificationsStreamTicketPost() {
+  const res = await api.post(`/notification/api/v1/notifications/stream-ticket`);
   return res.data;
 }
 
@@ -7377,7 +7401,7 @@ export async function pushSubscriptionsBySubscriptions(subscriptionId: string) {
 
 /**
  * 获取 VAPID 公钥
- * 返回 Web Push VAPID 公钥，供前端注册 Push 订阅时使用 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
+ * 返回 Web Push VAPID 公钥，供前端注册 Push 订阅时使用（来源：communication-service） 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
  */
 export async function pushVapidPublicKey() {
   const res = await api.get(`/notification/api/v1/push/vapid-public-key`);

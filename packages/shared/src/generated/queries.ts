@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-08-22 19:20:02
+// Generated: 2026-09-30 17:04:31
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from './api';
@@ -2598,6 +2598,14 @@ export function useMfaWebauthnCredentialsByCredentials(webauthnCredentialId: str
 }
 
 // --- notification-service ---
+
+/** 管理端列出公告 */
+export function useAdminAnnouncements(params?: any) {
+  return useQuery({
+    queryKey: ['notification-service', params] as const,
+    queryFn: () => api.adminAnnouncements(params),
+  });
+}
 
 /** 管理员查看指定用户通知列表 */
 export function useAdminNotifications(params?: any) {
@@ -9147,6 +9155,17 @@ export function usePostNotificationsSend_from_template() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => api.notificationsSendFromTemplatePost(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notification-service'] });
+    },
+  });
+}
+
+/** 签发 SSE 短期票据 */
+export function usePostNotificationsStream_ticket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.notificationsStreamTicketPost(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notification-service'] });
     },
