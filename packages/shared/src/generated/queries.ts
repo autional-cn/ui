@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-09-30 17:04:31
+// Generated: 2026-10-01 00:28:51
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from './api';
@@ -3003,6 +3003,14 @@ export function useAdminPayIntegrityByIntegrity(payId: string) {
   });
 }
 
+/** 查询支付列表（管理端） */
+export function useAdminPayments(params?: any) {
+  return useQuery({
+    queryKey: ['pay-service', params] as const,
+    queryFn: () => api.adminPayments(params),
+  });
+}
+
 /** 查询支付渠道列表 */
 export function useAdminPaymentsChannels() {
   return useQuery({
@@ -3032,6 +3040,22 @@ export function useAdminPaymentsWebhooks(params?: any) {
   return useQuery({
     queryKey: ['pay-service', params] as const,
     queryFn: () => api.adminPaymentsWebhooks(params),
+  });
+}
+
+/** 查询支付详情（管理端） */
+export function useAdminPaymentsByPayments(paymentId: string) {
+  return useQuery({
+    queryKey: ['pay-service', 'by_' + paymentId] as const,
+    queryFn: () => api.adminPaymentsByPayments(paymentId),
+  });
+}
+
+/** 获取支付回执（管理端） */
+export function useAdminPaymentsReceiptByPayments(paymentId: string) {
+  return useQuery({
+    queryKey: ['pay-service', 'by_' + paymentId] as const,
+    queryFn: () => api.adminPaymentsReceiptByPayments(paymentId),
   });
 }
 

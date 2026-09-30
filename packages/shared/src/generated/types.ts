@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-09-30 17:04:31
+// Generated: 2026-10-01 00:28:51
 
 // ============================================================
 // Shared generic types

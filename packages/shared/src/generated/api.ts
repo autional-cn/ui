@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-09-30 17:04:31
+// Generated: 2026-10-01 00:28:51
 
 // @ts-nocheck — auto-generated; validated by check-generated-api.py
 import type * as Types from './types';
@@ -7941,6 +7941,20 @@ export async function adminPayIntegrityByIntegrity(payId: string) {
 }
 
 /**
+ * 查询支付列表（管理端）
+ * 与用户面 /payments 同体、同租户范围；供控制台在 admin 平面读取。参考：PCI DSS v4.0 Req 3.3 (Mask PAN)、PCI DSS v4.0 Req 4 (Encrypt Transmission)。
+ */
+export async function adminPayments(params?: {
+  app_id?: string;  // 应用ID
+  status?: string;  // 支付状态
+  page?: number;  // 页码
+  page_size?: number;  // 每页数量
+}) {
+  const res = await api.get(`/pay/api/v1/admin/payments`, { params });
+  return res.data;
+}
+
+/**
  * 查询支付渠道列表
  * 查询当前租户的所有支付渠道配置列表。参考：PCI DSS v4.0 Req 3.3 (Mask PAN)、PCI DSS v4.0 Req 4 (Encrypt Transmission)。
  */
@@ -8036,6 +8050,24 @@ export async function adminPaymentsWebhooks(params?: {
  */
 export async function adminPaymentsWebhooksByWebhooksDelete(webhookId: string) {
   await api.delete(`/pay/api/v1/admin/payments/webhooks/${webhookId}`);
+}
+
+/**
+ * 查询支付详情（管理端）
+ * 与用户面 /payments/{payment_id} 同体、同租户范围；供控制台在 admin 平面读取。参考：PCI DSS v4.0 Req 3.3 (Mask PAN)、PCI DSS v4.0 Req 4 (Encrypt Transmission)。
+ */
+export async function adminPaymentsByPayments(paymentId: string) {
+  const res = await api.get(`/pay/api/v1/admin/payments/${paymentId}`);
+  return res.data;
+}
+
+/**
+ * 获取支付回执（管理端）
+ * 与用户面 /payments/{payment_id}/receipt 同体、同租户范围；供控制台在 admin 平面读取。参考：PCI DSS v4.0 Req 3.3 (Mask PAN)、PCI DSS v4.0 Req 4 (Encrypt Transmission)。
+ */
+export async function adminPaymentsReceiptByPayments(paymentId: string) {
+  const res = await api.get(`/pay/api/v1/admin/payments/${paymentId}/receipt`);
+  return res.data;
 }
 
 /**
