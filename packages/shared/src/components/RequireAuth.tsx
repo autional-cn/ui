@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AuthService, setBootstrapLock } from '../auth/service';
 import { buildLoginUrl } from '../auth/roles';
+import { traceRedirect } from '../auth/auth-trace';
 import { initiateOAuthLogin } from '../auth/oauth-login';
 import {
 	useTenantRoute,
@@ -103,8 +104,12 @@ export function RequireAuth({
 		// Cross-domain or no client: redirect to auth-pages login
 		// from_requireauth=1 与 service.ts 的 onUnauthorized 同口径：auth 侧据此先做会话复检
 		// （有会话直接回跳，避免「已登录还被要求再登一次」）
+		// interstitial：未认证深链被动弹登录 → authTrace 提示（可停留）；重入抑制在其内。
 		setTimeout(() => {
-			window.location.replace(buildLoginUrl(window.location.href, true));
+			traceRedirect(buildLoginUrl(window.location.href, true), {
+				reason: 'unauthenticated',
+				kind: 'interstitial',
+			});
 		}, 0);
 	}, [machine.status, tenantRoute]);
 

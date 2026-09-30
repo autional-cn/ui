@@ -25,6 +25,8 @@ export { generatePKCE, generateCodeChallenge } from './auth/pkce';
 export type { PKCEPair } from './auth/pkce';
 export { initiateOAuthLogin, handleOAuthCallback, isOAuthEnabled } from './auth/oauth-login';
 export { buildLoginUrl } from './auth/roles';
+export { traceRedirect, traceEvent, traceDump } from './auth/auth-trace';
+export type { AuthTraceEntry, AuthTraceRedirectOptions } from './auth/auth-trace';
 
 // Types
 export type {
@@ -128,6 +130,7 @@ export * from './seo';
 
 // Components
 export { RequireAuth } from './components/RequireAuth';
+export { TenantRootRedirect } from './components/TenantRootRedirect';
 export { OAuthCallbackPage } from './components/OAuthCallbackPage';
 export { TenantSlugProvider, useTenantSlug } from './auth/tenant-slug-context';
 export { useTenantSlugFromUrl, extractSlugFromPath, registerNonTenantSegments, clearNonTenantSegments } from './auth/slug-from-url';
@@ -160,13 +163,16 @@ export type { TenantIndexGuardProps } from './components/TenantIndexGuard';
 export { buildTenantUrls } from './auth/build-tenant-urls';
 export { resolvePortalBasename } from './config/resolve-basename';
 
-// 这里原来有 4 行 re-export：GeneratedApi / ApiGenerated / GeneratedTypes / ApiTypes，
-// 全部指向 @autional-cn/api-generated。2026-09 实测：**全舰队 0 处使用它们**
-// （唯一的出现就是这 4 行自己），而它们正是那份 file: 依赖的唯一消费者。
-// 删掉之后 shared 才能作为 npm 包发布——否则发布出去的清单里会留着一条
-// file:../../scripts/generate/api-generated-package，消费方永远解析不到。
-// 真正的生成代码走的是 @autional-cn/shared/generated/{api,types,queries}（src/generated/*），
-// 五个子路径里全舰队都在用的是那一组，不是这一组。
+// 生成代码的命名空间再导出（GeneratedApi / ApiGenerated / GeneratedTypes / ApiTypes）。
+// 说明：这 4 行原先指向 @autional-cn/api-generated —— 那是各站逐站副本里用
+// file:../../scripts/generate/api-generated-package 提供的本地包，一旦 shared 走 npm 发布
+// 就必然解析不到（authenticator / security 的 tsc 就是这么炸的：TS2305 has no exported member）。
+// 本包内的 src/generated/* 是同一份生成结果，因此改指包内相对路径；
+// 消费方实际用到的类型面由逐站 tsc 验证。
+export * as GeneratedApi from './generated/api';
+export * as GeneratedTypes from './generated/types';
+export * as ApiGenerated from './generated/api';
+export * as ApiTypes from './generated/types';
 
 // Branding（租户品牌 → CSS 变量 / favicon / customCss）
 export {

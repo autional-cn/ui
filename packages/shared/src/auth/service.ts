@@ -23,13 +23,13 @@ import {
 	isTokenExpired as checkExpired,
 } from './store';
 import { loginWithTokens } from './store';
-import { buildLoginUrl } from './roles';
+import { buildLoginUrl, isAuthLoginSurface } from './roles';
+import { traceRedirect } from './auth-trace';
 import { resolveClientIdForSession } from './oauth-client-id-store';
 import type { User } from '../types';
 
 // ============ Internal State ============
 
-let redirectingToLogin = false;
 let refreshPromise: Promise<string | null> | null = null;
 
 // ============ OAuth PKCE Bootstrap Lock ============
@@ -259,19 +259,30 @@ export const AuthService = {
 	/**
 	 * 刷新 access token。
 	 * 防重入：同一时间只会有一个刷新请求进行中。
-	 * 刷新失败时自动调用 onUnauthorized。
+	 *
+	 * 失败处置（onFailure，缺省 'redirect'）：
+	 * - 'redirect'：onUnauthorized —— 清理 + 引导登录（常规路径）；
+	 * - 'clear'   ：clearSession —— 只清理不导航（调用方自控唯一导航出口，
+	 *               如会话过期横幅 → error 页，避免与整页跳转双跳竞争）；
+	 * - 'none'    ：零副作用静默（尽力续期场景：如过期前 5 分钟的自动续期尝试，
+	 *               失败不清理不打断——会话此刻仍有效，等真正过期再统一处置）。
 	 */
-	refreshToken: async (): Promise<string | null> => {
+	refreshToken: async (opts?: {
+		onFailure?: 'redirect' | 'clear' | 'none';
+	}): Promise<string | null> => {
 		if (refreshPromise) return refreshPromise;
+		const onFailure = opts?.onFailure ?? 'redirect';
+		const handleFailure = () => {
+			if (onFailure === 'redirect') AuthService.onUnauthorized();
+			else if (onFailure === 'clear') AuthService.clearSession();
+		};
 
 		refreshPromise = (async () => {
 			const rt = AuthService.getRefreshToken();
 			if (!rt) {
 				// During OAuth PKCE bootstrap (no token yet), suppress redirect.
 				// RequireAuth will handle OAuth PKCE vs BFF fallback once tenantRoute resolves.
-				if (!_bootstrapLocked) {
-					AuthService.onUnauthorized();
-				}
+				if (!_bootstrapLocked) handleFailure();
 				return null;
 			}
 
@@ -315,7 +326,7 @@ export const AuthService = {
 				return newAT || null;
 			} catch (err) {
 				console.warn('[AuthService] Token refresh failed', (err as Error)?.message || '');
-				AuthService.onUnauthorized();
+				handleFailure();
 				return null;
 			} finally {
 				refreshPromise = null;
@@ -328,14 +339,10 @@ export const AuthService = {
 	// ==================== 401/未授权处理 ====================
 
 	/**
-	 * 处理 401 未授权响应：
-	 * 1. 登出（清除所有状态）
-	 * 2. 重定向到登录页（防重入锁）
+	 * 仅清除会话状态（store + localStorage），不做任何导航。
+	 * 供 silent 刷新失败、以及需要自控导航出口的调用方使用。
 	 */
-	onUnauthorized: (): void => {
-		// Suppress redirect during OAuth PKCE bootstrap — RequireAuth handles it
-		if (_bootstrapLocked) return;
-		// 先清除状态，不等待 logout 的异步吊销
+	clearSession: (): void => {
 		useAuthStore.getState().clearAuth();
 		if (typeof window !== 'undefined') {
 			// 清除 localStorage（同步，立即生效）
@@ -343,12 +350,32 @@ export const AuthService = {
 			localStorage.removeItem('access_token');
 			localStorage.removeItem('refresh_token');
 		}
+	},
 
-		if (!redirectingToLogin && typeof window !== 'undefined') {
-			redirectingToLogin = true;
-			setTimeout(() => {
-				window.location.replace(buildLoginUrl(window.location.href, true));
-			}, 0);
+	/**
+	 * 处理 401 未授权响应：
+	 * 1. 清除所有状态（clearSession）
+	 * 2. 经 authTrace 提示（会话已过期 → 即将前往登录，可停留）后整页弹登录页
+	 *
+	 * 例外：已在 auth 登录承接面（裸根入口 / `/<slug>/login` / `/error`）时只清理不导航 ——
+	 * 目标就是当前页，整页 replace 反而会丢掉 URL 里的 redirect 回程目标并造成闪烁
+	 * （F-W8b 修复②）；承接面页面对 401 有自己的收口（登录页落表单、error 页走倒计时）。
+	 *
+	 * 重入抑制在 authTrace 内（pending 单例；并发 401 只提示一次、只跳一次）。
+	 */
+	onUnauthorized: (): void => {
+		// Suppress redirect during OAuth PKCE bootstrap — RequireAuth handles it
+		if (_bootstrapLocked) return;
+		// 先清除状态，不等待 logout 的异步吊销
+		AuthService.clearSession();
+
+		if (isAuthLoginSurface()) return;
+
+		if (typeof window !== 'undefined') {
+			traceRedirect(buildLoginUrl(window.location.href, true), {
+				reason: 'session-expired',
+				kind: 'interstitial',
+			});
 		}
 	},
 

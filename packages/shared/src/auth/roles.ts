@@ -51,6 +51,22 @@ export function buildLogoutUrl(returnUrl?: string): string {
 	return `${base}/?${redirect}logout=1`;
 }
 
+/**
+ * 当前页是否已是 auth 的「登录承接面」——裸根入口（`/`、`/login`，由入口路由承接）、
+ * `/<slug>/login` 登录页、`/error` 错误页。
+ *
+ * 会话终结（onUnauthorized）时若已停在承接面，整页 replace 不但无益（目标就是本页），
+ * 还会因 buildLoginUrl 的防嵌套截断返回不带 redirect 的本页 —— 把 URL 中的回程目标
+ * 一并丢掉，且构成一次整页闪烁（F-W8b 修复②：存量过期 token 在登录页「静默弹走」）。
+ */
+export function isAuthLoginSurface(): boolean {
+	if (typeof window === 'undefined') return false;
+	const segs = window.location.pathname.split('/').filter(Boolean);
+	if (segs.length === 0) return true; // 裸根 `/`
+	if (segs[0] === 'login' || segs[0] === 'error') return true; // `/login`、`/error`
+	return segs.length === 2 && segs[1] === 'login'; // `/<slug>/login`
+}
+
 export function buildLoginUrl(returnUrl?: string, fromRequireAuth?: boolean): string {
 	const base = getPortalUrl('auth');
 	if (!base) return '/';

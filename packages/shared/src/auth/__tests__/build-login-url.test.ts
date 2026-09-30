@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildLoginUrl, buildLogoutUrl } from '../roles';
+import { buildLoginUrl, buildLogoutUrl, isAuthLoginSurface } from '../roles';
 
 const MOCK_CONFIG = {
 	VITE_PORTAL_CONFIG: {
@@ -215,5 +215,45 @@ describe('buildLoginUrl', () => {
 			const url = buildLogoutUrl();
 			expect(url).toBe('https://auth.autional.local/?logout=1');
 		});
+	});
+});
+
+// ============================================================
+// F-W8b 修复②：登录承接面判定（onUnauthorized 抑制整页弹走的判据）
+//  承接面（只清理不导航）：`/`、`/login`、`/<slug>/login`、`/error`
+//  非承接面（照常弹登录页）：应用页、PKCE 发起页、其它静态路由
+// ============================================================
+function mockPathname(pathname: string): void {
+	vi.stubGlobal('window', {
+		location: { pathname, hostname: 'auth.autional.local', protocol: 'https:' },
+		__APP_CONFIG__: MOCK_CONFIG,
+	});
+}
+
+describe('isAuthLoginSurface', () => {
+	beforeEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it.each([
+		['裸根入口', '/', true],
+		['/login 入口', '/login', true],
+		['错误页', '/error', true],
+		['租户登录页', '/demo/login', true],
+		['带尾斜杠的租户登录页', '/demo/login/', true],
+		['应用页 dashboard', '/demo/dashboard', false],
+		['租户 index（守卫跳转页）', '/demo', false],
+		['裸 dashboard', '/dashboard', false],
+		['PKCE 发起页', '/oauth/api/v1/oauth/authorize', false],
+		['重置密码页', '/reset-password', false],
+		['注册页', '/demo/register', false],
+	])('%s（%s）→ %s', (_name, pathname, expected) => {
+		mockPathname(pathname as string);
+		expect(isAuthLoginSurface()).toBe(expected);
+	});
+
+	it('服务端渲染（无 window）→ false，不抑制', () => {
+		vi.stubGlobal('window', undefined);
+		expect(isAuthLoginSurface()).toBe(false);
 	});
 });

@@ -55,8 +55,33 @@ import { getPortalUrl } from '../../config';
 
 const originalWindowLocation = window.location;
 
+/**
+ * 每例取全新模块实例：auth-trace 的模块级重入抑制（pending）与「停留」复位
+ * 是同页语义，跨用例泄漏会让后续 interstitial 被静默抑制（假红/假绿）。
+ */
+async function freshRequireAuth() {
+	vi.resetModules();
+	const mod = await import('../RequireAuth');
+	return mod.RequireAuth;
+}
+
+/** authTrace 的提示条/确认页挂在 document.body（非 React 树），手动清理防跨用例残留。 */
+function cleanupAuthTraceNodes() {
+	document.getElementById('auth-trace-notice')?.remove();
+	document.getElementById('auth-trace-confirm')?.remove();
+}
+
+function clickGoNow(): void {
+	const btn = Array.from(document.querySelectorAll<HTMLButtonElement>('#auth-trace-notice button')).find(
+		(b) => b.textContent === '立即前往',
+	);
+	expect(btn).toBeTruthy();
+	btn!.click();
+}
+
 beforeEach(() => {
 	vi.clearAllMocks();
+	document.documentElement.lang = 'zh-CN';
 	mockState.machineStatus = 'unauthenticated';
 	mockState.tenantRoute = {
 		slug: null,
@@ -85,15 +110,22 @@ afterEach(() => {
 	}
 	// vitest globals 未开启 ⇒ RTL 不会自动 cleanup，手动清理防跨用例 DOM 污染
 	cleanup();
+	cleanupAuthTraceNodes();
 });
 
 describe('RequireAuth 未登录出口', () => {
-	it('无可用 client_id → 跳 auth 登录页并带 from_requireauth=1', async () => {
+	it('无可用 client_id → 提示条（可停留）后跳 auth 登录页并带 from_requireauth=1', async () => {
+		const RequireAuthFresh = await freshRequireAuth();
+
 		render(
-			<RequireAuth>
+			<RequireAuthFresh>
 				<div>protected</div>
-			</RequireAuth>,
+			</RequireAuthFresh>,
 		);
+
+		// 层①：被动弹登录先出提示条（不再静默整页弹走）
+		await waitFor(() => expect(document.getElementById('auth-trace-notice')).toBeTruthy());
+		clickGoNow();
 
 		await waitFor(() => {
 			expect(mockState.replace).toHaveBeenCalled();
@@ -101,6 +133,7 @@ describe('RequireAuth 未登录出口', () => {
 		const url = String(mockState.replace.mock.calls[0][0]);
 		expect(url).toContain('from_requireauth=1');
 		expect(url).toContain('redirect=');
+		expect(url).toContain('rt=localhost.unauthenticated.');
 		expect(url.startsWith(getPortalUrl('auth'))).toBe(true);
 		expect(mockState.initiate).not.toHaveBeenCalled();
 	});
@@ -230,12 +263,16 @@ describe('RequireAuth F-W6 确定性 404 闸门', () => {
 
 	it('非 unknownSlug（网络错误 fail-open）→ 维持原漏斗（回归锁）', async () => {
 		// 默认 tenantRoute: notFound=true, unknownSlug=false —— 即 by-slug 网络错误场景
+		const RequireAuthFresh = await freshRequireAuth();
+
 		render(
-			<RequireAuth notFound={<div data-testid="tenant-404">no such tenant</div>}>
+			<RequireAuthFresh notFound={<div data-testid="tenant-404">no such tenant</div>}>
 				<div>protected</div>
-			</RequireAuth>,
+			</RequireAuthFresh>,
 		);
 
+		await waitFor(() => expect(document.getElementById('auth-trace-notice')).toBeTruthy());
+		clickGoNow();
 		await waitFor(() => expect(mockState.replace).toHaveBeenCalled());
 		const url = String(mockState.replace.mock.calls[0][0]);
 		expect(url).toContain('from_requireauth=1');

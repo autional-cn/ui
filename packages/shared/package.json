@@ -1,6 +1,6 @@
 {
   "name": "@autional-cn/shared",
-  "version": "0.1.0-rc",
+  "version": "0.1.0-rc.4",
   "description": "Autional shared layer — API client, auth, types, hooks, utils",
   "license": "AGPL-3.0",
   "main": "./src/index.ts",
@@ -26,18 +26,23 @@
   "dependencies": {
     "@opentelemetry/api": "1.9.1",
     "@tanstack/react-query": "5.100.9",
+    "@types/lodash-es": "4.17.12",
+    "@types/node": "26.1.2",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "axios": "1.16.0",
     "lodash-es": "4.18.1",
     "zustand": "5.0.13"
   },
   "devDependencies": {
-    "@types/lodash-es": "4.17.12",
-    "@types/node": "26.1.2",
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
+    "@autional-cn/tsconfig": "workspace:*",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "jsdom": "29.1.1",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "typescript": "5.8.3",
+    "vite": "6.4.2",
     "vitest": "3.2.0"
   },
   "peerDependencies": {

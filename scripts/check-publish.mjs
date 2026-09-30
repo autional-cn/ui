@@ -54,7 +54,16 @@ const DIR_PAIRS = [
   ['@autional-cn/react', 'packages/react/src'],
 ];
 
-const version = JSON.parse(readFileSync(join(ROOT, 'packages', 'tokens', 'package.json'), 'utf8')).version;
+// 每个包读**自己**的版本。原来是一把尺子量所有包（统一取 tokens 的版本），
+// 在 shared 需要单独升版（0.1.0-rc.1）时就会直接报错——包本来就该各自有版本。
+const PKG_DIR = {
+  '@autional-cn/tokens': 'packages/tokens',
+  '@autional-cn/tailwind-preset': 'packages/tailwind-preset',
+  '@autional-cn/ui': 'packages/ui',
+  '@autional-cn/shared': 'packages/shared',
+  '@autional-cn/react': 'packages/react'
+};
+const versionOf = (pkg) => JSON.parse(readFileSync(join(ROOT, PKG_DIR[pkg], 'package.json'), 'utf8')).version;
 const pkgs = [...new Set(PAIRS.map((p) => p[0]).concat(DIR_PAIRS.map((p) => p[0])))];
 
 const tmp = mkdtempSync(join(tmpdir(), 'publish-freshness-'));
@@ -64,7 +73,7 @@ try {
   delete env.NPM_CONFIG_USERCONFIG;
   delete env.NODE_AUTH_TOKEN;
   execFileSync('npm', ['init', '-y'], { cwd: tmp, stdio: 'pipe', shell: process.platform === 'win32' });
-  execFileSync('npm', ['install', ...pkgs.map((p) => p + '@' + version)], { cwd: tmp, stdio: 'pipe', env, shell: process.platform === 'win32' });
+  execFileSync('npm', ['install', ...pkgs.map((p) => p + '@' + versionOf(p))], { cwd: tmp, stdio: 'pipe', env, shell: process.platform === 'win32' });
 
   const sha = (f) => createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 12);
   const walk = (d, base, out) => {
@@ -84,7 +93,7 @@ try {
     if (!existsSync(local)) { problems.push('本地产物缺失：' + localRel); continue; }
     if (!existsSync(installed)) { problems.push('包 ' + pkg + ' 里没有 ' + rel + '（本地有）'); continue; }
     if (sha(installed) !== sha(local)) {
-      problems.push('npm 上的 ' + pkg + '@' + version + ' 的 ' + rel + ' 与当前 SSOT 不一致（包 ' + sha(installed) + ' vs 本地 ' + sha(local) + '）');
+      problems.push('npm 上的 ' + pkg + '@' + versionOf(pkg) + ' 的 ' + rel + ' 与当前 SSOT 不一致（包 ' + sha(installed) + ' vs 本地 ' + sha(local) + '）');
     } else same++;
   }
   for (const [pkg, localDirRel] of DIR_PAIRS) {
@@ -101,18 +110,19 @@ try {
       const local = join(localDir, rel);
       if (!existsSync(installed)) { problems.push('包 ' + pkg + ' 里没有 ' + rel + '（本地有）——该文件是发布之后新加的，需要重新发布'); continue; }
       if (sha(installed) !== sha(local)) {
-        problems.push('npm 上的 ' + pkg + '@' + version + ' 的 ' + rel + ' 与当前 SSOT 不一致（包 ' + sha(installed) + ' vs 本地 ' + sha(local) + '）——改了源码就要重新发布');
+        problems.push('npm 上的 ' + pkg + '@' + versionOf(pkg) + ' 的 ' + rel + ' 与当前 SSOT 不一致（包 ' + sha(installed) + ' vs 本地 ' + sha(local) + '）——改了源码就要重新发布');
       } else dirSame++;
     }
     infos.push('目录比对 ' + pkg + ' · ' + localDirRel + '：' + dirSame + '/' + files.length + ' 个文件逐字节一致');
   }
-  infos.push('已发布内容与当前 SSOT：' + same + '/' + total + ' 个文件逐字节一致（按 @' + version + ' 无凭据安装核验）');
+  infos.push('已发布内容与当前 SSOT：' + same + '/' + total + ' 个文件逐字节一致（按各自本地版本无凭据安装核验）');
 
   // 版本号本身也要对得上
   for (const pkg of pkgs) {
     const pj = join(tmp, 'node_modules', ...pkg.split('/'), 'package.json');
     const v = JSON.parse(readFileSync(pj, 'utf8')).version;
-    if (v !== version) problems.push(pkg + ' 已发布的版本是 ' + v + '，而本地是 ' + version);
+    const want = versionOf(pkg);
+    if (v !== want) problems.push(pkg + ' 已发布的版本是 ' + v + '，而本地是 ' + want);
   }
   if (problems.length) {
     problems.push('重新发布：cd ui && pnpm -r publish --access public --tag rc（预发版必须带 --tag）');
@@ -129,9 +139,9 @@ try {
   rmSync(tmp, { recursive: true, force: true });
 }
 
-if (AS_JSON) console.log(JSON.stringify({ version, infos, problems }, null, 2));
+if (AS_JSON) console.log(JSON.stringify({ versions: Object.fromEntries(pkgs.map((p) => [p, versionOf(p)])), infos, problems }, null, 2));
 else {
-  console.log('发布一致性闸门：@autional-cn/* 本地版本 ' + version);
+  console.log('发布一致性闸门：' + pkgs.map((p) => p.replace('@autional-cn/', '') + '@' + versionOf(p)).join('  '));
   for (const i of infos) console.log('  [INFO ] ' + i);
   for (const p of problems) console.log('  [ERROR] ' + p);
   const skipped = infos.some((i) => i.indexOf('SKIP') >= 0);

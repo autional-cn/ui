@@ -14,6 +14,7 @@ import { AuthService } from './service';
 import { generatePKCE } from './pkce';
 import { getPortalUrl } from '../config';
 import { persistOAuthClientId } from './oauth-client-id-store';
+import { traceRedirect } from './auth-trace';
 import type { User } from '../types';
 
 function getAppConfig(): Record<string, string> | undefined {
@@ -157,7 +158,13 @@ export async function initiateOAuthLogin(
 			code_challenge_method: 'S256',
 			state,
 		});
-		window.location.href = `${cfg.authorizeUrl}?${params}`;
+		// interstitial：未认证深链被动弹去登录 → authTrace 提示（可停留）；
+		// 「停留」取消后 10s 防重入窗口过期即失效，用户刷新/再次交互可重新发起。
+		traceRedirect(`${cfg.authorizeUrl}?${params}`, {
+			reason: 'oauth-initiate',
+			kind: 'interstitial',
+			assign: true,
+		});
 	} catch {
 		const params = new URLSearchParams({
 			response_type: 'code',
@@ -166,7 +173,11 @@ export async function initiateOAuthLogin(
 			scope: cfg.scope,
 			state,
 		});
-		window.location.href = `${cfg.authorizeUrl}?${params}`;
+		traceRedirect(`${cfg.authorizeUrl}?${params}`, {
+			reason: 'oauth-initiate',
+			kind: 'interstitial',
+			assign: true,
+		});
 	}
 }
 
@@ -287,5 +298,6 @@ export async function handleOAuthCallback(): Promise<void> {
 	}
 
 	// Full page navigation to the target (auth gateway will route to dashboard)
-	window.location.href = target;
+	// funnel：登录成功回跳（预期行为，静默直跳，assign 保持原语义）；仅记 trace。
+	traceRedirect(target, { reason: 'oauth-callback', assign: true });
 }

@@ -6,6 +6,7 @@
 
 import { useCallback } from 'react';
 import { buildLogoutUrl } from '../auth/roles';
+import { traceRedirect } from '../auth/auth-trace';
 
 /**
  * 统一的登出 Hook
@@ -26,7 +27,8 @@ export function useLogout() {
 
 			// buildLogoutUrl = auth 域裸根 + `logout=1` 登出意图标记：入口路由据此先
 			// 终结会话再落 brand，而不是把带会话的回程当普通深链直送登录页（会静默重登）。
-			window.location.href = buildLogoutUrl(currentUrl);
+			// funnel：用户主动行为，静默直跳（assign 保持原 href 历史语义）；仅记 trace。
+			traceRedirect(buildLogoutUrl(currentUrl), { reason: 'logout', assign: true });
 		};
 		performLogout();
 	}, []);
