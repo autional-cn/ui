@@ -356,6 +356,10 @@ export function getPLATFORM_CONSOLE_URL(): string {
 }
 export const API_BASE_URL = getEnv('VITE_API_BASE_URL', '/bff');
 
+// secret 管理面 namespace（§13-A P1-B）：admin 组端点要求 X-Namespace ∈ S（fail-closed）；
+// 缺省 "dev" 与服务端 DefaultNamespace（service-core cross/registry keyid.go）对称
+export const API_NAMESPACE = getEnv('VITE_API_NAMESPACE', 'dev');
+
 export function getApiBaseUrl(): string {
 	return API_BASE_URL;
 }

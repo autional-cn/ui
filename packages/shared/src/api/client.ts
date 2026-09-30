@@ -9,9 +9,10 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { camelCaseKeys, snakeCaseKeys } from '../utils/case';
-import { getApiBaseUrl } from '../config';
+import { API_NAMESPACE, getApiBaseUrl } from '../config';
 import { getTraceParentHeader } from './trace';
 import { ENTRY_PLANE_HEADER, resolveEntryPlane } from './entry-plane';
+import { NAMESPACE_HEADER, needsNamespaceHeader } from './namespace';
 import { AuthService } from '../auth/service';
 
 function setupInterceptors(instance: AxiosInstance) {
@@ -37,6 +38,11 @@ function setupInterceptors(instance: AxiosInstance) {
 		const tenantId = AuthService.getCurrentTenantId();
 		if (tenantId) {
 			config.headers['X-Tenant-ID'] = tenantId;
+		}
+
+		// secret 管理面（§13-A P1-B）：admin 组端点 fail-closed 要求 X-Namespace ∈ S
+		if (needsNamespaceHeader(config.url)) {
+			config.headers[NAMESPACE_HEADER] = API_NAMESPACE;
 		}
 
 		// 请求体 camelCase → snake_case 转换（后端 Go 期望 snake_case）
