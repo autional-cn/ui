@@ -235,3 +235,38 @@ describe('层 ② debug 确认页', () => {
 		expect(assignCalls[0]).toContain('logout=1');
 	});
 });
+
+describe('跳转执行防御（非法目标不炸页）', () => {
+	it('replace 抛 SyntaxError（IP 主机派生的 brand.127.0.0.1）→ 不冒泡，记 error-exit', async () => {
+		mockWindowLocation('/demo/');
+		const { traceRedirect } = await freshTrace();
+		replaceSpy.mockImplementationOnce(() => {
+			throw new SyntaxError(
+				"Failed to execute 'replace' on 'Location': 'http://brand.127.0.0.1/' is not a valid URL.",
+			);
+		});
+
+		expect(() =>
+			traceRedirect('http://brand.127.0.0.1/?redirect=x', { reason: 'funnel-brand' }),
+		).not.toThrow();
+
+		const entries = (window as any).__authTrace.entries() as any[];
+		const errEntry = entries.find((e) => e.ev === 'error-exit');
+		expect(errEntry).toBeTruthy();
+		expect(errEntry.reason).toBe('invalid-target');
+	});
+
+	it('防御后 pending 复位：随后合法跳转照常执行', async () => {
+		mockWindowLocation('/demo/');
+		const { traceRedirect } = await freshTrace();
+		replaceSpy.mockImplementationOnce(() => {
+			throw new SyntaxError('bad url');
+		});
+
+		traceRedirect('http://brand.127.0.0.1/?redirect=x', { reason: 'funnel-brand' });
+		traceRedirect('https://brand.autional.local/?redirect=y', { reason: 'funnel-brand' });
+
+		expect(replaceSpy).toHaveBeenCalledTimes(2);
+		expect(String(replaceSpy.mock.calls[1][0])).toContain('brand.autional.local');
+	});
+});

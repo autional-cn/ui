@@ -163,4 +163,18 @@ describe('TenantRootRedirect 裸根漏斗', () => {
 		await waitFor(() => expect(mockState.replace).toHaveBeenCalled());
 		expect(withoutRt(String(mockState.replace.mock.calls[0][0]))).toBe(withoutRt(expectedBrandFunnel()));
 	});
+
+	it('门户不可派生（IP 主机，如 127.0.0.1 静态托管）→ 不导航，保持当前页（不炸 ErrorBoundary）', async () => {
+		stubTenantList([{ id: 't1', name: 'demo' }]);
+		Object.defineProperties(window.location, {
+			hostname: { get: () => '127.0.0.1', configurable: true },
+			origin: { get: () => 'http://127.0.0.1:18951', configurable: true },
+			protocol: { get: () => 'http:', configurable: true },
+		});
+
+		render(wrapper(<TenantRootRedirect />));
+
+		await new Promise((r) => setTimeout(r, 80));
+		expect(mockState.replace).not.toHaveBeenCalled();
+	});
 });

@@ -223,8 +223,16 @@ let pending = false;
 
 function go(target: string, assign: boolean): void {
 	pending = true;
-	if (assign) window.location.href = target;
-	else window.location.replace(target);
+	try {
+		if (assign) window.location.href = target;
+		else window.location.replace(target);
+	} catch (e) {
+		// 非法目标不得冒泡炸掉调用方页面（effect 内抛出会被 ErrorBoundary 捕成整页错误）。
+		// 记 trace 并保持当前页——例如 IP 主机下派生的 `brand.127.0.0.1`（非法 IPv4）。
+		pending = false;
+		push('error-exit', { reason: 'invalid-target', to: sanitizeUrl(target) });
+		if (typeof console !== 'undefined') console.warn('[auth-trace] redirect rejected:', String(e));
+	}
 }
 
 function removeNode(id: string): void {

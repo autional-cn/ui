@@ -36,7 +36,10 @@ export function TenantRootRedirect() {
 		// 有会话但公开名单尚未返回：等待（名单是 slug 唯一权威，不得抢跑漏斗 brand）。
 		// 无会话（currentTenantId 空）不受此闸，立即漏斗。
 		if (currentTenantId && !tenantsLoaded) return;
-		const target = `${getPortalUrl('brand')}/?redirect=${encodeURIComponent(
+		const brand = getPortalUrl('brand');
+		// 门户不可派生（如经 IP 主机访问）：保持当前页，不导航（与 EntryRouter 同约定）
+		if (!brand) return;
+		const target = `${brand}/?redirect=${encodeURIComponent(
 			window.location.origin + window.location.pathname,
 		)}`;
 		traceRedirect(target, { reason: 'funnel-brand' });

@@ -168,6 +168,13 @@ function resolvePortalUrl(entry: PortalEntry, hostname: string, slug?: string): 
 			? parts.slice(1).join('.')
 			: getRootDomain(hostname);
 
+	// IP 根（127.0.0.1 / 192.168.x.x 等）无法派生子域门户：`brand.127.0.0.1`
+	// 会被浏览器当作非法 IPv4，`location.replace` 直接抛 SyntaxError。
+	// 有 host 前缀时返回 '' 表「不可派生」——与 SSR 空值同语义，调用方以 !url 降级
+	// （EntryRouter / TenantSwitchChip 已有该分支）。host 为空时 fullHost = root = IP
+	// 本身仍合法（如 landing），不拦。
+	if (host && /^\d+(\.\d+){3}$/.test(root)) return '';
+
 	const fullHost = host ? `${host}.${root}` : root;
 	let url = `${window.location.protocol}//${fullHost}${base || ''}`;
 	if (slug) {

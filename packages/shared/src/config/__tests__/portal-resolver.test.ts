@@ -244,4 +244,59 @@ describe('getPortalUrl', () => {
 			expect(getPortalUrl('status', 'demo')).toBe('https://status.iam.tianv.local');
 		});
 	});
+
+	describe('IP host cannot derive subdomain portals (guard returns empty ⇒ callers fall back)', () => {
+		const IP_CONFIG = {
+			VITE_PORTAL_CONFIG: {
+				auth: { host: 'auth', base: '' },
+				landing: { host: '', base: '' },
+				brand: { host: 'brand', base: '' },
+			},
+		};
+
+		beforeEach(() => {
+			vi.stubGlobal('window', {
+				location: {
+					hostname: '127.0.0.1',
+					protocol: 'http:',
+					origin: 'http://127.0.0.1:18951',
+				},
+				__APP_CONFIG__: IP_CONFIG,
+			});
+		});
+
+		it('subdomain portals (brand/auth, with or without slug) → empty string', () => {
+			expect(getPortalUrl('brand')).toBe('');
+			expect(getPortalUrl('auth')).toBe('');
+			expect(getPortalUrl('auth', 'demo')).toBe('');
+		});
+
+		it('host-less portals stay resolvable: landing = IP root itself (legal)', () => {
+			expect(getPortalUrl('landing')).toBe('http://127.0.0.1');
+		});
+
+		it('192.168.x.x private IP: same guard', () => {
+			vi.stubGlobal('window', {
+				location: {
+					hostname: '192.168.3.201',
+					protocol: 'http:',
+					origin: 'http://192.168.3.201',
+				},
+				__APP_CONFIG__: IP_CONFIG,
+			});
+			expect(getPortalUrl('brand')).toBe('');
+		});
+
+		it('default-table branch (no env config) under IP host: same guard', () => {
+			vi.stubGlobal('window', {
+				location: {
+					hostname: '127.0.0.1',
+					protocol: 'http:',
+					origin: 'http://127.0.0.1:18951',
+				},
+			});
+			expect(getPortalUrl('brand')).toBe('');
+			expect(getPortalUrl('landing')).toBe('http://127.0.0.1');
+		});
+	});
 });
