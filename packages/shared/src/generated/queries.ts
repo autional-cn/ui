@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-10-01 00:28:51
+// Generated: 2026-10-01 16:48:56
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from './api';
@@ -397,6 +397,14 @@ export function useAudit_publicStats() {
 
 // --- billing-service ---
 
+/** 列出用量告警（管理端） */
+export function useAdminBillingAlerts(params?: any) {
+  return useQuery({
+    queryKey: ['billing-service', params] as const,
+    queryFn: () => api.adminBillingAlerts(params),
+  });
+}
+
 /** 获取红字发票详情 */
 export function useAdminBillingCredit_noteByCreditNote(number: string) {
   return useQuery({
@@ -477,6 +485,14 @@ export function useAdminBillingPlans() {
   });
 }
 
+/** 获取计费记录（管理端） */
+export function useAdminBillingRecordsByRecords(tenantId: string, params?: any) {
+  return useQuery({
+    queryKey: ['billing-service', 'by_' + tenantId, params] as const,
+    queryFn: () => api.adminBillingRecordsByRecords(tenantId, params),
+  });
+}
+
 /** 获取退款审批状态 */
 export function useAdminBillingRefund_approvalByRefundApproval(approvalId: string) {
   return useQuery({
@@ -498,6 +514,22 @@ export function useAdminBillingRevenue_amortization(params?: any) {
   return useQuery({
     queryKey: ['billing-service', params] as const,
     queryFn: () => api.adminBillingRevenueAmortization(params),
+  });
+}
+
+/** 获取租户统计（管理端） */
+export function useAdminBillingStatisticsByStatistics(tenantId: string, params?: any) {
+  return useQuery({
+    queryKey: ['billing-service', 'by_' + tenantId, params] as const,
+    queryFn: () => api.adminBillingStatisticsByStatistics(tenantId, params),
+  });
+}
+
+/** 获取订阅信息（管理端） */
+export function useAdminBillingSubscriptionBySubscription(tenantId: string) {
+  return useQuery({
+    queryKey: ['billing-service', 'by_' + tenantId] as const,
+    queryFn: () => api.adminBillingSubscriptionBySubscription(tenantId),
   });
 }
 
@@ -538,6 +570,30 @@ export function useAdminBillingTax_exports(params?: any) {
   return useQuery({
     queryKey: ['billing-service', params] as const,
     queryFn: () => api.adminBillingTaxExports(params),
+  });
+}
+
+/** 获取当前使用量（管理端） */
+export function useAdminBillingUsageCurrentByUsage(tenantId: string, params?: any) {
+  return useQuery({
+    queryKey: ['billing-service', 'by_' + tenantId, params] as const,
+    queryFn: () => api.adminBillingUsageCurrentByUsage(tenantId, params),
+  });
+}
+
+/** 获取端点用量TopN排行（管理端） */
+export function useAdminBillingUsageEndpointsByUsage(tenantId: string, params?: any) {
+  return useQuery({
+    queryKey: ['billing-service', 'by_' + tenantId, params] as const,
+    queryFn: () => api.adminBillingUsageEndpointsByUsage(tenantId, params),
+  });
+}
+
+/** 获取用量时间序列（管理端） */
+export function useAdminBillingUsageTimelineByUsage(tenantId: string, params?: any) {
+  return useQuery({
+    queryKey: ['billing-service', 'by_' + tenantId, params] as const,
+    queryFn: () => api.adminBillingUsageTimelineByUsage(tenantId, params),
   });
 }
 
@@ -719,6 +775,22 @@ export function useBillingUsageTimelineByUsage(tenantId: string, params?: any) {
 
 // --- communication-service ---
 
+/** 获取通信仪表盘（管理端） */
+export function useAdminCommunicationDashboard(params?: any) {
+  return useQuery({
+    queryKey: ['communication-service', params] as const,
+    queryFn: () => api.adminCommunicationDashboard(params),
+  });
+}
+
+/** 渠道连通性检查（管理端） */
+export function useAdminCommunicationHealthByHealth(channel: string) {
+  return useQuery({
+    queryKey: ['communication-service', 'by_' + channel] as const,
+    queryFn: () => api.adminCommunicationHealthByHealth(channel),
+  });
+}
+
 /** 管理员查询任意用户的通信日志 */
 export function useAdminCommunicationLogs(params?: any) {
   return useQuery({
@@ -735,11 +807,35 @@ export function useAdminCommunicationPlatform_stats() {
   });
 }
 
+/** 获取服务商配置列表（管理端） */
+export function useAdminCommunicationProviders(params?: any) {
+  return useQuery({
+    queryKey: ['communication-service', params] as const,
+    queryFn: () => api.adminCommunicationProviders(params),
+  });
+}
+
 /** 管理员查看限流配置 */
 export function useAdminCommunicationRate_limits(params?: any) {
   return useQuery({
     queryKey: ['communication-service', params] as const,
     queryFn: () => api.adminCommunicationRateLimits(params),
+  });
+}
+
+/** 获取模板使用统计（近30天，管理端） */
+export function useAdminCommunicationTemplate_stats(params?: any) {
+  return useQuery({
+    queryKey: ['communication-service', params] as const,
+    queryFn: () => api.adminCommunicationTemplateStats(params),
+  });
+}
+
+/** 获取模板列表（管理端） */
+export function useAdminCommunicationTemplates(params?: any) {
+  return useQuery({
+    queryKey: ['communication-service', params] as const,
+    queryFn: () => api.adminCommunicationTemplates(params),
   });
 }
 
@@ -2615,11 +2711,83 @@ export function useAdminNotifications(params?: any) {
   });
 }
 
+/** 列出事件映射（管理端） */
+export function useAdminNotificationsEvent_mappings() {
+  return useQuery({
+    queryKey: ['notification-service'] as const,
+    queryFn: () => api.adminNotificationsEventMappings(),
+  });
+}
+
+/** 获取事件映射详情（管理端） */
+export function useAdminNotificationsEvent_mappingsByEventMappings(announcementId: string) {
+  return useQuery({
+    queryKey: ['notification-service', 'by_' + announcementId] as const,
+    queryFn: () => api.adminNotificationsEventMappingsByEventMappings(announcementId),
+  });
+}
+
+/** 列出全局变量（管理端） */
+export function useAdminNotificationsGlobal_variables() {
+  return useQuery({
+    queryKey: ['notification-service'] as const,
+    queryFn: () => api.adminNotificationsGlobalVariables(),
+  });
+}
+
+/** 获取全局变量（管理端） */
+export function useAdminNotificationsGlobal_variablesByGlobalVariables(announcementId: string) {
+  return useQuery({
+    queryKey: ['notification-service', 'by_' + announcementId] as const,
+    queryFn: () => api.adminNotificationsGlobalVariablesByGlobalVariables(announcementId),
+  });
+}
+
 /** 获取平台级通知统计 */
 export function useAdminNotificationsPlatform_stats() {
   return useQuery({
     queryKey: ['notification-service'] as const,
     queryFn: () => api.adminNotificationsPlatformStats(),
+  });
+}
+
+/** 获取通知已读报告（管理端） */
+export function useAdminNotificationsRead_report() {
+  return useQuery({
+    queryKey: ['notification-service'] as const,
+    queryFn: () => api.adminNotificationsReadReport(),
+  });
+}
+
+/** 获取通知统计（管理端） */
+export function useAdminNotificationsStats() {
+  return useQuery({
+    queryKey: ['notification-service'] as const,
+    queryFn: () => api.adminNotificationsStats(),
+  });
+}
+
+/** 列出通知模板（管理端） */
+export function useAdminNotificationsTemplates(params?: any) {
+  return useQuery({
+    queryKey: ['notification-service', params] as const,
+    queryFn: () => api.adminNotificationsTemplates(params),
+  });
+}
+
+/** 获取通知模板详情（管理端） */
+export function useAdminNotificationsTemplatesByTemplates(announcementId: string) {
+  return useQuery({
+    queryKey: ['notification-service', 'by_' + announcementId] as const,
+    queryFn: () => api.adminNotificationsTemplatesByTemplates(announcementId),
+  });
+}
+
+/** 获取通知趋势（管理端） */
+export function useAdminNotificationsTrend(params?: any) {
+  return useQuery({
+    queryKey: ['notification-service', params] as const,
+    queryFn: () => api.adminNotificationsTrend(params),
   });
 }
 
@@ -3915,6 +4083,22 @@ export function useAdminStorageEncryption_status() {
   });
 }
 
+/** 获取文件列表（管理端） */
+export function useAdminStorageFiles(params?: any) {
+  return useQuery({
+    queryKey: ['storage-service', params] as const,
+    queryFn: () => api.adminStorageFiles(params),
+  });
+}
+
+/** 下载文件（管理端） */
+export function useAdminStorageFilesDownloadByFiles(fileId: string) {
+  return useQuery({
+    queryKey: ['storage-service', 'by_' + fileId] as const,
+    queryFn: () => api.adminStorageFilesDownloadByFiles(fileId),
+  });
+}
+
 /** 管理员获取存储配额 */
 export function useAdminStorageQuota() {
   return useQuery({
@@ -3928,6 +4112,14 @@ export function useAdminStorageStats() {
   return useQuery({
     queryKey: ['storage-service'] as const,
     queryFn: () => api.adminStorageStats(),
+  });
+}
+
+/** 获取回收站列表（管理端） */
+export function useAdminStorageTrash(params?: any) {
+  return useQuery({
+    queryKey: ['storage-service', params] as const,
+    queryFn: () => api.adminStorageTrash(params),
   });
 }
 
@@ -4975,6 +5167,39 @@ export function usePostAdminAuditVerifications() {
 
 // --- billing-service ---
 
+/** 创建用量告警（管理端） */
+export function usePostAdminBillingAlerts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.adminBillingAlertsPost(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['billing-service'] });
+    },
+  });
+}
+
+/** 删除用量告警（管理端） */
+export function useDeleteAdminBillingAlertsByAlerts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (alertId: string) => api.adminBillingAlertsByAlertsDelete(alertId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['billing-service'] });
+    },
+  });
+}
+
+/** 更新用量告警（管理端） */
+export function usePutAdminBillingAlertsByAlerts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ alertId, data }: { alertId: string, data: any }) => api.adminBillingAlertsByAlertsPut(alertId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['billing-service'] });
+    },
+  });
+}
+
 /** 删除红字发票 */
 export function useDeleteAdminBillingCredit_noteByCreditNote() {
   const qc = useQueryClient();
@@ -5520,7 +5745,7 @@ export function usePutCommunicationPush_tokensByPushTokens() {
 export function useDeleteCommunicationScheduledByScheduled() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ messageId, data }: { messageId: string, data: any }) => api.communicationScheduledByScheduledDelete(messageId, data),
+    mutationFn: (messageId: string) => api.communicationScheduledByScheduledDelete(messageId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['communication-service'] });
     },
@@ -9097,6 +9322,17 @@ export function usePostAdminNotificationsTemplatesClone_to_localeByTemplates() {
   });
 }
 
+/** 发送测试通知（管理端） */
+export function usePostAdminNotificationsTest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.adminNotificationsTestPost(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notification-service'] });
+    },
+  });
+}
+
 /** 发送通知 */
 export function usePostNotifications() {
   const qc = useQueryClient();
@@ -11196,11 +11432,66 @@ export function usePostAdminStorageData_retention_policy() {
   });
 }
 
+/** 上传文件（管理端） */
+export function usePostAdminStorageFiles() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.adminStorageFilesPost(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['storage-service'] });
+    },
+  });
+}
+
+/** 删除文件（管理端） */
+export function useDeleteAdminStorageFilesByFiles() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (fileId: string) => api.adminStorageFilesByFilesDelete(fileId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['storage-service'] });
+    },
+  });
+}
+
+/** 创建文件夹（管理端） */
+export function usePostAdminStorageFolders() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.adminStorageFoldersPost(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['storage-service'] });
+    },
+  });
+}
+
 /** 管理员更新存储配额 */
 export function usePutAdminStorageQuota() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => api.adminStorageQuotaPut(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['storage-service'] });
+    },
+  });
+}
+
+/** 从回收站永久删除（管理端） */
+export function useDeleteAdminStorageTrashByTrash() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (trashId: string) => api.adminStorageTrashByTrashDelete(trashId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['storage-service'] });
+    },
+  });
+}
+
+/** 从回收站恢复文件（管理端） */
+export function usePostAdminStorageTrashRestoreByTrash() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (trashId: string) => api.adminStorageTrashRestoreByTrashPost(trashId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['storage-service'] });
     },

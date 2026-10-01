@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-10-01 00:28:51
+// Generated: 2026-10-01 16:48:56
 
 // ============================================================
 // Shared generic types
@@ -829,7 +829,16 @@ export interface TenantFeatureGateOverride {
   id?: string;
   tenantId?: string;
   updatedAt?: string;
-  updatedBy?: string;
+  updatedBy?: string;  // 审计列（AC 回归）：26→128 只扩不缩；API 已暴露故 json tag 不动
+}
+
+export interface ListResponsegitee_com_autional_servicebilling_internal_handler_dto_SubscriptionResponse {
+  code?: number;
+  items?: SubscriptionResponse[];  // 统一使用 items
+  message?: string;
+  pagination?: PageInfo;  // 分页信息（嵌套对象）
+  timestamp?: string;
+  total?: number;  // 总条数（平铺，便于直接读取）
 }
 
 export interface AppBillingEventRequest {
@@ -1161,15 +1170,6 @@ export interface InvoiceResponse {
   paidAt?: string;  // @example 2026-04-10T15:00:00Z
   status?: string;  // @example issued
   tenantId?: string;  // @example tnt_xyz789
-}
-
-export interface ListResponsedto_SubscriptionResponse {
-  code?: number;
-  items?: SubscriptionResponse[];  // 统一使用 items
-  message?: string;
-  pagination?: PageInfo;  // 分页信息（嵌套对象）
-  timestamp?: string;
-  total?: number;  // 总条数（平铺，便于直接读取）
 }
 
 export interface MeteredBillingExportItem {
@@ -1618,6 +1618,29 @@ export interface ChannelRateLimitData {
   tenantId?: string;
 }
 
+export interface DataResponseany {
+  code?: number;
+  data?: unknown;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface DataResponsegitee_com_autional_servicecommunication_internal_handler_dto_PreviewTemplateResponse {
+  code?: number;
+  data?: PreviewTemplateResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface ListResponsegitee_com_autional_servicecommunication_internal_handler_dto_ProviderConfigResponse {
+  code?: number;
+  items?: ProviderConfigResponse[];  // 统一使用 items
+  message?: string;
+  pagination?: PageInfo;  // 分页信息（嵌套对象）
+  timestamp?: string;
+  total?: number;  // 总条数（平铺，便于直接读取）
+}
+
 export interface AvailableTemplateListResponse {
   code?: number;
   items?: AvailableTemplateResponse[];  // 统一使用 items
@@ -1643,6 +1666,7 @@ export interface AvailableTemplateResponse {
 export interface BulkSendRequest {
   channel: "sms" | "email";  // @example sms
   content: string;  // @example 您的验证码是123456
+  purpose?: string;  // @example sms_verification
   recipients: string[];  // @example ['["13800138000"', '"13900139000"]']
   subject?: string;  // @example 通知
   template?: string;  // @example verify_code
@@ -1661,10 +1685,6 @@ export interface CallbackResultDetailResponse {
 export interface CallbackResultResponse {
   provider?: string;  // @example aliyun
   received?: boolean;  // @example True
-}
-
-export interface CancelScheduledRequest {
-  cancelKey?: string;
 }
 
 export interface ChannelHealthDataResponse {
@@ -1774,33 +1794,39 @@ export interface CreateTemplateResponse {
   message?: string;  // @example success
 }
 
-export interface DataResponseany {
-  code?: number;
-  data?: unknown;
-  message?: string;
-  timestamp?: string;
-}
-
-export interface DataResponsedto_PreviewTemplateResponse {
-  code?: number;
-  data?: PreviewTemplateResponse;
-  message?: string;
-  timestamp?: string;
-}
-
 /** 发送邮件请求参数 */
 export interface EmailRequest {
   bcc?: string[];  // 密送 | @example ['manager@example.com']
-  cancelKey?: string;  // @example order-123
   cc?: string[];  // 抄送 | @example ['admin@example.com']
   content?: string;  // 内容 | @example <h1>欢迎！</h1>
   isHtml?: boolean;  // HTML格式 | @example False
+  listUnsubscribe?: boolean;  // ListUnsubscribe 退订头开关（WS-D D5）。缺省(nil) = 按 email.subscription_template_codes 配置判定； true = 显式加 List-Unsubscribe；false ... | @example True
   sendAt?: string;  // @example 2026-06-07T10:00:00Z
   subject: string;  // 主题 | @example 账户激活邮件
   template?: string;  // 模板 | @example welcome_email
   to: string[];  // 收件人 | @example ['user@example.com']
   userId?: string;  // 用户ID | @example usr_abc123
   variables?: Record<string, string>;  // 变量
+}
+
+export interface EmailSuppressionListResponse {
+  code?: number;
+  items?: EmailSuppressionResponse[];  // 统一使用 items
+  message?: string;
+  pagination?: PageInfo;  // 分页信息（嵌套对象）
+  timestamp?: string;
+  total?: number;  // 总条数（平铺，便于直接读取）
+}
+
+export interface EmailSuppressionResponse {
+  bounceCount?: number;  // @example 3
+  createdAt?: string;  // @example 2026-09-17T10:00:00Z
+  emailMasked?: string;  // @example u***@example.com
+  expiresAt?: string;  // ExpiresAt 保留期到期时间（U3）。空 = 不过期（保留期配置为 0，或本列引入前的历史行）。 运维需要它来回答「这条抑制为什么会被自动解除」与「历史行何时被回收」。 | @example 2027-03-16T10:00:00Z
+  isActive?: boolean;  // @example True
+  lastBouncedAt?: string;  // @example 2026-09-17T10:00:00Z
+  provider?: string;  // @example smtp
+  reason?: string;  // hard_bounce | soft_bounce | complaint | @example hard_bounce
 }
 
 export interface EraseUserDataRequest {
@@ -1812,6 +1838,23 @@ export interface ExportUserDataDetailResponse {
   data?: ExportUserDataResponse;
   message?: string;
   timestamp?: string;
+}
+
+export interface InternalPushSendRequest {
+  body: string;  // @example Login from Beijing - Approve?
+  data?: Record<string, unknown>;
+  title: string;  // @example New Login Attempt
+  userId?: string;  // @example user-001
+}
+
+export interface InternalRegisterPushSubscriptionRequest {
+  appId?: string;
+  deviceName?: string;  // @example Chrome on Windows
+  deviceType?: string;  // @example web
+  endpoint: string;  // @example https://fcm.googleapis.com/fcm/send/...
+  keys: PushSubscriptionKeys;
+  userAgent?: string;
+  userId: string;  // @example user-001
 }
 
 export interface InternalSendDetailResponse {
@@ -1839,15 +1882,6 @@ export interface InternalSendResponse {
   messageId?: string;  // @example internal-1234567890
   status?: string;  // @example queued
   to?: string;  // @example user@example.com
-}
-
-export interface ListResponsedto_ProviderConfigResponse {
-  code?: number;
-  items?: ProviderConfigResponse[];  // 统一使用 items
-  message?: string;
-  pagination?: PageInfo;  // 分页信息（嵌套对象）
-  timestamp?: string;
-  total?: number;  // 总条数（平铺，便于直接读取）
 }
 
 export interface MessageTemplateDetailResponse {
@@ -1936,6 +1970,49 @@ export interface PushResultResponse {
   tokensSent?: number;  // @example 2
 }
 
+export interface PushSendDetailResponse {
+  code?: number;
+  data?: PushSendResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface PushSendResponse {
+  failed?: number;  // @example 0
+  sent?: number;  // @example 3
+  total?: number;  // @example 3
+}
+
+export interface PushSubscriptionDetailResponse {
+  code?: number;
+  data?: PushSubscriptionResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface PushSubscriptionKeys {
+  auth: string;  // @example xK2s9...
+  p256dh: string;  // @example BP7S2s9...
+}
+
+export interface PushSubscriptionListResponse {
+  code?: number;
+  items?: PushSubscriptionResponse[];  // 统一使用 items
+  message?: string;
+  pagination?: PageInfo;  // 分页信息（嵌套对象）
+  timestamp?: string;
+  total?: number;  // 总条数（平铺，便于直接读取）
+}
+
+/** Web Push 订阅信息 */
+export interface PushSubscriptionResponse {
+  createdAt?: string;  // @example 2026-05-12T12:00:00Z
+  deviceName?: string;  // @example Chrome on Windows
+  deviceType?: string;  // @example web
+  endpoint?: string;  // @example https://fcm.googleapis.com/fcm/send/...
+  id?: string;  // @example sub-abc123
+}
+
 export interface PushTokenDataResponse {
   code?: number;
   data?: PushTokenResponse;
@@ -1976,6 +2053,17 @@ export interface RateLimitsResponse {
   sms?: ChannelRateLimitData;
 }
 
+export interface ReleaseEmailSuppressionDetailResponse {
+  code?: number;
+  data?: ReleaseEmailSuppressionResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface ReleaseEmailSuppressionResponse {
+  released?: boolean;  // @example True
+}
+
 export interface RenderedContent {
   error?: string;
   rendered?: string;  // @example 您的验证码是123456，5分钟内有效
@@ -1983,9 +2071,9 @@ export interface RenderedContent {
 
 /** 发送短信请求参数 */
 export interface SMSRequest {
-  cancelKey?: string;  // @example order-123
   content?: string;  // 内容 | @example 您的验证码是123456
   phone: string;  // 手机号 | @example 13800138000
+  purpose?: string;  // Purpose 业务场景（审计/路由/脱敏；可选，向后兼容）。 | @example sms_verification
   sendAt?: string;  // @example 2026-06-07T10:00:00Z
   template?: string;  // 模板 | @example verify_code
   userId?: string;  // 用户ID | @example usr_abc123
@@ -2109,6 +2197,18 @@ export interface UpdateTemplateRequest {
   subject?: string;  // @example 验证码通知v2
   textContent?: string;  // @example Your code is {code}, valid for 10 min
   variables?: string[];  // @example ['["code"]']
+}
+
+export interface VapidPublicKeyDetailResponse {
+  code?: number;
+  data?: VapidPublicKeyResponse;
+  message?: string;
+  timestamp?: string;
+}
+
+/** Web Push VAPID 公钥，前端注册 Push 订阅时使用 */
+export interface VapidPublicKeyResponse {
+  publicKey?: string;  // @example BEL5Oa...
 }
 
 // ============================================================
@@ -7792,13 +7892,6 @@ export interface InternalCreateTemplateRequest {
   variables?: string[];
 }
 
-export interface InternalPushSendRequest {
-  body: string;  // @example Login from Beijing - Approve?
-  data?: Record<string, unknown>;
-  title: string;  // @example New Login Attempt
-  userId?: string;  // @example user-001
-}
-
 export interface InternalSendExternalRequest {
   channel: string;  // @example email
   locale?: string;  // @example en-US
@@ -7904,54 +7997,12 @@ export interface NotificationStatsResponse {
   totalSent?: number;  // 总发送 | @example 1000
 }
 
-export interface PushSendDetailResponse {
-  code?: number;
-  data?: PushSendResponse;
-  message?: string;
-  timestamp?: string;
-}
-
-export interface PushSendResponse {
-  failed?: number;  // @example 0
-  sent?: number;  // @example 3
-  total?: number;  // @example 3
-}
-
-export interface PushSubscriptionDetailResponse {
-  code?: number;
-  data?: PushSubscriptionResponse;
-  message?: string;
-  timestamp?: string;
-}
-
-export interface PushSubscriptionKeys {
-  auth: string;  // @example xK2s9...
-  p256dh: string;  // @example BP7S2s9...
-}
-
-export interface PushSubscriptionListResponse {
-  code?: number;
-  items?: PushSubscriptionResponse[];  // 统一使用 items
-  message?: string;
-  pagination?: PageInfo;  // 分页信息（嵌套对象）
-  timestamp?: string;
-  total?: number;  // 总条数（平铺，便于直接读取）
-}
-
 export interface PushSubscriptionRequest {
   deviceName?: string;  // @example Chrome on Windows
   deviceType?: string;  // @example web
   endpoint: string;  // @example https://fcm.googleapis.com/fcm/send/...
   keys: PushSubscriptionKeys;
   userAgent?: string;
-}
-
-export interface PushSubscriptionResponse {
-  createdAt?: string;  // @example 2026-05-12T12:00:00Z
-  deviceName?: string;  // @example Chrome on Windows
-  deviceType?: string;  // @example web
-  endpoint?: string;  // @example https://fcm.googleapis.com/fcm/send/...
-  id?: string;  // @example sub-abc123
 }
 
 export interface ReadReportDetailResponse {
@@ -8111,18 +8162,6 @@ export interface UpdateEventMappingRequest {
 
 export interface UpdateGlobalVariableRequest {
   value: string;
-}
-
-export interface VapidPublicKeyDetailResponse {
-  code?: number;
-  data?: VapidPublicKeyResponse;
-  message?: string;
-  timestamp?: string;
-}
-
-/** Web Push VAPID 公钥，前端注册 Push 订阅时使用 */
-export interface VapidPublicKeyResponse {
-  publicKey?: string;  // VAPID 公钥 | @example BEL5Oa...
 }
 
 export interface HealthErrorResponse {

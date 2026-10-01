@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-10-01 00:28:51
+// Generated: 2026-10-01 16:48:56
 
 // @ts-nocheck — auto-generated; validated by check-generated-api.py
 import type * as Types from './types';
@@ -767,6 +767,47 @@ export async function auditPublicStats() {
 // ============================================================
 
 /**
+ * 列出用量告警（管理端）
+ * 与用户面 /billing/alerts 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingAlerts(params?: {
+  app_id?: string;  // 应用ID（可选）
+  resource_type?: string;  // 资源类型（可选）
+  status?: string;  // 告警状态（active/silenced/triggered）
+  page?: number;  // 页码
+  page_size?: number;  // 每页条数
+}) {
+  const res = await api.get(`/billing/api/v1/admin/billing/alerts`, { params });
+  return res.data;
+}
+
+/**
+ * 创建用量告警（管理端）
+ * 与用户面 POST /billing/alerts 同体、同租户范围；供控制台在 admin 平面写入。
+ */
+export async function adminBillingAlertsPost(data: CreateUsageAlertRequest) {
+  const res = await api.post(`/billing/api/v1/admin/billing/alerts`, data);
+  return res.data;
+}
+
+/**
+ * 删除用量告警（管理端）
+ * 与用户面 DELETE /billing/alerts/{alert_id} 同体、同租户范围；供控制台在 admin 平面写入。
+ */
+export async function adminBillingAlertsByAlertsDelete(alertId: string) {
+  await api.delete(`/billing/api/v1/admin/billing/alerts/${alertId}`);
+}
+
+/**
+ * 更新用量告警（管理端）
+ * 与用户面 PUT /billing/alerts/{alert_id} 同体、同租户范围；供控制台在 admin 平面写入。
+ */
+export async function adminBillingAlertsByAlertsPut(alertId: string, data: UpdateUsageAlertRequest) {
+  const res = await api.put(`/billing/api/v1/admin/billing/alerts/${alertId}`, data);
+  return res.data;
+}
+
+/**
  * 删除红字发票
  * 物理删除一张红字发票记录
  */
@@ -989,6 +1030,19 @@ export async function adminBillingRecordsByRecordsDelete(recordId: string) {
 }
 
 /**
+ * 获取计费记录（管理端）
+ * 与用户面 /billing/records/{tenant_id} 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingRecordsByRecords(tenantId: string, params?: {
+  app_id?: string;  // 应用ID
+  page?: number;  // 页码
+  page_size?: number;  // 每页条数
+}) {
+  const res = await api.get(`/billing/api/v1/admin/billing/records/${tenantId}`, { params });
+  return res.data;
+}
+
+/**
  * 提交退款审批
  * 发起退款审批流程，记录退款金额、原因和关联交易。审批通过后由管理员执行实际退款操作。
  */
@@ -1067,11 +1121,31 @@ export async function adminBillingRevenueAmortization(params?: {
 }
 
 /**
+ * 获取租户统计（管理端）
+ * 与用户面 /billing/statistics/{tenant_id} 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingStatisticsByStatistics(tenantId: string, params?: {
+  app_id?: string;  // 应用ID（可选）
+}) {
+  const res = await api.get(`/billing/api/v1/admin/billing/statistics/${tenantId}`, { params });
+  return res.data;
+}
+
+/**
  * 取消订阅
  * 取消指定租户的当前订阅，状态变更为 cancelled。取消后租户在订阅周期结束后失去套餐功能。
  */
 export async function adminBillingSubscriptionBySubscriptionDelete(tenantId: string) {
   await api.delete(`/billing/api/v1/admin/billing/subscription/${tenantId}`);
+}
+
+/**
+ * 获取订阅信息（管理端）
+ * 与用户面 /billing/subscription/{tenant_id} 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingSubscriptionBySubscription(tenantId: string) {
+  const res = await api.get(`/billing/api/v1/admin/billing/subscription/${tenantId}`);
+  return res.data;
 }
 
 /**
@@ -1123,7 +1197,7 @@ export async function adminBillingSubscriptionAppsPricingBySubscriptionByAppsPos
 
 /**
  * 取消试用期
- * 立即终止指定租户当前订阅的免费试用期，状态变更为 active（转为正式计费）
+ * 立即终止指定租户当前订阅的免费试用期（仅试用中订阅可调用，否则 400），状态变更为 cancelled
  */
 export async function adminBillingSubscriptionCancelTrialBySubscriptionPost(tenantId: string) {
   const res = await api.post(`/billing/api/v1/admin/billing/subscription/${tenantId}/cancel-trial`);
@@ -1200,6 +1274,42 @@ export async function adminBillingTaxExports(params?: {
  */
 export async function adminBillingUsageStatsByUsageStatsByUsageIdPut(tenantId: string, usageId: string, data: Record<string, unknown>) {
   const res = await api.put(`/billing/api/v1/admin/billing/usage-stats/${tenantId}/${usageId}`, data);
+  return res.data;
+}
+
+/**
+ * 获取当前使用量（管理端）
+ * 与用户面 /billing/usage/{tenant_id}/current 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingUsageCurrentByUsage(tenantId: string, params?: {
+  app_id?: string;  // 应用ID（可选）
+}) {
+  const res = await api.get(`/billing/api/v1/admin/billing/usage/${tenantId}/current`, { params });
+  return res.data;
+}
+
+/**
+ * 获取端点用量TopN排行（管理端）
+ * 与用户面 /billing/usage/{tenant_id}/endpoints 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingUsageEndpointsByUsage(tenantId: string, params?: {
+  app_id?: string;  // 应用ID（可选）
+  limit?: number;  // 返回条数
+  days?: number;  // 统计天数
+}) {
+  const res = await api.get(`/billing/api/v1/admin/billing/usage/${tenantId}/endpoints`, { params });
+  return res.data;
+}
+
+/**
+ * 获取用量时间序列（管理端）
+ * 与用户面 /billing/usage/{tenant_id}/timeline 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingUsageTimelineByUsage(tenantId: string, params?: {
+  app_id?: string;  // 应用ID（可选）
+  days?: number;  // 统计天数
+}) {
+  const res = await api.get(`/billing/api/v1/admin/billing/usage/${tenantId}/timeline`, { params });
   return res.data;
 }
 
@@ -1497,6 +1607,26 @@ export async function billingUsageTimelineByUsage(tenantId: string, params?: {
 // ============================================================
 
 /**
+ * 获取通信仪表盘（管理端）
+ * 与用户面 /communication/dashboard 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminCommunicationDashboard(params?: {
+  days?: number;  // 统计天数范围（默认30天）
+}) {
+  const res = await api.get(`/communication/api/v1/admin/communication/dashboard`, { params });
+  return res.data;
+}
+
+/**
+ * 渠道连通性检查（管理端）
+ * 与用户面 /communication/health/{channel} 同体；供控制台在 admin 平面读取。
+ */
+export async function adminCommunicationHealthByHealth(channel: string) {
+  const res = await api.get(`/communication/api/v1/admin/communication/health/${channel}`);
+  return res.data;
+}
+
+/**
  * 管理员查询任意用户的通信日志
  * 管理员可按用户ID查询任意用户的通信日志，支持分页和渠道、状态筛选。与普通用户GetLogs接口不同，此接口不受用户隔离限制。参考：ePrivacy Directive 2002/58/EC、CAN-SPAM Act。
  */
@@ -1517,6 +1647,20 @@ export async function adminCommunicationLogs(params?: {
  */
 export async function adminCommunicationPlatformStats() {
   const res = await api.get(`/communication/api/v1/admin/communication/platform-stats`);
+  return res.data;
+}
+
+/**
+ * 获取服务商配置列表（管理端）
+ * 与用户面 /communication/providers 同体、同租户范围；供控制台在 admin 平面读取。凭据已脱敏。
+ */
+export async function adminCommunicationProviders(params?: {
+  channel?: string;  // 渠道筛选：sms/email/push
+  is_active?: boolean;  // 激活状态筛选：true/false
+  page?: number;  // 页码，从1开始（默认1）
+  page_size?: number;  // 每页条数（默认20）
+}) {
+  const res = await api.get(`/communication/api/v1/admin/communication/providers`, { params });
   return res.data;
 }
 
@@ -1559,10 +1703,36 @@ export async function adminCommunicationRateLimits(params?: {
 
 /**
  * 重发失败消息
- * 将处于failed或cancelled状态的消息重新加入发送队列进行重试。仅支持sms和email渠道（推送不支持重发）。重发后会创建新的发送记录并通过对应服务商重新投递。参考：ePrivacy Directive 2002/58/EC、CAN-SPAM Act。
+ * 将处于failed或cancelled状态的消息通过对应服务商重新投递。仅支持sms和email渠道（推送不支持重发）。重发会创建新的发送记录承载本次投递结果并返回真实投递结果（失败返回错误）。参考：ePrivacy Directive 2002/58/EC、CAN-SPAM Act。
  */
 export async function adminCommunicationResendByResendPost(messageId: string) {
   const res = await api.post(`/communication/api/v1/admin/communication/resend/${messageId}`);
+  return res.data;
+}
+
+/**
+ * 获取模板使用统计（近30天，管理端）
+ * 与用户面 /communication/template-stats 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminCommunicationTemplateStats(params?: {
+  channel?: string;  // 渠道筛选：sms/email/push
+}) {
+  const res = await api.get(`/communication/api/v1/admin/communication/template-stats`, { params });
+  return res.data;
+}
+
+/**
+ * 获取模板列表（管理端）
+ * 与用户面 /communication/templates 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminCommunicationTemplates(params?: {
+  channel?: string;  // 渠道筛选：sms/email/push
+  is_active?: boolean;  // 是否激活筛选：true/false
+  keyword?: string;  // 关键词搜索（匹配模板名称或编码）
+  page?: number;  // 页码，从1开始（默认1）
+  page_size?: number;  // 每页条数（默认20）
+}) {
+  const res = await api.get(`/communication/api/v1/admin/communication/templates`, { params });
   return res.data;
 }
 
@@ -1630,7 +1800,7 @@ export async function communicationBulkPost(data: BulkSendRequest) {
 
 /**
  * 处理短信/邮件/推送服务商回调
- * 接收并处理各短信、邮件、推送服务商（阿里云、腾讯云、AWS SNS/SES、SendGrid、Mailgun、FCM、APNs、JPush等）的投递状态回调通知，自动更新对应消息的发送状态。回调为公开端点，由各服务商直接调用。参考：ePrivacy Directive 2002/58/EC、CAN-SPAM Act。
+ * 接收并处理各短信、邮件、推送服务商（阿里云、腾讯云、AWS SNS/SES、SendGrid、Mailgun、FCM、APNs、JPush等）的投递状态回调通知，自动更新对应消息的发送状态。回调为公开端点，必须携带 HMAC-SHA256 签名（X-Callback-Signature，hex；密钥见 callback.secret），签名缺失/不符一律 401。参考：ePrivacy Directive 2002/58/EC、CAN-SPAM Act。
  */
 export async function communicationCallbackByCallbackPost(provider: string, data: Record<string, unknown>) {
   const res = await api.post(`/communication/api/v1/communication/callback/${provider}`, data);
@@ -1768,8 +1938,8 @@ export async function communicationRateLimits(params?: {
  * 取消定时发送消息
  * 取消指定ID且处于scheduled状态的消息定时发送任务。已发送或已失败的消息无法取消。取消后消息状态变更为cancelled。参考：ePrivacy Directive 2002/58/EC、CAN-SPAM Act。
  */
-export async function communicationScheduledByScheduledDelete(messageId: string, data: CancelScheduledRequest) {
-  await api.delete(`/communication/api/v1/communication/scheduled/${messageId}`, { data });
+export async function communicationScheduledByScheduledDelete(messageId: string) {
+  await api.delete(`/communication/api/v1/communication/scheduled/${messageId}`);
 }
 
 /**
@@ -6940,6 +7110,15 @@ export async function adminNotificationsBroadcastPost(data: BroadcastNotificatio
 }
 
 /**
+ * 列出事件映射（管理端）
+ * 与用户面 /notifications/event-mappings 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsEventMappings() {
+  const res = await api.get(`/notification/api/v1/admin/notifications/event-mappings`);
+  return res.data;
+}
+
+/**
  * 创建事件映射
  * 创建事件类型到通知模板的映射关系 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
  */
@@ -6957,11 +7136,29 @@ export async function adminNotificationsEventMappingsByEventMappingsDelete(annou
 }
 
 /**
+ * 获取事件映射详情（管理端）
+ * 与用户面 /notifications/event-mappings/{announcement_id} 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsEventMappingsByEventMappings(announcementId: string) {
+  const res = await api.get(`/notification/api/v1/admin/notifications/event-mappings/${announcementId}`);
+  return res.data;
+}
+
+/**
  * 更新事件映射
  * 更新指定ID的事件映射配置 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
  */
 export async function adminNotificationsEventMappingsByEventMappingsPut(announcementId: string, data: UpdateEventMappingRequest) {
   const res = await api.put(`/notification/api/v1/admin/notifications/event-mappings/${announcementId}`, data);
+  return res.data;
+}
+
+/**
+ * 列出全局变量（管理端）
+ * 与用户面 /notifications/global-variables 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsGlobalVariables() {
+  const res = await api.get(`/notification/api/v1/admin/notifications/global-variables`);
   return res.data;
 }
 
@@ -6980,6 +7177,15 @@ export async function adminNotificationsGlobalVariablesPost(data: CreateGlobalVa
  */
 export async function adminNotificationsGlobalVariablesByGlobalVariablesDelete(announcementId: string) {
   await api.delete(`/notification/api/v1/admin/notifications/global-variables/${announcementId}`);
+}
+
+/**
+ * 获取全局变量（管理端）
+ * 与用户面 /notifications/global-variables/{announcement_id} 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsGlobalVariablesByGlobalVariables(announcementId: string) {
+  const res = await api.get(`/notification/api/v1/admin/notifications/global-variables/${announcementId}`);
+  return res.data;
 }
 
 /**
@@ -7010,6 +7216,38 @@ export async function adminNotificationsPreferencesByPreferencesPut(userId: stri
 }
 
 /**
+ * 获取通知已读报告（管理端）
+ * 与用户面 /notifications/read-report 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsReadReport() {
+  const res = await api.get(`/notification/api/v1/admin/notifications/read-report`);
+  return res.data;
+}
+
+/**
+ * 获取通知统计（管理端）
+ * 与用户面 /notifications/stats 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsStats() {
+  const res = await api.get(`/notification/api/v1/admin/notifications/stats`);
+  return res.data;
+}
+
+/**
+ * 列出通知模板（管理端）
+ * 与用户面 /notifications/templates 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsTemplates(params?: {
+  include_inactive?: boolean;  // 包含已停用模板
+  type?: string;  // 通知类型过滤
+  page?: number;  // 页码（默认1）
+  page_size?: number;  // 每页条数（默认20）
+}) {
+  const res = await api.get(`/notification/api/v1/admin/notifications/templates`, { params });
+  return res.data;
+}
+
+/**
  * 创建通知模板
  * 创建一个新的通知模板，用于后续基于模板发送通知 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
  */
@@ -7027,6 +7265,15 @@ export async function adminNotificationsTemplatesByTemplatesDelete(announcementI
 }
 
 /**
+ * 获取通知模板详情（管理端）
+ * 与用户面 /notifications/templates/{announcement_id} 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsTemplatesByTemplates(announcementId: string) {
+  const res = await api.get(`/notification/api/v1/admin/notifications/templates/${announcementId}`);
+  return res.data;
+}
+
+/**
  * 更新通知模板
  * 更新指定ID的通知模板内容 参考：CAN-SPAM Act (15 U.S.C. §7701) — Commercial Email Compliance。
  */
@@ -7041,6 +7288,26 @@ export async function adminNotificationsTemplatesByTemplatesPut(announcementId: 
  */
 export async function adminNotificationsTemplatesCloneToLocaleByTemplatesPost(announcementId: string, data: CloneTemplateToLocaleRequest) {
   const res = await api.post(`/notification/api/v1/admin/notifications/templates/${announcementId}/clone-to-locale`, data);
+  return res.data;
+}
+
+/**
+ * 发送测试通知（管理端）
+ * 与用户面 /notifications/test 同体、同租户范围；供控制台在 admin 平面写入。
+ */
+export async function adminNotificationsTestPost(data: TestNotificationRequest) {
+  const res = await api.post(`/notification/api/v1/admin/notifications/test`, data);
+  return res.data;
+}
+
+/**
+ * 获取通知趋势（管理端）
+ * 与用户面 /notifications/trend 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminNotificationsTrend(params?: {
+  days?: number;  // 天数（默认30）
+}) {
+  const res = await api.get(`/notification/api/v1/admin/notifications/trend`, { params });
   return res.data;
 }
 
@@ -10432,6 +10699,55 @@ export async function adminStorageEncryptionStatus() {
 }
 
 /**
+ * 获取文件列表（管理端）
+ * 与用户面 /files 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminStorageFiles(params?: {
+  parent_id?: string;  // 父文件夹ID，不填则查询根目录文件
+  page?: number;  // 页码（默认1）
+  page_size?: number;  // 每页条数（默认20，最大100）
+  keyword?: string;  // 文件名关键词搜索
+}) {
+  const res = await api.get(`/storage/api/v1/admin/storage/files`, { params });
+  return res.data;
+}
+
+/**
+ * 上传文件（管理端）
+ * 与用户面 /files 同体、同租户范围；供控制台在 admin 平面写入。
+ */
+export async function adminStorageFilesPost() {
+  const res = await api.post(`/storage/api/v1/admin/storage/files`);
+  return res.data;
+}
+
+/**
+ * 删除文件（管理端）
+ * 与用户面 /files/{file_id} 同体、同租户范围；供控制台在 admin 平面写入。软删除，入回收站。
+ */
+export async function adminStorageFilesByFilesDelete(fileId: string) {
+  await api.delete(`/storage/api/v1/admin/storage/files/${fileId}`);
+}
+
+/**
+ * 下载文件（管理端）
+ * 与用户面 /files/{file_id}/download 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminStorageFilesDownloadByFiles(fileId: string) {
+  const res = await api.get(`/storage/api/v1/admin/storage/files/${fileId}/download`);
+  return res.data;
+}
+
+/**
+ * 创建文件夹（管理端）
+ * 与用户面 /storage/folders 同体、同租户范围；供控制台在 admin 平面写入。
+ */
+export async function adminStorageFoldersPost(data: CreateFolderRequest) {
+  const res = await api.post(`/storage/api/v1/admin/storage/folders`, data);
+  return res.data;
+}
+
+/**
  * 管理员获取存储配额
  * 获取当前租户的存储配额及已使用情况（已用字节数、可用字节数、使用百分比）。参考：GDPR Art 32 (Security of Processing)。
  */
@@ -10455,6 +10771,35 @@ export async function adminStorageQuotaPut(data: UpdateStorageQuotaRequest) {
  */
 export async function adminStorageStats() {
   const res = await api.get(`/storage/api/v1/admin/storage/stats`);
+  return res.data;
+}
+
+/**
+ * 获取回收站列表（管理端）
+ * 与用户面 /storage/trash 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminStorageTrash(params?: {
+  page?: number;  // 页码（默认1）
+  page_size?: number;  // 每页条数（默认20）
+}) {
+  const res = await api.get(`/storage/api/v1/admin/storage/trash`, { params });
+  return res.data;
+}
+
+/**
+ * 从回收站永久删除（管理端）
+ * 与用户面 /storage/trash/{trash_id} 同体、同租户范围；供控制台在 admin 平面写入。
+ */
+export async function adminStorageTrashByTrashDelete(trashId: string) {
+  await api.delete(`/storage/api/v1/admin/storage/trash/${trashId}`);
+}
+
+/**
+ * 从回收站恢复文件（管理端）
+ * 与用户面 /storage/trash/{trash_id}/restore 同体、同租户范围；供控制台在 admin 平面写入。
+ */
+export async function adminStorageTrashRestoreByTrashPost(trashId: string) {
+  const res = await api.post(`/storage/api/v1/admin/storage/trash/${trashId}/restore`);
   return res.data;
 }
 
@@ -10839,7 +11184,7 @@ export async function storageQuota() {
 
 /**
  * 清空回收站
- * 硬删除回收站中当前租户的所有文件和文件夹。记录审计日志。参考：GDPR Art 32 (Security of Processing)。
+ * 硬删除回收站中当前用户的文件和文件夹（仅本人 owner 名下，不触及其他用户）。记录审计日志。参考：GDPR Art 32 (Security of Processing)。
  */
 export async function storageTrashDelete() {
   await api.delete(`/storage/api/v1/storage/trash`);
