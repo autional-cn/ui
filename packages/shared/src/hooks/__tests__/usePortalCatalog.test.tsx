@@ -182,4 +182,57 @@ describe('usePortalCatalog', () => {
 		await waitFor(() => expect(result.current.portals).toHaveLength(1));
 		expect(result.current.portals[0]!.url).toBe('http://status.localhost');
 	});
+
+	it('角色过滤：allowed_roles 缺省全员可见；存在则须含当前角色（allPortals 不受角色过滤）', async () => {
+		fetchMock.mockResolvedValue(
+			okJson({
+				code: 0,
+				data: [
+					{
+						code: 'admin',
+						name: '管理控制台',
+						order: 2,
+						config: { portal: { allowed_roles: ['admin', 'super_admin'] } },
+					},
+					{ code: 'user', name: '用户门户', order: 1, config: { portal: { allowed_roles: ['user'] } } },
+					{ code: 'developer', name: '开发者门户', order: 3 },
+				],
+			}),
+		);
+		const { result } = renderHook(() => usePortalCatalog({ tenantId: 't1', role: 'user' }), {
+			wrapper: makeWrapper(),
+		});
+		await waitFor(() => expect(result.current.allPortals).toHaveLength(3));
+
+		// portals：角色过滤 + order 升序（developer 无 allowed_roles = 全员可见）
+		expect(result.current.portals.map((p) => p.code)).toEqual(['user', 'developer']);
+		// allPortals：仅 exclude，保持服务端顺序（偏好面板要能配置全部门户）
+		expect(result.current.allPortals.map((p) => p.code)).toEqual(['admin', 'user', 'developer']);
+	});
+
+	it('role 缺省回退 store 当前角色（useCurrentRole）', async () => {
+		useAuthStore.setState({
+			tenants: [{ id: 't1', name: 'demo', role: 'super_admin' }],
+			currentTenantId: 't1',
+		});
+		fetchMock.mockResolvedValue(
+			okJson({
+				code: 0,
+				data: [
+					{
+						code: 'admin',
+						name: '管理控制台',
+						order: 1,
+						config: { portal: { allowed_roles: ['super_admin'] } },
+					},
+					{ code: 'user', name: '用户门户', order: 2, config: { portal: { allowed_roles: ['user'] } } },
+				],
+			}),
+		);
+		const { result } = renderHook(() => usePortalCatalog({ tenantId: 't1' }), {
+			wrapper: makeWrapper(),
+		});
+		await waitFor(() => expect(result.current.portals).toHaveLength(1));
+		expect(result.current.portals[0]!.code).toBe('admin');
+	});
 });
