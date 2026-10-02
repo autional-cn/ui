@@ -69,6 +69,13 @@ export type { BootstrapState } from './hooks/useBootstrap';
 export { useSodMode, useIsAuditRestricted } from './hooks/useSodMode';
 export type { SodMode } from './hooks/useSodMode';
 export { useCurrentRole } from './hooks/useCurrentRole';
+export { usePortalCatalog } from './hooks/usePortalCatalog';
+export type {
+	PortalCatalogEntry,
+	PortalCatalogAudience,
+	UsePortalCatalogOptions,
+	UsePortalCatalogResult,
+} from './hooks/usePortalCatalog';
 
 // Constants
 export { API as API_PATHS } from './constants/api-paths';

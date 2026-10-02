@@ -1,6 +1,6 @@
 {
   "name": "@autional-cn/shared",
-  "version": "0.1.0-rc.10",
+  "version": "0.1.0-rc.11",
   "description": "Autional shared layer — API client, auth, types, hooks, utils",
   "license": "AGPL-3.0",
   "main": "./src/index.ts",
