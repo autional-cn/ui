@@ -164,12 +164,26 @@ if (manifest) {
         infos.push('版本目录 ' + name + '：内容指纹自证通过（' + files.length + ' 个文件）');
       }
     }
-    if (dirs.length > 1) {
-      bad('ui/ 下有 ' + dirs.length + ' 个版本目录（' + dirs.join(', ') + '）—— 只应有一个。' +
-          '残留的旧目录说明有已无人引用的 URL 还在被 immutable 承诺覆盖，客户端永远不会再回源去发现它');
+    // 旧版本目录**应当保留**（有上限）：immutable 只保证客户端不再回源，不保证
+    // 它手里的 HTML 也是新的。还拿着上一版 HTML 的浏览器会去取旧版本目录，
+    // 清掉它就是 404 + 页面无样式（实测踩过：清掉后 14 个站的 dist 产物全部失效，
+    // 字体断言 / 对比度 / 视觉回归三道闸门一起变红）。
+    // 保留不削弱不可变性：目录名带内容指纹，旧目录永不可能被原地覆盖。
+    const KEEP = 5;
+    if (dirs.length > KEEP) {
+      bad('ui/ 下有 ' + dirs.length + ' 个版本目录，超过保留上限 ' + KEEP +
+          ' —— 旧目录是给「已缓存旧 HTML 的浏览器」兜底的，不是无限存档');
     }
     if (latestDoc && !dirs.includes('v' + latestDoc.version)) {
       bad('latest.json 指向 v' + latestDoc.version + '，但该目录不存在');
+    } else if (latestDoc && dirs.length > 1) {
+      // latest 必须指向**最新**的那一个，否则「跟随最新版」会指回旧版。
+      const at = (n) => { try { return JSON.parse(readFileSync(join(uiDir, n, 'manifest.json'), 'utf8')).generatedAt || ''; } catch { return ''; } };
+      const newest = dirs.slice().sort((a, b) => (at(a) < at(b) ? 1 : -1))[0];
+      if (newest !== 'v' + latestDoc.version) {
+        bad('latest.json 指向 ' + latestDoc.version + '，但按 manifest 的 generatedAt 最新的是 ' + newest +
+            ' —— 指针没跟上最近一次构建');
+      }
     }
   }
 }

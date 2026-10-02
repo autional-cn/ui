@@ -234,26 +234,52 @@ if (missing.length) {
   process.exit(1);
 }
 
-// ── 落盘：同名目录只可能是同一份内容，直接替换；旧版本目录一并清掉 ──────────────
-// 保留旧目录会让「哪些 URL 还活着」变成需要考古的问题，而它已经没有任何消费者
-// （14 站的 <link> 是唯一的引用方，随版本一起改）。immutable 的客户端本来就拿着自己的副本。
+// ── 落盘：同名目录只可能是同一份内容，直接替换；旧版本目录**保留**（有上限）──────
+//
+// 为什么保留而不是清掉（第一版是清掉的，错了）：immutable 只保证"客户端不再回源"，
+// 不保证"客户端手里的 HTML 也是新的"。一个还拿着上一版 HTML 的浏览器会去取
+// /ui/v<旧版本>.<旧指纹>/tokens.css —— 目录被清掉它就是 404、页面无样式。
+// 实测踩过：清掉旧目录后，本机 14 个站点的 **dist 产物**（引用旧路径）全部失效，
+// 字体断言、对比度、视觉回归三道闸门一起变红。
+// 保留旧目录不会削弱不可变性：目录名带内容指纹，旧目录永远不可能被原地覆盖，
+// 而"旧 URL 继续返回它当初承诺的字节"正是 immutable 该有的样子。
+//
+// 上限 KEEP 只是防无限增长（每个约 330 KB）。清单里的 generatedAt 让保留顺序是确定的，
+// 不依赖文件 mtime（新 clone 出来的 mtime 都一样，排序会退化）。
+const KEEP = 5;
 const uiRoot = join(OUT, 'ui');
 mkdirSync(uiRoot, { recursive: true });
-const pruned = [];
+const removed = [];
+const kept = [];
 for (const name of readdirSync(uiRoot)) {
-  const p = join(uiRoot, name);
   if (!name.startsWith('v')) continue;
-  if (existsSync(join(p, 'manifest.json')) === false) { pruned.push(name + '(无清单，一并清)'); rmSync(p, { recursive: true, force: true }); continue; }
-  if (name !== 'v' + VERSION) { rmSync(p, { recursive: true, force: true }); pruned.push(name); }
+  const p = join(uiRoot, name);
+  const mf = join(p, 'manifest.json');
+  if (existsSync(mf) === false) { rmSync(p, { recursive: true, force: true }); removed.push(name + '(无清单，不完整)'); continue; }
+  const fpOk = /^v.+.[0-9a-f]{8}$/.test(name);
+  if (!fpOk) { rmSync(p, { recursive: true, force: true }); removed.push(name + '(名字无内容指纹，无法自称 immutable)'); continue; }
+  let at = '';
+  try { at = JSON.parse(readFileSync(mf, 'utf8')).generatedAt || ''; } catch {}
+  kept.push({ name, at });
+}
+kept.sort((a, b) => (a.at < b.at ? 1 : -1));           // 新的在前
+for (const old of kept.slice(KEEP)) {
+  if (old.name === 'v' + VERSION) continue;
+  rmSync(join(uiRoot, old.name), { recursive: true, force: true });
+  removed.push(old.name + '(超出保留上限 ' + KEEP + ')');
 }
 if (existsSync(DEST)) rmSync(DEST, { recursive: true, force: true });
 renameSync(STAGE, DEST);
-if (pruned.length) console.log('  清理旧版本目录：' + pruned.join(', '));
+if (removed.length) console.log('  移除版本目录：' + removed.join(', '));
+console.log('  保留版本目录：' + [('v' + VERSION)].concat(kept.filter((k) => k.name !== 'v' + VERSION).slice(0, KEEP - 1).map((k) => k.name)).join(', '));
 
 for (const e of entries) e.path = BASE + '/' + e.destRel;
 entries.sort((a, b) => (a.path < b.path ? -1 : 1));
 const manifest = {
   $note: 'CDN 资产清单。sha384 用于 <link>/<script> 的 integrity 属性与 SRI 校验。路径一律不可变：内容变了必须换版本号。',
+  // 保留顺序的依据（旧版本目录按此排序裁剪）。**刻意不在内容指纹的输入里** ——
+  // 它在 manifest.json 内，而 manifest.json 已因含 BASE 被排除，加了它就会循环。
+  generatedAt: new Date().toISOString(),
   version: VERSION,
   base: BASE,
   origin: CDN_ORIGIN,

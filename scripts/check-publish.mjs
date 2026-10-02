@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-// 发布一致性闸门（verify 第 16 道）
+// 发布一致性闸门（verify 第 14 道）
+//
+// 它回答两个不同的问题，两个都要问：
+//   (a) 已发布内容的**字节**是否仍等于当前 SSOT（干净安装 + 逐文件 sha256）
+//   (b) 发布**通道**的 tag 是否指对（latest 必须等于 rc；rc 必须等于本地 SSOT 版本）
+// 只问 (a) 会漏掉实测发生过的事：shared 的 rc 一路发到 rc.10 而 latest 停在 rc.4，
+// 字节检查全绿，因为检查的是**按本地版本号取到的那份**，跟 tag 无关。
 //
 // 设计系统的产物有**三个交付面**，它们都应当由同一份 SSOT 派生：
 //   ① npm 包（@autional-cn/*）—— 构建期代码
@@ -22,6 +28,7 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { ROOT } from './lib/tokens.mjs';
+import { PKG_DIR, versionOf, auditDistTags } from './lib/dist-tags.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const problems = [];
@@ -55,15 +62,8 @@ const DIR_PAIRS = [
 ];
 
 // 每个包读**自己**的版本。原来是一把尺子量所有包（统一取 tokens 的版本），
-// 在 shared 需要单独升版（0.1.0-rc.1）时就会直接报错——包本来就该各自有版本。
-const PKG_DIR = {
-  '@autional-cn/tokens': 'packages/tokens',
-  '@autional-cn/tailwind-preset': 'packages/tailwind-preset',
-  '@autional-cn/ui': 'packages/ui',
-  '@autional-cn/shared': 'packages/shared',
-  '@autional-cn/react': 'packages/react'
-};
-const versionOf = (pkg) => JSON.parse(readFileSync(join(ROOT, PKG_DIR[pkg], 'package.json'), 'utf8')).version;
+// 在 shared 需要单独升版时就会直接报错——包本来就该各自有版本。
+// PKG_DIR / versionOf 与 align-dist-tags.mjs 共用 lib/dist-tags.mjs，两处实现不许漂开。
 const pkgs = [...new Set(PAIRS.map((p) => p[0]).concat(DIR_PAIRS.map((p) => p[0])))];
 
 const tmp = mkdtempSync(join(tmpdir(), 'publish-freshness-'));
@@ -130,6 +130,14 @@ try {
     const want = versionOf(pkg);
     if (v !== want) problems.push(pkg + ' 已发布的版本是 ' + v + '，而本地是 ' + want);
   }
+
+  // 发布**通道**的 tag 政策：latest 必须等于 rc。
+  // 只校验版本号还不够——实测 @autional-cn/shared 连发多次只打了 rc 没跟 latest，
+  // latest 停在 0.1.0-rc.4 而 rc 已到 0.1.0-rc.10，任何人都装到旧构建；
+  // 而站点全部精确 pin，所以**没有任何站点会报错**，它可以一直错下去。
+  const tags = await auditDistTags();
+  infos.push(...tags.infos);
+  problems.push(...tags.problems);
   if (problems.length) {
     problems.push('重新发布：cd ui && pnpm -r publish --access public --tag rc（预发版必须带 --tag）');
   }

@@ -9,10 +9,11 @@
 // npm 与 SSOT 之间**根本没有检查**（第 41 轮补上第 16 道闸门）。
 //
 // 本脚本把顺序固定下来，并在每一步失败时中止：
-//   1. pnpm verify           —— 16 道闸门必须全绿，否则不发
-//   2. pnpm -r publish       —— 发布 npm（预发版必须 --tag）
-//   3. pnpm build:cdn        —— 重建 CDN 产物到 ../cdn
-//   4. 提示提交 ../cdn       —— 不代你提交，那是对外发布动作
+//   1. pnpm verify            —— 全部闸门必须全绿，否则不发（不写死道数，写死了就会过期）
+//   2. pnpm -r publish        —— 发布 npm（预发版必须 --tag；registry 显式钉 npmjs）
+//   3. align-dist-tags        —— latest 对齐到 rc（政策见计划文末「规则 2」）
+//   4. pnpm build:cdn         —— 重建 CDN 产物到 ../cdn（版本目录名带内容指纹）
+//   5. 提示提交 ../cdn + 跑 bump:cdn —— 不代你提交，那是对外发布动作
 //
 // 用法: node scripts/release.mjs [--tag rc] [--skip-verify]
 
@@ -20,6 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/tokens.mjs';
+import { REGISTRY } from './lib/dist-tags.mjs';
 
 const argv = process.argv.slice(2);
 const tagIdx = argv.indexOf('--tag');
@@ -38,16 +40,32 @@ const run = (cmd, args, label) => {
   }
 };
 
-if (!SKIP_VERIFY) run('pnpm', ['verify'], '1/3 16 道闸门');
+if (!SKIP_VERIFY) run('pnpm', ['verify'], '1/5 全部闸门');
 else console.log('已跳过 verify（--skip-verify，仅用于明确知道后果时）');
 
 // 预发版必须显式 --tag，否则 npm 直接拒绝（实测踩过）。
-run('pnpm', ['-r', 'publish', '--access', 'public', '--tag', TAG], '2/3 发布 npm（tag=' + TAG + '）');
-run('pnpm', ['build:cdn'], '3/3 重建 CDN 产物');
+// registry 必须显式写出来：本机 ~/.npmrc 指向镜像站，而镜像站对新发布的包有同步延迟，
+// 发完立刻从镜像装会 404（本计划第 3 次遇到同一现象）。见计划文末「规则 3」。
+run('pnpm', ['-r', 'publish', '--access', 'public', '--tag', TAG, '--registry=' + REGISTRY],
+    '2/5 发布 npm（tag=' + TAG + '，registry=npmjs）');
+run('node', ['scripts/align-dist-tags.mjs', '--write'], '3/5 latest 对齐到 ' + TAG);
+run('pnpm', ['build:cdn'], '4/5 重建 CDN 产物');
 
 const CDN = join(ROOT, '..', 'cdn');
 console.log('');
-console.log('两个交付面都已产出。还差最后一步（刻意不代做）：');
+console.log('npm 与 CDN 两个交付面都已产出。还差两步（刻意不代做）：');
+console.log('');
+console.log('① 提交 CDN（推送即触发 Vercel 生产部署）：');
 console.log('  cd ' + CDN);
 console.log('  git add -A && git commit -m "chore: 发布 v<版本>" && git push');
-console.log('推送到 main 即触发 Vercel 生产部署，上线后再跑 node scripts/check-publish.mjs --live 与 check-cdn --live 回验。');
+console.log('');
+console.log('② 把 14 个站点的 <link> 切到新版本目录：');
+console.log('  cd ' + ROOT);
+console.log('  pnpm bump:cdn --write      # 预演先看会改什么；写完自证全舰队 0 处旧引用');
+console.log('  然后逐站提交（每站一个 chore(cdn) commit，与既有 chore(deps) 批次同构）');
+console.log('');
+console.log('为什么这两步不自动化：CDN 的 push 与站点提交都是对外发布动作，');
+console.log('而站点改动会改变渲染，按本仓惯例逐站构建 + 视觉回归后再接受。');
+console.log('忘了②会被闸门抓住：build-cdn 会清掉旧目录，站点的 <link> 随即 404，');
+console.log('check-assets 的 cdnDelivered() 断言「站点引用的版本在 CDN 工作区里存在」直接报红。');
+console.log('上线后再跑 node scripts/check-publish.mjs --live 与 check-cdn --live 回验。');

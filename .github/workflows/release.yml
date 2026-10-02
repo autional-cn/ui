@@ -1,0 +1,117 @@
+name: release
+
+# 计划 §P3.3 的载体。ui 仓此前只有 verify.yml，发布是纯手工的
+# （pnpm release + 手工推 cdn + 手工切 14 个站的 <link>）——
+# 「有脚本但没有载体」等于「只在有人记得手动跑的时候才生效」，
+# 这正是 verify.yml 当初被建出来的理由。
+#
+# 触发：推一个 v* tag。**不用 push to main** —— 发布是不可逆的对外动作，
+# 必须落在一个显式的人为决策点上。
+#
+# 前置 secret（缺任何一个都会在 preflight 硬失败，不会静默跳过）：
+#   NPM_TOKEN       @autional-cn 作用域的 publish 权限
+#   CDN_PUSH_TOKEN  对 autional-cn/cdn 有 contents:write 的 PAT
+#                   （跨仓推送不能用 GITHUB_TOKEN）
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 前置自证：所需 secret 必须存在
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CDN_PUSH_TOKEN: ${{ secrets.CDN_PUSH_TOKEN }}
+        run: |
+          missing=0
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::缺少 secret NPM_TOKEN（@autional-cn 作用域的 publish 权限）"; missing=1
+          fi
+          if [ -z "$CDN_PUSH_TOKEN" ]; then
+            echo "::error::缺少 secret CDN_PUSH_TOKEN（对 autional-cn/cdn 有 contents:write 的 PAT）"; missing=1
+          fi
+          if [ "$missing" = 1 ]; then
+            echo "::error::发布前置不全。**不降级、不跳过** —— 静默跳过等于只发一半，而另一半要等到有人发现。"
+            exit 1
+          fi
+
+      # ui 与 cdn 必须是**兄弟目录**：build-cdn / check-cdn / bump-cdn-version
+      # 都按 ROOT/../cdn 找 CDN 工作区。GitHub 不允许 checkout 到 workspace 之外，
+      # 所以把 ui 放进子目录，cdn 与它同级。
+      - uses: actions/checkout@v4
+        with:
+          path: ui
+
+      - uses: actions/checkout@v4
+        with:
+          repository: autional-cn/cdn
+          path: cdn
+          token: ${{ secrets.CDN_PUSH_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install
+        working-directory: ui
+        run: pnpm install --frozen-lockfile
+
+      # 发布**前**：16 项跑全，只排除那两项「断言交付面已与 SSOT 同步」的闸门。
+      # 它们在发布之前按定义必然为红 —— 让它们变绿正是本次要做的事。
+      # 允许清单写死在 scripts/verify.mjs 里（只此两键），不是通用 --skip。
+      - name: 发布前置门（全部闸门，除 publish / cdn）
+        working-directory: ui
+        run: node scripts/verify.mjs --except publish,cdn
+
+      - name: 发布 npm（tag=rc，registry 显式钉 npmjs）
+        working-directory: ui
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm -r publish --access public --tag rc --no-git-checks --registry=https://registry.npmjs.org/
+
+      - name: latest 对齐到 rc（政策见计划文末「规则 2」）
+        working-directory: ui
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node scripts/align-dist-tags.mjs --write
+
+      - name: 重建 CDN 产物（版本目录名带内容指纹）
+        working-directory: ui
+        run: pnpm build:cdn
+
+      # 发布**后**：补跑那两项。它们现在有真实语义了 —— 没补跑等于这次发版没验过。
+      - name: 发布后置门（publish 一致性 + CDN 契约）
+        working-directory: ui
+        run: node scripts/check-publish.mjs && node scripts/check-cdn.mjs
+
+      - name: 提交并推送 CDN（推送即触发 Vercel 生产部署）
+        working-directory: cdn
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "CDN 产物无变化（内容指纹未变），无需提交。"
+            exit 0
+          fi
+          VER=$(node -p "require('../ui/packages/tokens/package.json').version")
+          git add -A
+          git commit -m "chore: 发布 v$VER"
+          git push
+
+      - name: 剩余的手工步骤（刻意不自动化，且忘了会被闸门抓住）
+        run: |
+          echo "::notice::CDN 已推送。剩余手工步骤：在 ui 仓跑 pnpm bump:cdn --write，然后逐站提交 chore(cdn)。"
+          echo "::notice::不自动化这两个动作，是因为 CDN push 与站点提交都是对外发布动作，而站点改动会改变渲染 —— 本仓惯例是逐站构建 + 视觉回归后再接受。"
+          echo "::notice::忘了也不会被静默放过：build-cdn 已清掉旧版本目录，站点的 <link> 随即 404，check-assets 的 cdnDelivered() 断言直接报红。"
