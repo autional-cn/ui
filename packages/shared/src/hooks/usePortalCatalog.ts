@@ -14,7 +14,6 @@ export interface PortalCatalogEntry {
 	/** getPortalUrl 按 code 拼装（slug 白名单门户带租户段，域根门户落根 URL） */
 	url: string;
 	order: number;
-	icon?: string;
 }
 
 /**
@@ -58,7 +57,6 @@ interface RawPortalApplication {
 	name: string;
 	description?: string;
 	order?: number;
-	icon_url?: string;
 	config?: { portal?: { allowed_roles?: readonly string[] } } | null;
 }
 
@@ -69,7 +67,6 @@ function toEntry(app: RawPortalApplication, slug?: string): PortalCatalogEntry {
 		description: app.description,
 		url: getPortalUrl(app.code, slug),
 		order: app.order ?? 0,
-		icon: app.icon_url,
 	};
 }
 

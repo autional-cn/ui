@@ -60,7 +60,7 @@ describe('usePortalCatalog', () => {
 				data: [
 					{ code: 'auth', name: 'Sign-in', order: 1 },
 					{ code: 'user', name: '用户门户', order: 3 },
-					{ code: 'admin', name: '管理控制台', order: 1, icon_url: 'https://cdn.example/icon.svg' },
+					{ code: 'admin', name: '管理控制台', order: 1 },
 					{ code: 'landing', name: 'Home', order: 9 },
 				],
 			}),
@@ -82,7 +82,6 @@ describe('usePortalCatalog', () => {
 		expect(result.current.portals.map((p) => p.code)).toEqual(['admin', 'user']);
 		const admin = result.current.portals.find((p) => p.code === 'admin')!;
 		expect(admin.url).toBe('http://admin.localhost/acme-corp');
-		expect(admin.icon).toBe('https://cdn.example/icon.svg');
 		expect(result.current.isError).toBe(false);
 	});
 
