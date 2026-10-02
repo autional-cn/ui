@@ -27,6 +27,7 @@
     "sync:consumers": "node scripts/sync-consumers.mjs",
     "upstream:diff": "node scripts/upstream-diff.mjs",
     "build:cdn": "node scripts/build-cdn.mjs",
+    "bump:cdn": "node scripts/bump-cdn-version.mjs",
     "visual": "node scripts/visual.mjs check",
     "visual:baseline": "node scripts/visual.mjs baseline"
   },

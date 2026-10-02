@@ -13,7 +13,7 @@
 //
 // 用法: node scripts/check-cdn.mjs [--cdn <dir>] [--live]
 
-import { readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, existsSync, mkdtempSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
@@ -78,6 +78,7 @@ if (!existsSync(vjPath)) {
 const uiDir = join(CDN, 'ui');
 let manifest = null;
 let manifestPath = null;
+let latestDoc = null;
 if (!existsSync(uiDir)) {
   bad('CDN 仓里没有 ui/ 目录 —— 还没跑过 pnpm build:cdn');
 } else {
@@ -85,6 +86,7 @@ if (!existsSync(uiDir)) {
   if (!existsSync(latestPath)) bad('缺少 ui/latest.json');
   else {
     const latest = JSON.parse(readFileSync(latestPath, 'utf8'));
+    latestDoc = latest;
     manifestPath = join(uiDir, 'v' + latest.version, 'manifest.json');
     if (!existsSync(manifestPath)) bad('latest.json 指向 v' + latest.version + '，但该版本的 manifest.json 不存在');
     else manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -109,6 +111,67 @@ if (manifest) {
   // 版本化路径必须带版本号，不能出现「无版本」的发布
   const badPath = manifest.files.filter((f) => !/^\/ui\/v[^/]+\//.test(f.path));
   if (badPath.length) bad('有 ' + badPath.length + ' 个文件不在版本化路径下（例如 ' + badPath[0].path + '）—— 不可变缓存的前提是路径带版本号');
+}
+
+// ── ②b 版本目录名的指纹必须等于目录内容的指纹 ───────────────────────────────
+// 这条补的是本闸门自己的盲区：② 只校验「目录里的字节 == 它自己的 manifest」，
+// ③ 只校验「== 当前 SSOT」。两条都在问「内容对不对」，**没有一条问「同一个 URL 的字节
+// 有没有被换过」**—— 而 vercel.json 对 /ui/:version/:path* 承诺的是 immutable + 一年。
+// 那是对浏览器的硬承诺：URL 不变就永远不回源。换过字节就等于撒谎，而且后果已经发生过：
+// favicon 黑块的修复（ef054c8）与 tokens.css 的两次改版都发在同一个 ui/v0.1.0-rc/ 下。
+//
+// 做法不依赖 git：目录名里带内容指纹（build-cdn.mjs 写入），这里用**同一口径**独立复算。
+// 排除 icons/site.webmanifest 与 manifest.json 两个派生文件（前者含 BASE、后者即清单，纳入即循环）。
+{
+  const fingerprint = (list) => createHash('sha256')
+    .update(list.map((e) => e.rel + '\u0000' + e.sha384).sort().join('\n'))
+    .digest('hex').slice(0, 8);
+  const DERIVED = new Set(['manifest.json', 'icons/site.webmanifest']);
+  const walk = (d, base, out) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const p = join(d, e.name);
+      if (e.isDirectory()) walk(p, base, out);
+      else out.push(p.slice(base.length + 1).replace(/\\/g, '/'));
+    }
+    return out;
+  };
+  const dirs = existsSync(uiDir)
+    ? readdirSync(uiDir).filter((n) => n.startsWith('v') && statSync(join(uiDir, n)).isDirectory())
+    : [];
+  if (!existsSync(uiDir)) {
+    // 上一段已经报过「没有 ui/ 目录」
+  } else if (dirs.length === 0) {
+    bad('ui/ 下没有任何版本目录 —— 还没跑过 pnpm build:cdn');
+  } else {
+    for (const name of dirs) {
+      const m = name.match(/^v(.+)\.([0-9a-f]{8})$/);
+      if (!m) {
+        bad('版本目录 ' + name + ' 的名字里没有内容指纹 —— 这条路径无法自称 immutable。应形如 v<版本>.<8 位十六进制>');
+        continue;
+      }
+      const files = walk(join(uiDir, name), join(uiDir, name), []).filter((f) => !DERIVED.has(f));
+      if (!files.length) { bad('版本目录 ' + name + ' 里没有可指纹化的文件'); continue; }
+      const list = files.map((rel) => {
+        const buf = readFileSync(join(uiDir, name, rel));
+        return { rel, sha384: 'sha384-' + createHash('sha384').update(buf).digest('base64') };
+      });
+      const got = fingerprint(list);
+      if (got !== m[2]) {
+        bad('版本目录 ' + name + ' 的内容指纹是 ' + got + '，与目录名里的 ' + m[2] +
+            ' 不符 —— 不可变路径下的字节被原地改过。这正是旧实现的问题（favicon.svg 被改 4 次 / tokens.css 3 次），' +
+            '修法：重跑 build-cdn.mjs 让它换目录，然后同步 14 个站点的 <link>');
+      } else {
+        infos.push('版本目录 ' + name + '：内容指纹自证通过（' + files.length + ' 个文件）');
+      }
+    }
+    if (dirs.length > 1) {
+      bad('ui/ 下有 ' + dirs.length + ' 个版本目录（' + dirs.join(', ') + '）—— 只应有一个。' +
+          '残留的旧目录说明有已无人引用的 URL 还在被 immutable 承诺覆盖，客户端永远不会再回源去发现它');
+    }
+    if (latestDoc && !dirs.includes('v' + latestDoc.version)) {
+      bad('latest.json 指向 v' + latestDoc.version + '，但该目录不存在');
+    }
+  }
 }
 
 // ── ③ CDN 产物是否与**当前 SSOT** 一致 ────────────────────────────────────

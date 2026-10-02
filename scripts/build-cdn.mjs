@@ -19,7 +19,7 @@
 //
 // 用法: node scripts/build-cdn.mjs [--out <dir>]
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync, readdirSync, mkdtempSync, renameSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT, loadTokens, resolvedIn, parseHex } from './lib/tokens.mjs';
@@ -30,10 +30,25 @@ const OUT = resolve(outIdx >= 0 ? argv[outIdx + 1] : join(ROOT, '..', 'cdn'));
 const CDN_ORIGIN = 'https://cdn.autional.cn';
 
 const T = loadTokens();
-const VERSION = T.$meta.version;
-const BASE = '/ui/v' + VERSION;
-const DEST = join(OUT, 'ui', 'v' + VERSION);
-const ABS = CDN_ORIGIN + BASE;
+
+// 版本号 = tokens 包版本 + **内容指纹**。指纹不是装饰，是这条路径能不能自称 immutable 的前提。
+//
+// 背景：vercel.json 对 /ui/:version/:path* 发 "public, max-age=31536000, immutable"，
+// 语义是「这个 URL 的字节一年内不会变，别再来问」。而旧实现里 VERSION 只取 tokens 包版本，
+// tokens 包从发布至今一直是 0.1.0-rc —— CSS 内容改了、路径不动，同一个 immutable URL 被反复覆盖。
+// 实测（cdn 仓 git 历史）：ui/v0.1.0-rc/ 下 manifest.json 改过 7 次、icons/favicon.svg 4 次、
+// tokens.css 3 次（blob f1587991 → 7636b285 → f94393c0）。后果不是理论问题：
+// favicon 黑块的修复（ef054c8）就发在同一个 URL 下，而浏览器已被承诺一年内不必回源。
+//
+// 指纹口径（check-cdn 用同一算法独立复算）：
+//   sha256( 每个文件的 "<目录内相对路径>\0<sha384>" 按行排序后 join('\n') ) 取前 8 位十六进制
+// 刻意**不含** icons/site.webmanifest 与 manifest.json 两个派生文件：
+//   前者内含 ABS（依赖 BASE），后者就是清单本身 —— 纳入即循环。
+// 排除它是安全的：site.webmanifest 的全部变量是 BASE 与 tokens 的 color.neutral-0，
+// 后者一变 tokens.css 必变，指纹照样移动。
+const VERSION_BASE = T.$meta.version;
+const STAGE = mkdtempSync(join(OUT, '.cdnstage-'));
+let VERSION, BASE, DEST, ABS;   // 产物字节确定后才赋值
 
 // ── 源 → 目标 ───────────────────────────────────────────────────────────────
 // 图标只保留一套。历史上并存两套（assets/favicon/png 与 assets/favicon_io），
@@ -115,7 +130,7 @@ function flattenLayers(css) {
   return out;
 }
 
-// ── 生成 site.webmanifest ───────────────────────────────────────────────────
+// ── 生成 site.webmanifest（工厂函数：BASE 要等指纹算完才知道，所以推迟到这里）─────
 // 不从 favicon_io 直接拷：那份用的是相对路径，放到 CDN 上就成了死链。
 // 这里按 CDN 绝对路径重新生成。
 //
@@ -129,7 +144,7 @@ function flattenLayers(css) {
 // 由 check-icons I11 断言一致）。
 const R = resolvedIn(T, {});
 const bg = R['color.neutral-0'] || '#ffffff';
-const manifestWeb = {
+const buildWebmanifest = () => ({
   name: 'Autional',
   short_name: 'Autional',
   icons: [
@@ -138,12 +153,9 @@ const manifestWeb = {
   ],
   background_color: bg,
   display: 'standalone'
-};
+});
 
-// ── 构建 ────────────────────────────────────────────────────────────────────
-if (existsSync(DEST)) rmSync(DEST, { recursive: true, force: true });
-mkdirSync(DEST, { recursive: true });
-
+// ── 构建（先写进暂存目录，算完指纹再改名到最终版本目录）──────────────────────
 const entries = [];
 const missing = [];
 
@@ -157,7 +169,7 @@ const TEXT_EXT = new Set(['.css', '.json', '.svg', '.txt', '.webmanifest', '.htm
 function emit(srcRel, destRel, transform) {
   const src = join(ROOT, srcRel);
   if (!existsSync(src)) { missing.push(srcRel); return; }
-  const dest = join(DEST, destRel);
+  const dest = join(STAGE, destRel);
   mkdirSync(dirname(dest), { recursive: true });
   const ext = destRel.slice(destRel.lastIndexOf('.'));
   let buf;
@@ -170,7 +182,7 @@ function emit(srcRel, destRel, transform) {
   }
   writeFileSync(dest, buf);
   entries.push({
-    path: BASE + '/' + destRel.split('\\').join('/'),
+    destRel: destRel.split('\\').join('/'),
     bytes: buf.length,
     sha384: 'sha384-' + createHash('sha384').update(buf).digest('base64')
   });
@@ -196,7 +208,7 @@ for (const [s, d] of PROFILES) emitCss(s, d);
 for (const [s, d] of FONTS) emit(s, d);
 for (const [s, d] of ICONS) emit(s, d);
 for (const [s, d] of LOGOS) emit(s, d);
-emit('assets/favicon_io/site.webmanifest', 'icons/site.webmanifest', () => JSON.stringify(manifestWeb, null, 2) + '\n');
+// icons/site.webmanifest 刻意放在指纹之后 emit —— 它内含 BASE，先算指纹就会循环。
 
 if (missing.length) {
   console.error('缺少源文件，构建中止（宁可失败也不发一份不完整的资产包）：');
@@ -204,6 +216,41 @@ if (missing.length) {
   process.exit(1);
 }
 
+// ── 定版本：内容指纹 → 版本目录名 ───────────────────────────────────────────
+const fingerprint = (list) => createHash('sha256')
+  .update(list.map((e) => e.destRel + '\u0000' + e.sha384).sort().join('\n'))
+  .digest('hex').slice(0, 8);
+
+const FP = fingerprint(entries);
+VERSION = VERSION_BASE + '.' + FP;
+BASE = '/ui/v' + VERSION;
+DEST = join(OUT, 'ui', 'v' + VERSION);
+ABS = CDN_ORIGIN + BASE;
+
+// site.webmanifest 此时才能生成（ABS 已知）
+emit('assets/favicon_io/site.webmanifest', 'icons/site.webmanifest', () => JSON.stringify(buildWebmanifest(), null, 2) + '\n');
+if (missing.length) {
+  console.error('site.webmanifest 生成失败，构建中止：' + missing.join(', '));
+  process.exit(1);
+}
+
+// ── 落盘：同名目录只可能是同一份内容，直接替换；旧版本目录一并清掉 ──────────────
+// 保留旧目录会让「哪些 URL 还活着」变成需要考古的问题，而它已经没有任何消费者
+// （14 站的 <link> 是唯一的引用方，随版本一起改）。immutable 的客户端本来就拿着自己的副本。
+const uiRoot = join(OUT, 'ui');
+mkdirSync(uiRoot, { recursive: true });
+const pruned = [];
+for (const name of readdirSync(uiRoot)) {
+  const p = join(uiRoot, name);
+  if (!name.startsWith('v')) continue;
+  if (existsSync(join(p, 'manifest.json')) === false) { pruned.push(name + '(无清单，一并清)'); rmSync(p, { recursive: true, force: true }); continue; }
+  if (name !== 'v' + VERSION) { rmSync(p, { recursive: true, force: true }); pruned.push(name); }
+}
+if (existsSync(DEST)) rmSync(DEST, { recursive: true, force: true });
+renameSync(STAGE, DEST);
+if (pruned.length) console.log('  清理旧版本目录：' + pruned.join(', '));
+
+for (const e of entries) e.path = BASE + '/' + e.destRel;
 entries.sort((a, b) => (a.path < b.path ? -1 : 1));
 const manifest = {
   $note: 'CDN 资产清单。sha384 用于 <link>/<script> 的 integrity 属性与 SRI 校验。路径一律不可变：内容变了必须换版本号。',
