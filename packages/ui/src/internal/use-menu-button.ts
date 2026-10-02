@@ -5,7 +5,7 @@ import type React from 'react';
  * W3C APG「menu button」最小实现：UserMenu / PortalSwitcher 共用。
  * trigger 携带 aria-haspopup/aria-expanded/aria-controls；菜单内 Arrow/Home/End
  * roving focus（条目 tabIndex=-1，由组件自行标注 role="menuitem"）、Esc 关闭并还焦、
- * Tab 关闭放行走位、document mousedown 外部点击关闭。
+ * Tab 关闭放行走位、焦点离开 trigger/菜单时关闭、document mousedown 外部点击关闭。
  */
 export interface UseMenuButtonResult {
 	open: boolean;
@@ -75,6 +75,15 @@ export function useMenuButton(): UseMenuButtonResult {
 		}
 	};
 
+	// 焦点离开 widget（trigger + 菜单）即收起：覆盖「鼠标开菜单 → Tab 走位」时
+	// 面板仍悬浮、而菜单内 Tab 分支不触发的场景。焦点转入菜单项（键盘开菜单）除外。
+	const triggerBlur = (event: React.FocusEvent<HTMLButtonElement>) => {
+		if (!open) return;
+		const next = event.relatedTarget as Node | null;
+		if (next && menuRef.current?.contains(next)) return;
+		setOpen(false);
+	};
+
 	const menuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
 		const items = getItems();
 		if (items.length === 0) return;
@@ -123,6 +132,7 @@ export function useMenuButton(): UseMenuButtonResult {
 			'aria-controls': open ? menuId : undefined,
 			onClick: toggle,
 			onKeyDown: triggerKeyDown,
+			onBlur: triggerBlur,
 		},
 		menuProps: {
 			id: menuId,

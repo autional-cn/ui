@@ -114,6 +114,25 @@ describe('UserMenu', () => {
 		expect(menu()).not.toBeInTheDocument();
 	});
 
+	it('Tab 移焦离开触发钮时菜单关闭（鼠标开菜单场景）', async () => {
+		const user = userEvent.setup();
+		renderMenu();
+		await user.click(trigger());
+		expect(menu()).toBeInTheDocument();
+		await user.tab();
+		expect(menu()).not.toBeInTheDocument();
+	});
+
+	it('键盘开菜单后 Tab 关闭并放行走位', async () => {
+		const user = userEvent.setup();
+		renderMenu();
+		trigger().focus();
+		await user.keyboard('{ArrowDown}');
+		expect(document.activeElement).toBe(screen.getAllByRole('menuitem')[0]);
+		await user.tab();
+		expect(menu()).not.toBeInTheDocument();
+	});
+
 	it('外部点击关闭', async () => {
 		const user = userEvent.setup();
 		render(
