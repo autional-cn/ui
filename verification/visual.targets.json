@@ -26,8 +26,8 @@
     {
       "name": "admin-console",
       "root": "../sites/admin/apps/admin-console/dist",
-      "path": "/",
-      "note": "console SPA 外壳，依赖后端（会尝试跳转 auth）。基线只保证「渲染未意外变化」，不代表功能可用。"
+      "path": "/404",
+      "note": "console SPA 的 404 页（antd Result 组件）。**刻意不用 / ：** 该路径会尝试跳转 auth（依赖后端），渲染出来一段文本都没有 —— 于是视觉基线是一张白页、对比度闸门报「检查 0 段文本，全部达到 AA」。两个闸门都在量空气。换成 /404 后两件事都成立：基线有内容，对比度有 4 段真实文本。"
     },
     {
       "name": "developer-home",

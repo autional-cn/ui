@@ -362,6 +362,13 @@ const antdToken = (ctx) => ({
   colorBgContainer: ctx.resolve('{color.bg-surface}'),
   colorBgElevated: ctx.resolve('{color.bg-elevated}'),
   colorText: ctx.resolve('{color.text-primary}'),
+  // KI-015：antd 的 colorTextSecondary / colorTextDescription **没有**默认吃到 colorText，
+  // 它俩是拿 colorText 按透明度派生的 —— #003153 @45% → #8a8a8b，对白底 3.33:1，不到 AA。
+  // admin-console 的 404 / 403 页（antd Result 组件的 .ant-result-subtitle）实测就是这样。
+  // 设计系统里早就有对应角色，只是桥没接：colorTextSecondary ← text-secondary，
+  // colorTextDescription ← text-muted。派生值必须被显式覆盖，否则改令牌传导不到这里。
+  colorTextSecondary: ctx.resolve('{color.text-secondary}'),
+  colorTextDescription: ctx.resolve('{color.text-muted}'),
   borderRadius: pixel(ctx.resolve('{radius.sm}')),
   fontFamily: cssFontStack(TOKENS.core.font.sans),
 });

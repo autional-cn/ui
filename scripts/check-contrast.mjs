@@ -36,6 +36,12 @@ const EXEMPT_PATH = join(ROOT, 'verification', 'contrast-exemptions.json');
 const KNOWN_PATH = join(ROOT, 'verification', 'known-issues.json');
 
 const problems = [];
+// 零样本**刻意不走 problems**：problems 会被 known-issues 的子串匹配吞掉，
+// 而"这个目标什么都没渲染"是**闸门自身的配置缺陷**，不是产品缺陷 ——
+// 用一张产品侧的登记单来掩盖"我们没在量东西"是错的。
+// 实测踩到过：KI-015 的 match 写成 "AA1 admin-console"（粒度太粗，
+// 违反 known-issues 自己的规则），把我新加的零样本报错整条吞了，闸门照样打印"全部达到 AA"。
+const zeroSample = [];
 const warns = [];
 const info = [];
 
@@ -135,6 +141,21 @@ for (const t of targets) {
     await page.waitForTimeout(400);
     const res = await page.evaluate(PROBE);
     skipped += res.skippedGradient;
+
+    // 零样本 = 没验，不是通过。这一条是补一个实际存在的假绿：
+    // admin-console 的 target 指向 SPA 的 `/`，该页会尝试跳转 auth（依赖后端），
+    // 于是渲染出来一段文本都没有 —— 闸门照样打印
+    //   「AA1 admin-console：检查 0 段文本，全部达到 AA」+ 「结论：对比度全部达到 WCAG AA」
+    // 假绿比红贵：它会在几十轮里一直掩盖真实缺陷。KI-015 登记的 3 处不达标
+    // 就在这个目标上，而闸门用 0 段样本"通过"了它。
+    //
+    // 不引入新的豁免机制：走已有的 KNOWN（verification/known-issues.json，code=AA1），
+    // 那条路径强制要求 owner 与 expires，口径与其它闸门一致。
+    if (res.items.length === 0) {
+      zeroSample.push('AA1 ' + t.name + '：0 段文本样本 —— 这个目标什么都没渲染，闸门无从判定。' +
+        '零样本不是通过：把 target 换成一个真能渲染的路径，或者把它从 target 名单里去掉');
+    }
+
     const bad = [];
     for (const it of res.items) {
       checked++;
@@ -164,7 +185,7 @@ for (const t of targets) {
 }
 await browser.close();
 
-const active = [];
+const active = [...zeroSample];   // 零样本不可豁免，直接进失败列表
 for (const p of problems) {
   const k = KNOWN.find((x) => p.indexOf(x.match) >= 0);
   if (k) info.push('AA1 已登记（' + k.id + '）：' + p.slice(0, 100)); else active.push(p);
