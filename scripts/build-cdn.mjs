@@ -268,11 +268,11 @@ for (const old of kept.slice(KEEP)) {
   rmSync(join(uiRoot, old.name), { recursive: true, force: true });
   removed.push(old.name + '(超出保留上限 ' + KEEP + ')');
 }
-if (existsSync(DEST)) rmSync(DEST, { recursive: true, force: true });
-renameSync(STAGE, DEST);
-if (removed.length) console.log('  移除版本目录：' + removed.join(', '));
-console.log('  保留版本目录：' + [('v' + VERSION)].concat(kept.filter((k) => k.name !== 'v' + VERSION).slice(0, KEEP - 1).map((k) => k.name)).join(', '));
-
+// 清单必须在**决定是否落盘之前**写好，并放进暂存目录。
+// 原因：指纹未变时整份产物（含 manifest.json）都不该被重写 ——
+// 之前 manifest 是在落盘之后写的，于是「内容没变也重写一次」，
+// cdn 仓会出现一个只有 generatedAt 的 diff（实测踩到：改一个**不在 CDN 上**的文件、
+// 重跑一次 build:cdn，cdn 仓就脏了），release.yml 的「无变化就跳过提交」守卫也永远失效。
 for (const e of entries) e.path = BASE + '/' + e.destRel;
 entries.sort((a, b) => (a.path < b.path ? -1 : 1));
 const manifest = {
@@ -286,7 +286,19 @@ const manifest = {
   generatedFrom: 'autional-cn/ui',
   files: entries
 };
-writeFileSync(join(DEST, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+writeFileSync(join(STAGE, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+
+if (existsSync(DEST)) {
+  // 目录名带内容指纹 ⇒ 同名必然同内容 ⇒ 逐字节相同 ⇒ **整份丢弃暂存，不动现有目录**。
+  // generatedAt 因此记录的是「这份内容第一次出现的时间」，而不是最后一次构建时间 ——
+  // 这正是保留排序想要的语义。
+  rmSync(STAGE, { recursive: true, force: true });
+  console.log('  内容未变（指纹 ' + FP + ' 相同），保留现有版本目录，不重写任何一个字节');
+} else {
+  renameSync(STAGE, DEST);
+}
+if (removed.length) console.log('  移除版本目录：' + removed.join(', '));
+console.log('  保留版本目录：' + [('v' + VERSION)].concat(kept.filter((k) => k.name !== 'v' + VERSION).slice(0, KEEP - 1).map((k) => k.name)).join(', '));
 
 mkdirSync(join(OUT, 'ui'), { recursive: true });
 writeFileSync(join(OUT, 'ui', 'latest.json'), JSON.stringify({
