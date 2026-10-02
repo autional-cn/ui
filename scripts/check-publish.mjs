@@ -69,11 +69,17 @@ const pkgs = [...new Set(PAIRS.map((p) => p[0]).concat(DIR_PAIRS.map((p) => p[0]
 const tmp = mkdtempSync(join(tmpdir(), 'publish-freshness-'));
 try {
   // 刻意**不带凭据**：这正是 14 个 Vercel 项目构建时的条件。
+  //
+  // registry 必须显式钉死：删掉 NPM_CONFIG_USERCONFIG 只是让 npm 回到默认位置，
+  // 而默认位置就是 ~/.npmrc —— 本机那份把 registry 指向 npmmirror。闸门在临时目录里跑，
+  // ui/.npmrc 的 @autional-cn:registry 作用不到，于是刚发布的版本在镜像站同步前必然 ETARGET
+  // （实测：shared@0.1.0-rc.10 已在 npmjs 可下载，闸门仍报 no matching version）。
   const env = { ...process.env };
   delete env.NPM_CONFIG_USERCONFIG;
   delete env.NODE_AUTH_TOKEN;
-  execFileSync('npm', ['init', '-y'], { cwd: tmp, stdio: 'pipe', shell: process.platform === 'win32' });
-  execFileSync('npm', ['install', ...pkgs.map((p) => p + '@' + versionOf(p))], { cwd: tmp, stdio: 'pipe', env, shell: process.platform === 'win32' });
+  const REG = '--registry=https://registry.npmjs.org/';
+  execFileSync('npm', ['init', '-y', REG], { cwd: tmp, stdio: 'pipe', shell: process.platform === 'win32' });
+  execFileSync('npm', ['install', REG, ...pkgs.map((p) => p + '@' + versionOf(p))], { cwd: tmp, stdio: 'pipe', env, shell: process.platform === 'win32' });
 
   const sha = (f) => createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 12);
   const walk = (d, base, out) => {
