@@ -25,6 +25,12 @@ const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
 
 const EXEMPT_PATH = join(ROOT, 'verification', 'header-exemptions.json');
+// 「按设计没有顶栏」的站点声明 —— 与豁免不同：那是**有期限的债务登记**，这是**适用范围声明**。
+// 两者必须分开：把「本契约不适用」塞进豁免表，会让那张表从"债务清单"变成"杂物抽屉"。
+const NO_TOP_BAR = (() => {
+  try { return new Set(JSON.parse(readFileSync(join(ROOT, 'verification', 'consumer-targets.json'), 'utf8')).noTopBar || []); }
+  catch (e) { return new Set(); }
+})();
 const TODAY = new Date().toISOString().slice(0, 10);
 const exemptions = existsSync(EXEMPT_PATH) ? (JSON.parse(readFileSync(EXEMPT_PATH, 'utf8')).exemptions || []) : [];
 const expiredEx = exemptions.filter((e) => e.expires && e.expires < TODAY);
@@ -85,7 +91,26 @@ for (const site of readdirSync(SITES)) {
     });
   }
   if (!hits.length) {
+    // H1 的失败分支。**此前这里是空的** —— 一个完全没有可识别顶栏的站会显示「—」并通过，
+    // 而闸门照样打印「顶栏契约一致（14 站）」。实测坐实：auth 站 0 命中，14 站全绿。
+    // 零命中不是通过：它意味着**这道闸门对那个站什么都没验**。
+    // 与 contrast 的「0 段文本样本」、CDN 的「连不上 registry 就 SKIP」是同一条纪律。
+    // 确属「本站本就没有顶栏」的，走 header-exemptions.json 登记（必须给 owner 与 expires）——
+    // 那是**有期限的登记**，不是把问题藏起来。
     rows.push({ site, headers: 0, verdict: '无顶栏元素' });
+    const exz = exemptFor(site + '/');
+    if (exz) {
+      rows[rows.length - 1].tokenOk = '豁免';
+      rows[rows.length - 1].stickyOk = '豁免';
+      console.log('  [KNOWN] ' + site + ' 无顶栏元素，已登记豁免（owner ' + exz.owner + '，到期 ' + exz.expires + '）');
+    } else if (NO_TOP_BAR.has(site)) {
+      rows[rows.length - 1].tokenOk = '不适用';
+      rows[rows.length - 1].stickyOk = '不适用';
+      console.log('  [N/A  ] ' + site + '：consumer-targets.json 声明为「按设计没有顶栏」—— 本契约对该站不适用（声明，不是豁免）');
+    } else {
+      problems.push('H1 ' + site + '：源码里 0 个可识别的顶栏元素（<header> / <AntHeader> / <Header> / 自报 sticky 的 <nav>）—— ' +
+        '闸门对这个站什么都没验。要么让顶栏用其中一种写法，要么在 header-exemptions.json 登记（必须给 owner 与 expires）');
+    }
     continue;
   }
   // 逐个候选算分，取**最满足契约**的那个再判定。
@@ -139,7 +164,8 @@ else {
   console.log('  站点'.padEnd(17) + '顶栏数  令牌驱动  sticky');
   for (const r of rows) {
     // 豁免不等于达标——显示成 '免' 而不是 'Y'，否则这张表会谎报合规。
-    const mark = (v) => (v === '豁免' ? '免' : (r.headers === 0 ? '—' : (v ? 'Y' : 'N')));
+    // 'N/A' 必须与 '—' 分开显示：'—' 是「有元素但没判」（曾经是假绿），'N/A' 是「本契约不适用（已声明）」
+    const mark = (v) => (v === '豁免' ? '免' : (v === '不适用' ? 'N/A' : (r.headers === 0 ? '—' : (v ? 'Y' : 'N'))));
     const t = mark(r.tokenOk), s = mark(r.stickyOk);
     console.log('  ' + r.site.padEnd(15) + String(r.headers).padStart(5) + String(t).padStart(9) + String(s).padStart(8));
   }
