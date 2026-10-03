@@ -15,6 +15,7 @@ import {
 	User,
 } from 'lucide-react';
 import { useMenuButton } from '../internal/use-menu-button';
+import { UI_I18N_NS, uiText } from '../i18n';
 
 export interface PortalLink {
 	code: string;
@@ -54,34 +55,6 @@ const DEFAULT_PORTAL_ICONS: Record<string, React.ComponentType<{ className?: str
 	landing: Globe,
 };
 
-const PORTAL_NAMES_ZH: Record<string, string> = {
-	admin: '管理控制台',
-	auth: '登录中心',
-	security: '安全控制台',
-	user: '用户门户',
-	authenticator: '身份验证器',
-	status: '状态页',
-	trust: '信任中心',
-	platform: '平台控制台',
-	developer: '开发者门户',
-	landing: '门户首页',
-	brand: '品牌站',
-};
-
-const PORTAL_NAMES_EN: Record<string, string> = {
-	admin: 'Admin console',
-	auth: 'Sign-in',
-	security: 'Security console',
-	user: 'User portal',
-	authenticator: 'Authenticator',
-	status: 'Status page',
-	trust: 'Trust center',
-	platform: 'Platform console',
-	developer: 'Developer portal',
-	landing: 'Home',
-	brand: 'Brand site',
-};
-
 export function PortalSwitcher({
 	portals,
 	currentPortal,
@@ -93,15 +66,18 @@ export function PortalSwitcher({
 	hideWhenSingle = true,
 	iconForPortal,
 }: PortalSwitcherProps) {
-	const { i18n } = useTranslation();
-	const isZh = (i18n.language || '').toLowerCase().startsWith('zh');
-	const switchLabel = labels?.switchPortal ?? (isZh ? '切换门户' : 'Switch portal');
+	const { t, i18n } = useTranslation();
 	const { open, setOpen, triggerRef, menuRef, triggerProps, menuProps } = useMenuButton();
 
 	if (!loading && hideWhenSingle && portals.length < 2) return null;
 
 	const icons = { ...DEFAULT_PORTAL_ICONS, ...iconForPortal };
-	const names = isZh ? PORTAL_NAMES_ZH : PORTAL_NAMES_EN;
+	// 文案解析链：站点 i18next（注册 registerUiI18n 后，可覆盖/扩语言）→ 内置表（未注册）→ lastResort
+	const text = (key: string, lastResort?: string): string => {
+		const builtin = uiText(i18n.language, key);
+		return t(key, { ns: UI_I18N_NS, defaultValue: builtin ?? lastResort ?? key });
+	};
+	const switchLabel = labels?.switchPortal ?? text('portal.switcher');
 
 	return (
 		<div className="relative">
@@ -142,7 +118,9 @@ export function PortalSwitcher({
 								onClick={isCurrent ? (event) => { event.preventDefault(); setOpen(false); } : () => setOpen(false)}
 							>
 								{portal.icon ?? <Icon className="h-4 w-4 shrink-0 text-[var(--color-text-secondary)]" />}
-								<span className="flex-1 truncate">{portal.name ?? names[portal.code] ?? portal.code}</span>
+								<span className="flex-1 truncate">
+									{text(`portal.names.${portal.code}`, portal.name ?? portal.code)}
+								</span>
 								{isCurrent && <Check className="h-4 w-4 shrink-0 text-[var(--color-brand)]" />}
 							</a>
 						);
