@@ -79,7 +79,12 @@ const SHELL_SRC = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'AppShell.tsx
 let shellOk = false;
 if (existsSync(SHELL_SRC)) {
   const s = readFileSync(SHELL_SRC, 'utf8');
-  shellOk = /var\(--layout-header-height\)/.test(s) && /\bsticky\b/.test(s);
+  // ⚠ 必须把断言**钉在 <header> 那个标签上**，不能在整份文件里找。
+  // 第一版就是「文件里有这个令牌就算过」——阳性对照当场证明它不成立：
+  // 侧栏上也有同一个高度令牌，把**顶栏那处**改成 h-16 之后闸门照样全绿。
+  // （教训与 C11 那次同型：判据必须落在**它要说的那个元素**上。）
+  const headerTag = /<header\b[^>]*>/.exec(s);
+  shellOk = !!headerTag && /var\(--layout-header-height\)/.test(headerTag[0]) && /\bsticky\b/.test(headerTag[0]);
 } else {
   shellOk = false;
 }
