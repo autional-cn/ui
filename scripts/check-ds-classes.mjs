@@ -102,6 +102,13 @@ const LIT_CURLY = /className=\{[^}]*["'\u0060]([^"'\u0060\u0024{}]+)["'\u0060][^
 //     Dev / Error / Boundary / Something / went / wrong 全当成了类，闸门于是报了一堆
 //     根本不存在的「缺失类」。假阳性比漏报更贵：它会让整道闸门失去可信度。
 const LIT_STYLE = /^\s*[A-Za-z][\w-]*:\s*["'\u0060]([^"'\u0060\u0024{}]+)["'\u0060],?\s*$/gm;
+// (c) **模板字符串**：className={`rounded-md transition-colors ${className}`}
+//     上面两条抓不到它：LIT / LIT_CURLY 都把 $ 与 {} 排除在外（那正是为了不被插值骗），
+//     于是「带插值的 className」整条字符串一个类都抽不出来。
+//     实测踩到：brand 只导入 ThemeProvider + ThemeToggle，而 ThemeToggle 的 className 恰好是模板串
+//     —— 闸门于是报 D2「导入了 2 个组件但一个类名都抽不到」。那是**闸门自己的假阳性**。
+//     模板串里能信的是**静态片段**：先整体取出，再丢掉含 $ 的 token（那是插值，不是类名）。
+const LIT_TEMPLATE = /className=\{\s*\u0060([^\u0060]*)\u0060\s*\}/g;
 const SEP = /[-:/]/;
 
 function classesInFile(abs, seen) {
@@ -114,6 +121,10 @@ function classesInFile(abs, seen) {
       if (!looksLikeClasses(m[1])) continue;
       for (const t of m[1].trim().split(/\s+/)) out.add(t);
     }
+  }
+  for (const m of text.matchAll(LIT_TEMPLATE)) {
+    const statics = m[1].split(/\s+/).filter((t) => t && !t.includes('$'));
+    if (statics.length && statics.every((t) => CLASS_TOKEN.test(t))) for (const t of statics) out.add(t);
   }
   for (const m of text.matchAll(LIT_STYLE)) {
     if (!looksLikeClasses(m[1])) continue;
