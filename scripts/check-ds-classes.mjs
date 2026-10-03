@@ -42,10 +42,10 @@ const problems = [];
 const infos = [];
 
 // ── 1. 名字 → 源文件（走 barrel，递归展开目录 index.ts）────────────────────
-function buildExportMap() {
+function buildExportMap(pkgDir) {
   const map = new Map();
   const readBarrel = (rel) => {
-    const abs = join(PKG, rel);
+    const abs = join(pkgDir, rel);
     if (!existsSync(abs)) return;
     const text = readFileSync(abs, 'utf8');
     const dir = dirname(rel).split('\\').join('/');
@@ -63,18 +63,21 @@ function buildExportMap() {
       const from = m[1];
       if (from[0] !== '.') continue;
       const sub = (dir === '.' ? from : dir + '/' + from).split('\\').join('/');
-      for (const cand of [sub + '/index.ts', sub + '.ts']) if (existsSync(join(PKG, cand))) { readBarrel(cand); break; }
+      for (const cand of [sub + '/index.ts', sub + '.ts']) if (existsSync(join(pkgDir, cand))) { readBarrel(cand); break; }
     }
   };
   readBarrel('index.ts');
   return map;
 }
 
-const EXPORTS = buildExportMap();
-if (EXPORTS.size === 0) {
-  console.log('check-ds-classes：读不到 @autional-cn/ui 的导出表（packages/ui/src/index.ts）—— 跳过');
-  process.exit(0);
-}
+// 导出表按**每个站实际安装的那份 DS** 来读，不读本地 ui/packages/ui/src。
+//
+// 为什么（本轮实测踩到）：判据是「你装的这套组件，类生成了没有」。若拿**本地源码**去比对，
+// 后果是**每次改 DS 都会让闸门变红** —— 源码领先已发布版本，站点装的是旧版。
+// 实测：改完 StatusBadge 之后闸门报 bg-success-soft 缺失，而缺失的原因不是 glob 坏了，
+// 是站点装的还是已发布的 rc.3、还没有这次改动。那是**发布流程**的事，不是这道闸门的事。
+// 拿站点实装的那份来比，闸门就只对「导入的组件有没有样式」负责 —— 这才是它该管的。
+const LOCAL_PKG = PKG;   // 兜底：站点还没装（CI 里只 checkout ui/）时用本地源码
 
 // ── 2. 从源码抽"类名字符串" ────────────────────────────────────────────────
 // 两类来源都要抓：
@@ -192,6 +195,16 @@ for (const site of readdirSync(SITES)) {
   for (const r of roots) if (existsSync(r)) srcFiles.push(...walk(r, (p) => /\.(ts|tsx|astro)$/.test(p)));
   if (!srcFiles.length) continue;
 
+  // 站点实际安装的 DS 源码：SPA 在 apps/<app>/node_modules，内容站/根装在站点根
+  const candidates = [];
+  const appsDir = join(siteDir, 'apps');
+  if (existsSync(appsDir)) for (const a of readdirSync(appsDir)) candidates.push(join(appsDir, a, 'node_modules', '@autional-cn', 'ui', 'src'));
+  candidates.push(join(siteDir, 'node_modules', '@autional-cn', 'ui', 'src'));
+  candidates.push(LOCAL_PKG);
+  const pkgDir = candidates.find((d) => existsSync(d));
+  const EXPORTS = buildExportMap(pkgDir);
+  if (EXPORTS.size === 0) { infos.push('D0 ' + site + '：读不到 @autional-cn/ui 的导出表（' + pkgDir + '）—— 跳过'); continue; }
+
   const imported = new Set();
   for (const f of srcFiles) {
     for (const m of readFileSync(f, 'utf8').matchAll(/import\s+(?:type\s+)?\{([^}]+)\}\s*from\s*'@autional-cn\/ui'/g)) {
@@ -212,7 +225,7 @@ for (const site of readdirSync(SITES)) {
   for (const n of imported) {
     const rel = EXPORTS.get(n);
     for (const ext of ['.tsx', '.ts']) {
-      const abs = join(PKG, rel + ext);
+      const abs = join(pkgDir, rel + ext);
       if (existsSync(abs)) { for (const c of classesInFile(abs, seen)) expected.add(c); break; }
     }
   }
