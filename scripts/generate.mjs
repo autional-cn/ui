@@ -468,6 +468,11 @@ const FLAT_COLORS = [
   ['success-soft', 'success-soft'],
   ['warning-soft', 'warning-soft'],
   ['danger-soft', 'danger-soft'],
+  // 与 -soft 配对的文本档。缺了它们，组件写 text-success-text 就生成不出类 ——
+  // 而 $soft-note 规定的完整用法正是「bg-success-soft + text-success-text」（对比度 5.51/4.85/4.65）。
+  ['success-text', 'success-text'],
+  ['warning-text', 'warning-text'],
+  ['danger-text', 'danger-text'],
   ['error', 'danger'],
   ['info', 'info'],
   ['info-text', 'info-text'],
