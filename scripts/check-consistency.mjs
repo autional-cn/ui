@@ -83,6 +83,7 @@ if (!existsSync(SITES)) {
 // 批次之间必须有个东西记住「现在是多少」，否则这一批刚清掉的 import 会被下一批悄悄加回来。
 const ANTD_REGISTRY_PATH = join(ROOT, 'verification', 'antd-entries.json');
 const CONSOLE_HEADERS_PATH = join(ROOT, 'verification', 'console-headers.json');
+const PALETTE_PATH = join(ROOT, 'verification', 'palette-usage.json');
 const WRITE_REGISTRY = process.argv.includes('--write-registry');
 const ANTD_KINDS = ['Table', 'DatePicker', 'RangePicker', 'Drawer', 'icons', 'other', 'subpath'];
 // ⚠ 'RangePicker' 是**唯一一个按用法计数的种类**，其余六个都按具名导入计。
@@ -232,6 +233,48 @@ function countConsoleHeaders() {
   return { inline, marketing };
 }
 
+// ── C11 非设计系统色阶的度量 ────────────────────────────────────────────
+// 设计系统的 tailwind preset 只定义四个色阶：primary / sky / amber / neutral（其余是语义色）。
+// Tailwind **出厂**的那些色阶（gray / red / green / blue / emerald / rose …）仍然能被生成 ——
+// 所以第 13 道「类名可达性」抓不到它们。但它们不是设计系统的颜色：
+//   ① 同一个页面上 `text-gray-500` 与 `text-neutral-600` 并存时，两个几乎一样的灰会并排出现；
+//   ② 出厂色阶没有做过设计系统那套对比度验证（DS 的 neutral-400 只有 1.93:1）。
+// 判据与 C5/C8/C9 同形：存量只许减不许增；closedKeys 里的键必须为 0。
+//
+// 度量范围**排除 `src/components/layout/**`**：那是并行工作流的只读边界（见计划 §7 L2），
+// 边界解除后应一并收敛 —— 这一点写进台账注释，避免「排除」变成一个没人记得的洞。
+const DS_FAMILIES = new Set(['primary', 'sky', 'amber', 'neutral']);
+const LOCKED_CLASSES = ['text-neutral-400'];
+const PALETTE_RE = /\b(bg|text|border|ring|divide|from|to|via|fill|stroke|outline|shadow|decoration|placeholder|caret|accent)-(red|green|blue|yellow|orange|emerald|rose|violet|purple|indigo|teal|cyan|lime|pink|gray|grey|slate|zinc|stone)-(\d{2,3})\b/g;
+const PALETTE_EXCLUDE = /(^|[\\/])components[\\/]layout[\\/]/;
+function countPaletteUsage() {
+  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
+  const out = {};
+  for (const site of CONSOLE_SITES.concat(['user'])) {
+    if (!SITES_HAS(site)) continue;
+    const counts = {};
+    for (const f of walk(join(SITES, site), [], (x) => /\.(tsx|jsx)$/.test(x), SKIP)) {
+      if (PALETTE_EXCLUDE.test(f)) continue;
+      const code = strip(readFileSync(f, 'utf8'));
+      for (const m of code.matchAll(PALETTE_RE)) {
+        if (DS_FAMILIES.has(m[2])) continue;
+        counts[m[2]] = (counts[m[2]] || 0) + 1;
+      }
+      for (const cls of LOCKED_CLASSES) {
+        const re = new RegExp('\\b' + cls + '\\b', 'g');
+        for (const m of code.matchAll(re)) {
+          // 只锁**无变体前缀**的：disabled:text-neutral-400 是设计系统许可的禁用态写法
+          const before = code[m.index - 1];
+          if (before === ':' || before === '-') continue;
+          counts[cls] = (counts[cls] || 0) + 1;
+        }
+      }
+    }
+    if (Object.keys(counts).length) out[site] = counts;
+  }
+  return out;
+}
+
 if (WRITE_REGISTRY) {
   const prev = (antdRegistry && antdRegistry.sites) || {};
   const out = {
@@ -268,6 +311,17 @@ if (WRITE_REGISTRY) {
     marketing: ch.marketing,
   }, null, 2) + '\n');
   console.log('已写入 ' + relative(ROOT, CONSOLE_HEADERS_PATH).replace(/\\/g, '/') + '（inline ' + Object.values(ch.inline).reduce((x, y) => x + y, 0) + ' 处 / marketing ' + Object.values(ch.marketing).reduce((x, y) => x + y, 0) + ' 处）');
+
+  const pPrev = existsSync(PALETTE_PATH) ? JSON.parse(readFileSync(PALETTE_PATH, 'utf8')) : null;
+  const pu = countPaletteUsage();
+  writeFileSync(PALETTE_PATH, JSON.stringify({
+    $comment: '非设计系统色阶台账（棘轮，C11）。键 = 非 DS 的 Tailwind 色系名（gray/red/green/blue/…），或设计系统内部被锁的类名（如 text-neutral-400）。数字只许减不许增；closedKeys 里的键必须为 0。度量范围排除 src/components/layout/**（并行工作流只读边界，边界解除后一并收敛）。',
+    updated: TODAY,
+    coveredSites: CONSOLE_SITES.concat(['user']),
+    closedKeys: (pPrev && pPrev.closedKeys) || [],
+    usage: pu,
+  }, null, 2) + '\n');
+  console.log('已写入 ' + relative(ROOT, PALETTE_PATH).replace(/\\/g, '/') + '（非 DS 色阶 ' + Object.values(pu).reduce((a, o) => a + Object.entries(o).filter(([k]) => !LOCKED_CLASSES.includes(k)).reduce((x, [, y]) => x + y, 0), 0) + ' 处）');
   process.exit(0);
 }
 
@@ -764,6 +818,44 @@ if (!existsSync(CONSOLE_HEADERS_PATH)) {
   }
 }
 info.push('C10 控制台页头：inline ' + Object.values(chCounts.inline).reduce((a, b) => a + b, 0) + ' 处 / marketing ' + Object.values(chCounts.marketing).reduce((a, b) => a + b, 0) + ' 处（收敛目标是 0，改用 ConsolePageHeader）');
+
+// ── C11 非设计系统色阶（棘轮 + 收敛开关）────────────────────────────────
+{
+  const pos = ('class="' + 'text-gray-500' + '"').match(PALETTE_RE);
+  const neg = ('class="' + 'text-neutral-500' + '"').match(PALETTE_RE);
+  const neg2 = ('class="' + 'text-primary-900' + '"').match(PALETTE_RE);
+  if (!pos || pos.length !== 1 || neg || neg2) {
+    problems.push('C11 度量器自检失败（正例 ' + (pos ? pos.length : 0) + ' 次、反例 ' + (neg ? neg.length : 0) + '/' + (neg2 ? neg2.length : 0) + ' 次）——非 DS 色阶计数解析器出错了，棘轮因此失去意义');
+  }
+}
+const paletteCounts = countPaletteUsage();
+if (!existsSync(PALETTE_PATH)) {
+  problems.push('C11 verification/palette-usage.json 缺失 —— 非设计系统色阶的存量要靠它记账（node scripts/check-consistency.mjs --write-registry）');
+} else {
+  const pReg = JSON.parse(readFileSync(PALETTE_PATH, 'utf8'));
+  const pRec = pReg.usage || {};
+  let pTotal = 0;
+  for (const [site, counts] of Object.entries(paletteCounts)) {
+    const rec = pRec[site] || {};
+    for (const [k, n] of Object.entries(counts)) {
+      if (!LOCKED_CLASSES.includes(k)) pTotal += n;
+      const was = rec[k] || 0;
+      if (n > was) {
+        problems.push('C11 ' + site + ' 新增了非设计系统色阶「' + k + '」（' + was + ' → ' + n + '）。设计系统的 preset 只定义 primary / sky / amber / neutral 四个色阶加语义色；Tailwind 出厂色阶能生成但没做过对比度验证，且会让同一个页面上并排出现两个几乎一样的灰。');
+      } else if (n < was) {
+        warns.push('C11 ' + site + ' 的「' + k + '」从 ' + was + ' 降到 ' + n + ' —— 这是进展，请跑 node scripts/check-consistency.mjs --write-registry 更新台账');
+      }
+    }
+  }
+  for (const site of pReg.coveredSites || []) {
+    if (!SITES_HAS(site)) { problems.push('C11 台账里的 coveredSites 含不存在的站点「' + site + '」——拼错会让该站的闸门静默失效'); continue; }
+    for (const k of pReg.closedKeys || []) {
+      const n = (paletteCounts[site] || {})[k] || 0;
+      if (n > 0) problems.push('C11 ' + site + ' 已登记为「' + k + ' 已收敛」，但仍有 ' + n + ' 处 —— 登记与事实不符');
+    }
+  }
+  info.push('C11 非设计系统色阶：' + pTotal + ' 处，分布在 ' + Object.keys(paletteCounts).length + ' 个站点；已 closed 的键：' + ((pReg.closedKeys || []).join(' / ') || '无'));
+}
 
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
 const codeOf = (msg) => { const m = /^(C\d)/.exec(msg); return m ? m[1] : null; };
