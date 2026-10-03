@@ -10,12 +10,13 @@
     "subpath"
   ],
   "closedKinds": [],
-  "tableConvergedSites": [],
+  "tableConvergedSites": [
+    "user"
+  ],
   "handwrittenTablesBySite": {
     "developer": 1,
     "docs": 9,
-    "trust": 2,
-    "user": 9
+    "trust": 2
   },
   "sites": {
     "admin": {
