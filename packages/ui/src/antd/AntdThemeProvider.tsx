@@ -49,6 +49,10 @@ export function AntdThemeProvider({ children, locale }: AntdThemeProviderProps) 
 			theme={{
 				algorithm: isDark ? antdAlgorithm.darkAlgorithm : antdAlgorithm.defaultAlgorithm,
 				token: (isDark ? antdTheme.dark : antdTheme.light).token,
+				// 组件级 token 由桥下发（不是在这里手写）。它统一的是「视觉维度」——
+				// 表头底色 / 悬浮态 / 边框 / 行高 —— 而且**对所有 antd Table 生效**，
+				// 包括控制台现存的那些直接使用，它们一行都不用改。
+				components: (isDark ? antdTheme.dark : antdTheme.light).components,
 			}}
 		>
 			<AntdApp>{children}</AntdApp>

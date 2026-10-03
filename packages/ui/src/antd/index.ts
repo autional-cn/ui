@@ -5,3 +5,5 @@
 
 export { AntdThemeProvider, useAntdApp } from './AntdThemeProvider';
 export type { AntdThemeProviderProps } from './AntdThemeProvider';
+export { DataTable } from './DataTable';
+export type { DataTableProps } from './DataTable';

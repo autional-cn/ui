@@ -102,8 +102,8 @@ importers:
         version: 6.6.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     devDependencies:
       '@autional-cn/tokens':
-        specifier: 0.1.0-rc.3
-        version: 0.1.0-rc.3
+        specifier: 0.1.0-rc.4
+        version: 0.1.0-rc.4
       '@testing-library/jest-dom':
         specifier: 6.9.1
         version: 6.9.1
@@ -202,8 +202,8 @@ packages:
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
-  '@autional-cn/tokens@0.1.0-rc.3':
-    resolution: {integrity: sha512-qBkqGOr6P0m31RrehjOAPp105UIZiIR9LJkSEUPoRtVY9ZlH/ghzCGodnam/cUOVgIjnt6fh2RkXF7fsm7gt/g==}
+  '@autional-cn/tokens@0.1.0-rc.4':
+    resolution: {integrity: sha512-Ovm6jWJOiepWmpvA+UYdd7jhFhYzEralJqyIn0bvXMhzKhtHlGwK2JOIx00VHmAKghZt10qTzS3rIp9zOE3oHw==}
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -1789,7 +1789,7 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@autional-cn/tokens@0.1.0-rc.3': {}
+  '@autional-cn/tokens@0.1.0-rc.4': {}
 
   '@babel/code-frame@7.29.7':
     dependencies:

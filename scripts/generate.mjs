@@ -373,10 +373,31 @@ const antdToken = (ctx) => ({
   fontFamily: cssFontStack(TOKENS.core.font.sans),
 });
 
+// 组件级主题。它解决的是「同一张表在四个门户里长得不一样」——
+// 而**放在这里而不是放在某个 DataTable 组件里**是刻意的：
+//   组件级 token 一旦由 ConfigProvider 下发，**所有** antd Table 都会吃到它，
+//   包括控制台现存的 156 处直接使用（它们一行代码都不用改）。
+//   若把视觉收在自研 DataTable 里，只有换用它的地方才统一 —— 覆盖面小一个数量级。
+//
+// 只覆盖「视觉维度」（表头底色 / 悬浮态 / 边框 / 行高），**不碰任何行为 props**：
+//   columns / rowKey / pagination / scroll / onRow / rowSelection / expandable / sticky / tableLayout
+//   全部照旧透传。这条边界就是 §3.1 的薄透传契约。
+const antdComponents = (ctx) => ({
+  Table: {
+    headerBg: ctx.resolve('{color.bg-muted}'),
+    headerColor: ctx.resolve('{color.text-primary}'),
+    headerSplitColor: ctx.resolve('{color.border-subtle}'),
+    rowHoverBg: ctx.resolve('{color.bg-muted}'),
+    borderColor: ctx.resolve('{color.border-subtle}'),
+    cellPaddingBlock: 10,
+    cellPaddingInline: 12,
+  },
+});
+
 outputs.set(
   'packages/tokens/dist/antd-theme.js',
   `'use strict';\n/** ${GENERATED('tokens/tokens.json')}\n *\n * antd v5/v6 ThemeConfig bridge. Usage:\n *   const antdToken = require('@autional-cn/tokens/antd-theme');\n *   <ConfigProvider theme={{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,\n *                            token: (isDark ? antdToken.dark : antdToken.light).token }}>\n */\n` +
-    `module.exports = {\n  light: { token: ${js(antdToken(light), 1)} },\n  dark: { token: ${js(antdToken(dark), 1)} },\n};\n`,
+    `module.exports = {\n  light: { token: ${js(antdToken(light), 1)}, components: ${js(antdComponents(light), 2)} },\n  dark: { token: ${js(antdToken(dark), 1)}, components: ${js(antdComponents(dark), 2)} },\n};\n`,
 );
 
 // ESM 变体：站点侧的应用是 ESM（package.json "type": "module"），而上面的 .js 是 CJS。
@@ -394,8 +415,8 @@ outputs.set(
  * 控制台不得再手写这些色值——手写会让令牌变更无法传导，各 portal 各自漂移（KI-011）。
  */
 const antdTheme = {
-  light: { token: ${js(antdToken(light), 1)} },
-  dark: { token: ${js(antdToken(dark), 1)} },
+  light: { token: ${js(antdToken(light), 1)}, components: ${js(antdComponents(light), 2)} },
+  dark: { token: ${js(antdToken(dark), 1)}, components: ${js(antdComponents(dark), 2)} },
 };
 export default antdTheme;
 export const light = antdTheme.light;
@@ -409,20 +430,20 @@ outputs.set(
   'packages/tokens/dist/antd-theme.d.mts',
   `/** ${GENERATED('tokens/tokens.json')} */\n` +
     `declare const antdTheme: {\n` +
-    `  light: { token: Record<string, string | number> };\n` +
-    `  dark: { token: Record<string, string | number> };\n` +
+    `  light: { token: Record<string, string | number>; components: Record<string, Record<string, string | number>> };\n` +
+    `  dark: { token: Record<string, string | number>; components: Record<string, Record<string, string | number>> };\n` +
     `};\n` +
     `export default antdTheme;\n` +
-    `export declare const light: { token: Record<string, string | number> };\n` +
-    `export declare const dark: { token: Record<string, string | number> };\n`,
+    `export declare const light: { token: Record<string, string | number>; components: Record<string, Record<string, string | number>> };\n` +
+    `export declare const dark: { token: Record<string, string | number>; components: Record<string, Record<string, string | number>> };\n`,
 );
 
 outputs.set(
   'packages/tokens/dist/antd-theme.d.ts',
   `/** ${GENERATED('tokens/tokens.json')} */\n` +
     `declare const antdTheme: {\n` +
-    `  light: { token: Record<string, string | number> };\n` +
-    `  dark: { token: Record<string, string | number> };\n` +
+    `  light: { token: Record<string, string | number>; components: Record<string, Record<string, string | number>> };\n` +
+    `  dark: { token: Record<string, string | number>; components: Record<string, Record<string, string | number>> };\n` +
     `};\n` +
     `export = antdTheme;\n`,
 );
