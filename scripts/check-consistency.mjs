@@ -39,6 +39,7 @@ const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
 const KNOWN = join(ROOT, 'verification', 'known-issues.json');
 const TODAY = new Date().toISOString().slice(0, 10);
 
+const SITES_HAS = (s) => { try { return statSync(join(SITES, s)).isDirectory(); } catch (e) { return false; } };
 const problems = [];
 const warns = [];
 const info = [];
@@ -168,6 +169,28 @@ for (const site of readdirSync(SITES)) {
   }
 }
 
+// 手写 <table> 的度量（C8 用）。做成函数是因为写入台账与判定各要一次：
+// 逻辑只有一份，重复的只是那次文件遍历。
+function countHandwrittenTables() {
+  // 这里自带一个剥注释的小函数，而不是复用下面 C2 的 stripComments ——
+  // 那个是在 C2 段定义的，而本函数在写入台账时（更早）就会被调用，直接复用会撞上 TDZ。
+  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
+  const counts = {};
+  for (const site of readdirSync(SITES)) {
+    const sp = join(SITES, site);
+    if (!statSync(sp).isDirectory()) continue;
+    if (!SITES_HAS(site)) continue;
+    let n = 0;
+    for (const f of walk(sp, [], (x) => /\.(tsx|jsx|astro)$/.test(x), SKIP)) {
+      // 先剥注释：本项目里就有「把 <table> 写进注释解释这件事」的地方，
+      // 不剥的话注释会把存量数凭空加一。
+      n += (strip(readFileSync(f, 'utf8')).match(/<table[\s>]/g) || []).length;
+    }
+    if (n) counts[site] = n;
+  }
+  return counts;
+}
+
 if (WRITE_REGISTRY) {
   const prev = (antdRegistry && antdRegistry.sites) || {};
   const out = {
@@ -175,6 +198,8 @@ if (WRITE_REGISTRY) {
     updated: TODAY,
     kinds: ANTD_KINDS,
     closedKinds: (antdRegistry && antdRegistry.closedKinds) || [],
+    tableConvergedSites: (antdRegistry && antdRegistry.tableConvergedSites) || [],
+    handwrittenTablesBySite: countHandwrittenTables(),
     sites: {},
   };
   for (const [site, rec] of Object.entries(antdMeasured)) {
@@ -543,6 +568,35 @@ for (const [site, files] of c7setup) {
   }
 }
 info.push('C7 有测试 setup 的站点：' + c7setup.size + ' 个（' + [...c7setup.keys()].join(', ') + '）');
+
+// ── C8 手写 <table> 存量（棘轮 + 收敛开关）──────────────────────────────
+// §9 完成定义第 2 条写着「四站的表格由同一个 DataTable 渲染（user 不再有手写 table 标签）」。
+// 在那之前它只是文档里的一句话 —— **没有任何东西在数手写表格还剩几个**，
+// 于是「还剩几个」只能靠人去数，而人一忙就不数了。
+// 判据与 C5 同一形状：存量只许减不许增；登记为已收敛的站点必须为 0。
+const tableCounts = countHandwrittenTables();
+const tableTotal = Object.values(tableCounts).reduce((a, b) => a + b, 0);
+if (!antdRegistry) {
+  problems.push('C8 缺少 verification/antd-entries.json —— 手写表格的存量要靠它记账（node scripts/check-consistency.mjs --write-registry）');
+} else {
+  const recorded = antdRegistry.handwrittenTablesBySite || {};
+  for (const [site, n] of Object.entries(tableCounts)) {
+    const was = recorded[site] || 0;
+    if (n > was) {
+      problems.push('C8 ' + site + ' 新增了手写 <table>（' + was + ' → ' + n + '）。表格一律走 @autional-cn/ui/antd 的 DataTable：手写表要自己实现排序/分页/空态/加载态，而且必然与其余 portal 长得不一样。');
+    } else if (n < was) {
+      warns.push('C8 ' + site + ' 的手写 <table> 从 ' + was + ' 降到 ' + n + ' —— 这是进展，请跑 node scripts/check-consistency.mjs --write-registry 更新台账');
+    }
+  }
+  for (const site of antdRegistry.tableConvergedSites || []) {
+    if (!SITES_HAS(site)) { problems.push('C8 台账里的 tableConvergedSites 含不存在的站点「' + site + '」——拼错会让该站的闸门静默失效'); continue; }
+    if ((tableCounts[site] || 0) > 0) {
+      problems.push('C8 ' + site + ' 已登记为「表格已收敛」，但仍有 ' + tableCounts[site] + ' 个手写 <table> —— 登记与事实不符');
+    }
+  }
+}
+info.push('C8 手写 <table> 存量：' + tableTotal + ' 处，分布在 ' + Object.keys(tableCounts).length + ' 个站点' +
+  (Object.keys(tableCounts).length ? '（' + Object.entries(tableCounts).map(([s, n]) => s + ' ' + n).join('、') + '）' : ''));
 
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
 const codeOf = (msg) => { const m = /^(C\d)/.exec(msg); return m ? m[1] : null; };
