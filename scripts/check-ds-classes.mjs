@@ -90,8 +90,16 @@ const looksLikeClasses = (s) => {
 };
 const VARIANT = /^(?:dark|hover|focus|focus-visible|active|disabled|group-hover|md|lg|sm|xl|2xl|checked|peer-checked):/;
 const stripVariant = (c) => (VARIANT.test(c) ? c.replace(/^(?:[a-z-]+:)+/, '') : c);
-const LIT = /(?:className\s*=\s*|:\s*)["'\u0060]([^"'\u0060\u0024{}]+)["'\u0060]/g;
+// (a) className 里的字符串：**不要求** token 带分隔符，否则 flex / hidden / truncate 这类单词类会被漏掉
+const LIT = /className\s*=\s*["'\u0060]([^"'\u0060\u0024{}]+)["'\u0060]/g;
 const LIT_CURLY = /className=\{[^}]*["'\u0060]([^"'\u0060\u0024{}]+)["'\u0060][^}]*\}/g;
+// (b) 变体表：形如   success: 'bg-success text-white',
+//     这一支**必须**要求至少一个 token 带分隔符（- : /）。
+//     否则 message: 'Something went wrong' 会被当成类名串 —— 实测踩到：抽取器把
+//     Dev / Error / Boundary / Something / went / wrong 全当成了类，闸门于是报了一堆
+//     根本不存在的「缺失类」。假阳性比漏报更贵：它会让整道闸门失去可信度。
+const LIT_STYLE = /^\s*[A-Za-z][\w-]*:\s*["'\u0060]([^"'\u0060\u0024{}]+)["'\u0060],?\s*$/gm;
+const SEP = /[-:/]/;
 
 function classesInFile(abs, seen) {
   if (seen.has(abs) || !existsSync(abs)) return new Set();
@@ -103,6 +111,12 @@ function classesInFile(abs, seen) {
       if (!looksLikeClasses(m[1])) continue;
       for (const t of m[1].trim().split(/\s+/)) out.add(stripVariant(t));
     }
+  }
+  for (const m of text.matchAll(LIT_STYLE)) {
+    if (!looksLikeClasses(m[1])) continue;
+    const toks = m[1].trim().split(/\s+/);
+    if (!toks.some((t) => SEP.test(t))) continue;   // 见 LIT_STYLE 上方注释
+    for (const t of toks) out.add(stripVariant(t));
   }
   for (const m of text.matchAll(/from\s*'(\.\.?\/[^']+)'/g)) {
     const dir = dirname(abs);
@@ -138,8 +152,26 @@ function distCss(siteDir) {
   return out;
 }
 // Tailwind 把 : . / ( ) [ ] 转义成 \: \/ \( …，先还原再匹配，否则 focus-visible:outline-none 永远"缺失"
-const unescapeCss = (s) => s.replace(/\\([^0-9a-fA-F\s])/g, '\u00241');
-const hasRule = (css, cls) => new RegExp('\\.' + cls.replace(/[.*+?^\u0024{}()|[\]\\/]/g, '\\\u0026') + '(?![\\w-])').test(css);
+// 匹配器：**不要**去反转义 CSS，而是把类名按 Tailwind 的规则转义，再对**原始** CSS 做子串查找。
+//
+// 为什么强调：第一版是「先反转义 CSS，再用转义过的模式去搜」，两边口径不一致，
+// 于是含 . / [ ] ( ) 的类（gap-1.5、h-3.5、text-[var(--color-text-primary)]）**被整体误报为缺失**。
+// 实测坐实：它们在产物 CSS 里是转义形态且**都在**：
+//   .gap-1\\.5 / .h-3\\.5 / .ml-0\\.5 / .text-\\[var\\(--color-text-primary\\)\\]
+// 用字符串查找而不是正则，顺带免掉一整类转义事故；边界用「后一个字符不能是 [\w-]」手工判
+// （否则 .flex 会命中 .flex-col）。
+const TW_ESCAPE = /[!"#\u0024%&'()*+,./:;<=>?@[\\\]^`{|}~]/g;
+const twEscape = (c) => c.replace(TW_ESCAPE, (m) => '\\' + m);
+const hasRule = (rawCss, cls) => {
+  const sel = '.' + twEscape(cls);
+  let i = rawCss.indexOf(sel);
+  while (i >= 0) {
+    const after = rawCss[i + sel.length];
+    if (after === undefined || !/[\w-]/.test(after)) return true;
+    i = rawCss.indexOf(sel, i + 1);
+  }
+  return false;
+};
 
 if (!existsSync(SITES)) {
   console.log('check-ds-classes：本次工作区没有 sites/，跳过（CI 里同样跳过）');
@@ -173,7 +205,7 @@ for (const site of readdirSync(SITES)) {
 
   const cssFiles = distCss(siteDir);
   if (!cssFiles.length) { infos.push('D1 ' + site + '：导入了 ' + imported.size + ' 个 DS 组件，但找不到已构建的 CSS —— 跳过（先 pnpm build）'); continue; }
-  const css = unescapeCss(cssFiles.map((f) => readFileSync(f, 'utf8')).join('\n'));
+  const css = cssFiles.map((f) => readFileSync(f, 'utf8')).join('\n');   // 原始字节，不反转义
 
   const seen = new Set();
   const expected = new Set();
@@ -186,7 +218,17 @@ for (const site of readdirSync(SITES)) {
   }
   if (!expected.size) { problems.push('D2 ' + site + '：导入 ' + imported.size + ' 个 DS 组件但一个类名都抽不到 —— 抽取器坏了，按失败处理'); continue; }
 
-  if (hasRule(css, SENTINEL)) { problems.push('D0 阳性对照失败：哨兵类被判为存在 —— 匹配器坏了，这道闸门的结论不可信'); continue; }
+  // 阳性对照，两个哨兵，缺一不可：
+  //   ① 负对照：必定**不存在**的类必须被判为缺失（防匹配器恒真）
+  //   ② 正对照：必定**存在**的类必须被判为存在（防匹配器恒假）
+  // ② 是补上来的。第一版只有 ①，而匹配器当时把含 . 或 / 的类整体误报为缺失，
+  // ① 完全看不出来（哨兵类没有特殊字符）。教训：**正对照与负对照都要有**。
+  const PRESENT_PROBE = ['flex', 'hidden', 'block', 'w-full', 'items-center'];
+  if (hasRule(css, SENTINEL)) { problems.push('D0 阳性对照失败（负）：哨兵类被判为存在 —— 匹配器恒真，结论不可信'); continue; }
+  if (!PRESENT_PROBE.some((c) => hasRule(css, c))) {
+    problems.push('D0 阳性对照失败（正）：' + PRESENT_PROBE.join(' / ') + ' 一个都找不到 —— 匹配器恒假，结论同样不可信');
+    continue;
+  }
 
   const missing = [...expected].filter((c) => !hasRule(css, c));
   checkedSites++; checkedClasses += expected.size;
