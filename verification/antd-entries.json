@@ -13,10 +13,17 @@
   "tableConvergedSites": [
     "user"
   ],
+  "overlayConvergedSites": [],
   "handwrittenTablesBySite": {
     "developer": 1,
     "docs": 9,
     "trust": 2
+  },
+  "handwrittenOverlaysBySite": {
+    "auth": 2,
+    "authenticator": 2,
+    "user": 12,
+    "web": 1
   },
   "sites": {
     "admin": {

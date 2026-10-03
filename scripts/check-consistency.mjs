@@ -199,7 +199,9 @@ if (WRITE_REGISTRY) {
     kinds: ANTD_KINDS,
     closedKinds: (antdRegistry && antdRegistry.closedKinds) || [],
     tableConvergedSites: (antdRegistry && antdRegistry.tableConvergedSites) || [],
+    overlayConvergedSites: (antdRegistry && antdRegistry.overlayConvergedSites) || [],
     handwrittenTablesBySite: countHandwrittenTables(),
+    handwrittenOverlaysBySite: countHandwrittenOverlays(),
     sites: {},
   };
   for (const [site, rec] of Object.entries(antdMeasured)) {
@@ -597,6 +599,70 @@ if (!antdRegistry) {
 }
 info.push('C8 手写 <table> 存量：' + tableTotal + ' 处，分布在 ' + Object.keys(tableCounts).length + ' 个站点' +
   (Object.keys(tableCounts).length ? '（' + Object.entries(tableCounts).map(([s, n]) => s + ' ' + n).join('、') + '）' : ''));
+
+// ── C9 手写浮层存量（棘轮 + 收敛开关）────────────────────────────────────
+// 「弹窗」是继表格、徽标之后第三处四个门户各写一遍的东西：每个页面自己拼
+// fixed inset-0 遮罩 + rounded-xl border bg-white p-6 shadow-xl 卡片 + 手写标题栏，
+// 于是 Esc 关闭、body 滚动锁、点击遮罩关闭这些**行为**有的做有的没做。
+// 设计系统已经有 Modal（含 Esc 与滚动锁）；判据就是「别再自己拼」。
+//
+// 计的是**全屏浮层的迹象数**（fixed inset-0）。这个口径包含少数合法的全屏遮罩
+// （例如移动端侧边栏背后那层），所以对它们不设「必须为 0」，
+// 只做两件事：① 存量只许减不许增；② 登记进 overlayConvergedSites 的站点必须为 0。
+// 判据口径必须说清楚 —— 一个会把合法用法算进去的数字，只能当棘轮用，不能当验收线。
+const OVERLAY_MARK = /fixed\s+inset-0/g;
+// 度量器正负控制：解析器失灵时棘轮会全绿，那比红危险。
+{
+  const pos = (('<div class="') + 'fixed inset-0 z-50' + ('">')).match(OVERLAY_MARK);
+  const neg = 'fixed inset-x-0 bottom-0'.match(OVERLAY_MARK);
+  if (!pos || pos.length !== 1 || neg) {
+    problems.push('C9 度量器自检失败（正例 ' + (pos ? pos.length : 0) + ' 次、反例 ' + (neg ? neg.length : 0) + ' 次）——浮层计数解析器出错了，棘轮因此失去意义');
+  }
+}
+
+function countHandwrittenOverlays() {
+  // 与 countHandwrittenTables 同样的理由：本函数在写入台账时就会被调用，
+  // 不能复用 C2 段的 stripComments（那时它还没初始化）。
+  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
+  // 与 countHandwrittenTables 同理：本函数在**写入台账时**就会被调用，
+  // 所以不能引用 C9 段顶部那个常量（那时还没初始化）—— 本轮的 TDZ 是第二次踩到（第一次是 C8）。
+  const mark = /fixed\s+inset-0/g;
+  const counts = {};
+  for (const site of readdirSync(SITES)) {
+    const sp = join(SITES, site);
+    if (!statSync(sp).isDirectory()) continue;
+    let n = 0;
+    for (const f of walk(sp, [], (x) => /\.(tsx|jsx|astro)$/.test(x), SKIP)) {
+      n += (strip(readFileSync(f, 'utf8')).match(mark) || []).length;
+    }
+    if (n) counts[site] = n;
+  }
+  return counts;
+}
+
+const overlayCounts = countHandwrittenOverlays();
+const overlayTotal = Object.values(overlayCounts).reduce((a, b) => a + b, 0);
+if (!antdRegistry) {
+  problems.push('C9 缺少 verification/antd-entries.json —— 手写浮层的存量要靠它记账（node scripts/check-consistency.mjs --write-registry）');
+} else {
+  const recorded = antdRegistry.handwrittenOverlaysBySite || {};
+  for (const [site, n] of Object.entries(overlayCounts)) {
+    const was = recorded[site] || 0;
+    if (n > was) {
+      problems.push('C9 ' + site + ' 新增了手写全屏浮层（' + was + ' → ' + n + '）。弹窗走 @autional-cn/ui 的 Modal：Esc 关闭、body 滚动锁、点击遮罩关闭这些行为不该由每个页面各自实现一遍。');
+    } else if (n < was) {
+      warns.push('C9 ' + site + ' 的手写浮层从 ' + was + ' 降到 ' + n + ' —— 这是进展，请跑 node scripts/check-consistency.mjs --write-registry 更新台账');
+    }
+  }
+  for (const site of antdRegistry.overlayConvergedSites || []) {
+    if (!SITES_HAS(site)) { problems.push('C9 台账里的 overlayConvergedSites 含不存在的站点「' + site + '」——拼错会让该站的闸门静默失效'); continue; }
+    if ((overlayCounts[site] || 0) > 0) {
+      problems.push('C9 ' + site + ' 已登记为「浮层已收敛」，但仍有 ' + overlayCounts[site] + ' 处手写全屏浮层 —— 登记与事实不符');
+    }
+  }
+}
+info.push('C9 手写浮层存量：' + overlayTotal + ' 处，分布在 ' + Object.keys(overlayCounts).length + ' 个站点' +
+  (Object.keys(overlayCounts).length ? '（' + Object.entries(overlayCounts).map(([s, n]) => s + ' ' + n).join('、') + '）' : ''));
 
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
 const codeOf = (msg) => { const m = /^(C\d)/.exec(msg); return m ? m[1] : null; };
