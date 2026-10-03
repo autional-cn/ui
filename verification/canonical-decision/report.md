@@ -13,8 +13,8 @@ DESIGN.md 第 3 节已记录该决策：当历史站点与 console 舰队冲突�
 |---|---|---|---|
 | legacy 定义 | D:/autional/ui/tokens | 旧站点当时打算用什么 | 可用（3 套 profile） |
 | legacy 实际渲染 | 对 www.autional.com 的取证观测（E1，见 legacy-render-observations.json） | 旧站点实际渲染成什么 | 见该文件 |
-| canonical 定义 | tokens/tokens.json | 现在规定用什么 | 可用（205 个叶子） |
-| 站点实际生效 | sites/*/packages/tailwind-preset/tokens.css | 线上真正在用什么 | 14 个站点副本 |
+| canonical 定义 | tokens/tokens.json | 现在规定用什么 | 可用（207 个叶子） |
+| 站点实际生效 | sites/*/packages/tailwind-preset/tokens.css | 线上真正在用什么 | 本次工作区无 sites/ |
 
 ## 1. 品牌锚点核对（ASTRYX_MANIFEST.brandCore.colorRoles vs canonical 阶梯）
 
@@ -102,25 +102,7 @@ legacy 解析为品牌天蓝，canonical 解析为另一档——代码没动，
 
 ## 5. 站点实际生效的值（这一节决定线上到底在跑哪套）
 
-| 站点 | :root 变量数 | 与 canonical :root 的差异 | --font-sans 首项 |
-|---|---|---|---|
-| admin | 203 | 缺 2 / 取值不同 0 | Inter |
-| auth | 203 | 缺 2 / 取值不同 0 | Inter |
-| authenticator | 203 | 缺 2 / 取值不同 0 | Inter |
-| brand | 203 | 缺 2 / 取值不同 0 | Inter |
-| developer | 203 | 缺 2 / 取值不同 0 | Inter |
-| docs | 203 | 缺 2 / 取值不同 0 | Inter |
-| platform | 203 | 缺 2 / 取值不同 0 | Inter |
-| reference | 203 | 缺 2 / 取值不同 0 | Inter |
-| security | 203 | 缺 2 / 取值不同 0 | Inter |
-| status | 203 | 缺 2 / 取值不同 0 | Inter |
-| trust | 203 | 缺 2 / 取值不同 0 | Inter |
-| user | 203 | 缺 2 / 取值不同 0 | Inter |
-| web | 203 | 缺 2 / 取值不同 0 | Inter |
-| wiki | 203 | 缺 2 / 取值不同 0 | Inter |
-
-canonical :root 有 205 个变量；权威 --font-sans 首项是 Inter。
-
+本次工作区没有 sites/，无法核对。
 ## 6. 人工裁定清单
 
 机器能给到证据，但下面这些必须人来定。每条都已附上判断依据。
@@ -136,5 +118,5 @@ canonical :root 有 205 个变量；权威 --font-sans 首项是 Inter。
 
 ---
 
-本报告基于令牌快照 hash 53748c49b92d3e9c。令牌变更后需重新生成本报告（pnpm delta）。
+本报告基于令牌快照 hash 431bff2298a090e4。令牌变更后需重新生成本报告（pnpm delta）。
 

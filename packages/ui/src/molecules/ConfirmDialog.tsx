@@ -14,15 +14,15 @@ interface ConfirmDialogProps {
 
 const variantStyles = {
 	danger: {
-		icon: 'bg-danger/10 text-danger',
-		confirm: 'bg-danger text-white hover:bg-danger/90',
+		icon: 'bg-danger-soft text-danger-text',
+		confirm: 'bg-danger text-white hover:opacity-90',
 	},
 	warning: {
-		icon: 'bg-warning/10 text-warning',
-		confirm: 'bg-warning text-white hover:bg-warning/90',
+		icon: 'bg-warning-soft text-warning-text',
+		confirm: 'bg-warning text-white hover:opacity-90',
 	},
 	neutral: {
-		icon: 'bg-[var(--color-brand)]/10 text-[var(--color-brand)]',
+		icon: 'bg-brand-soft text-brand',
 		confirm: 'bg-[var(--color-brand)] text-white hover:opacity-90',
 	},
 };

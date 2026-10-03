@@ -79,6 +79,8 @@ module.exports = {
         'danger-soft': 'var(--color-danger-soft)',
         error: 'var(--color-danger)',
         info: 'var(--color-info)',
+        'info-text': 'var(--color-info-text)',
+        'info-soft': 'var(--color-info-soft)',
         brand: 'var(--color-brand)',
         'brand-hover': 'var(--color-brand-hover)',
         'brand-soft': 'var(--color-brand-soft)',

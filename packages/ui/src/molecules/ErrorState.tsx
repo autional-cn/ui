@@ -22,9 +22,9 @@ export function ErrorState({
 
 	return (
 		<div
-			className={`flex flex-col items-center justify-center gap-3 rounded-lg border border-danger/20 bg-danger/5 px-4 py-8 text-center ${className}`}
+			className={`flex flex-col items-center justify-center gap-3 rounded-lg border border-danger-soft bg-danger-soft px-4 py-8 text-center ${className}`}
 		>
-			<div className="flex h-14 w-14 items-center justify-center rounded-full bg-danger/10">
+			<div className="flex h-14 w-14 items-center justify-center rounded-full bg-danger-soft">
 				<AlertTriangle className="h-7 w-7 text-danger" />
 			</div>
 			<div>
@@ -41,7 +41,7 @@ export function ErrorState({
 			) : onRetry ? (
 				<button
 					onClick={onRetry}
-					className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-danger)]/30 bg-[var(--color-bg-surface)] px-3 py-1.5 text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/5"
+					className="inline-flex items-center gap-1.5 rounded-md border border-danger-soft bg-[var(--color-bg-surface)] px-3 py-1.5 text-xs text-danger-text hover:bg-danger-soft"
 				>
 					<RefreshCw className="h-3.5 w-3.5" />
 					重试

@@ -470,6 +470,8 @@ const FLAT_COLORS = [
   ['danger-soft', 'danger-soft'],
   ['error', 'danger'],
   ['info', 'info'],
+  ['info-text', 'info-text'],
+  ['info-soft', 'info-soft'],
   ['brand', 'brand'],
   ['brand-hover', 'brand-hover'],
   ['brand-soft', 'brand-soft'],
