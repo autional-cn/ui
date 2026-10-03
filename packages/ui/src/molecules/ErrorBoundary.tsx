@@ -15,8 +15,14 @@
  *   例如 auth 的 useI18n 走的是 t('flat.' + key)（前缀 flat.），而那个 wrapper 位于
  *   各 portal 的 apps 目录下（apps slash 站点名 slash src slash lib），不在 packages/ui 内，
  *   组件够不着；键前缀约定也不一致。
- *   所以这里改用**各 portal 已经在维护的零依赖信号**：document.documentElement.lang。
- *   各 portal 的 I18nProvider 都在 languageChanged 时调用 syncHtmlLang 同步它。
+ *   所以这里改用**零依赖信号**：document.documentElement.lang。
+ *
+ *   ⚠ 2026-10-03 实测更正：原注释写「各 portal 的 I18nProvider 都在 languageChanged 时调用 syncHtmlLang 同步它」——
+ *   **那是不成立的**：全舰队当时只有 authenticator 有这段同步，user/admin/platform 都没有。
+ *   后果很具体：它们的错误页只会在中文与英文之间**永远停在 index.html 的 zh-CN**，
+ *   而 user 当时靠一层本地包装用 i18n 覆盖文案绕过了这一点。
+ *   现在四个门户都补上了这 7 行同步（user 因此可以删掉那层包装），这条断言才真正成立 ——
+ *   但**依赖它的组件不该假设它天然成立**：将来新增门户若忘了同步，错误页会静默地只显示一种语言。
  *   代价：语言切换时错误页不会实时重渲染（错误边界本就只在出错时渲染一次，可接受）。
  *   若将来统一了跨 portal 的键约定，应改为走 i18n，而不是继续在组件里放文案。
  *
