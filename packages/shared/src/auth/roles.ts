@@ -43,8 +43,8 @@ const AUTH_ROUTE_RESERVED = new Set([
  * `/<slug>/login`（登录页路由，不经入口路由），`logout=1` 在那里被静默忽略；
  * 带会话回程甚至会被登录页 checkAndRedirect 直接放行成静默重登（F-W5c）。
  * 裸根 = EntryRouter 唯一登出闸门：先终结 auth 域会话，再决定落点——
- * 回程能解析出真实租户 → `/<slug>/login?redirect=…`（登录页展示表单）；
- * 否则落 brand。
+ * 回程能解析出真实租户 → 裸 `/<slug>/login`（不带回程参数：登出即"重新开始"，
+ * 登录后走默认去向，去向选择权交还用户）；否则落 brand 裸根。
  */
 export function buildLogoutUrl(returnUrl?: string): string {
 	const base = getPortalUrl('auth');
