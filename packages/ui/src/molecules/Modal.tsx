@@ -9,7 +9,8 @@ interface ModalProps {
 	title?: string;
 	/** 标题下的一行说明。多个页面原本把它写在自绘表头里（如「授权同意」弹窗），收进 API 才不用各自拼表头。 */
 	description?: string;
-	children: React.ReactNode;
+	/** 正文。**可以不给** —— 「标题 + 说明 + 按钮」的确认框是常见形状，不该被逼着塞一个空正文（那会留一段 32px 的空白）。 */
+	children?: React.ReactNode;
 	footer?: React.ReactNode;
 	maxWidth?: 'sm' | 'md' | 'lg';
 	className?: string;
@@ -91,7 +92,7 @@ export const Modal = React.memo(function Modal({
 						<X className="h-4 w-4" />
 					</button>
 				)}
-				<div className="px-6 py-4">{children}</div>
+				{children != null && <div className="px-6 py-4">{children}</div>}
 				{footer && (
 					<div className="flex justify-end gap-3 border-t border-[var(--color-border-subtle)] px-6 py-4">
 						{footer}
