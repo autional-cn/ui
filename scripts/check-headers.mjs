@@ -67,6 +67,28 @@ const HARDCODED_H = /\bh-(?:[0-9]|1[0-9]|2[0-9])\b|\bpy-(?:[0-9])\b|height:\s*\d
 const STICKY = /\b(sticky|fixed)\b|position:\s*(?:sticky|fixed)/;
 const ICON_AS_LOGO = /<(?:Activity|Shield|Bell|Zap|Globe|Lock|Server|Gauge|Pulse)\b[^>]*className/;
 
+// ── 共享外壳（AppShell）也是顶栏宿主 ────────────────────────────────────
+// 站点把外壳交给设计系统的 <AppShell> 之后，它自己的源码里就**再没有 <header> 了** ——
+// 实测踩到：迁移完 user 的 AppShell，H1「零命中不是通过」当场变红，
+// 而它变红的原因恰恰是**收敛成功**。这是闸门必须跟着架构走的一个例子。
+// 但也不能就此把 <AppShell> 当成免检通道：那会把「改用共享外壳」变成绕过顶栏契约的后门。
+// 所以两边都要验：
+//   ① 站点确实把外壳交给了 DS；
+//   ② DS 那一份**真的**满足契约（同一个令牌高度 + sticky）—— 这一条在这里只验一次。
+const SHELL_SRC = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'AppShell.tsx');
+let shellOk = false;
+if (existsSync(SHELL_SRC)) {
+  const s = readFileSync(SHELL_SRC, 'utf8');
+  shellOk = /var\(--layout-header-height\)/.test(s) && /\bsticky\b/.test(s);
+} else {
+  shellOk = false;
+}
+// 自检放在常量定义之后：放前面会撞 TDZ（本轮实测踩到第二次，第一次是 C8/C9 的计数器）。
+if (!shellOk) {
+  problems.push('H2 设计系统的 AppShell 缺失或不满足顶栏契约（需要 ' + SHELL_SRC.replace(/\\/g, '/') +
+    ' 里有 var(--layout-header-height) 与 sticky）—— 站点把外壳交给它之后，顶栏契约就没有人满足了');
+}
+
 for (const site of readdirSync(SITES)) {
   const dir = join(SITES, site);
   if (!statSync(dir).isDirectory()) continue;
@@ -86,8 +108,10 @@ for (const site of readdirSync(SITES)) {
       // <Header\b 不会误匹配 <PageHeader：那要求 '<' 紧跟 'Header'。
       const isHeader = /<header\b|<AntHeader\b|<Header\b/.test(ln);
       const isStickyNav = /<nav\b/.test(ln) && /\b(sticky|fixed)\b|position:\s*(?:sticky|fixed)/.test(ln);
-      if (!isHeader && !isStickyNav) return;
-      hits.push({ file: relative(SITES, f).replace(/\\/g, '/'), line: i + 1, text: ln });
+      // <AppShell 只在 DS 那一份满足契约时才算命中；否则下面的 !hits.length 分支会如实报「无顶栏元素」
+      const isShell = /<AppShell\b/.test(ln) && shellOk;
+      if (!isHeader && !isStickyNav && !isShell) return;
+      hits.push({ file: relative(SITES, f).replace(/\\/g, '/'), line: i + 1, text: ln, shell: isShell });
     });
   }
   if (!hits.length) {
@@ -120,6 +144,7 @@ for (const site of readdirSync(SITES)) {
   // 只取第一个会把已经改好的站点判成失败（实测踩过）。
   const readAll = (h) => readFileSync(join(SITES, h.file), 'utf8').split(/\r?\n/).slice(h.line - 1, h.line + 7).join('\n');
   const score = (h) => {
+    if (h.shell) return 3;                       // 共享外壳：契约由 DS 那份满足（已在上文验过）
     const b = readAll(h);
     const prim = /(^|[\s"'])site-header([\s"']|$)/.test(b);
     return (prim || USES_TOKEN.test(b) ? 2 : 0) + (prim || STICKY.test(b) ? 1 : 0);
@@ -134,7 +159,7 @@ for (const site of readdirSync(SITES)) {
 
   // .site-header 原语自带 position:sticky 与 height:var(--layout-header-height)，
   // 挂了它就等于两项都满足——判定要认得这一点，否则「改用原语」反而被判失败。
-  const primitive = /(^|[\s"'])site-header([\s"']|$)/.test(block);
+  const primitive = /(^|[\s"'])site-header([\s"']|$)/.test(block) || primary.shell;
 
   const tokenOk = primitive || USES_TOKEN.test(block);
   const stickyOk = primitive || STICKY.test(block);
