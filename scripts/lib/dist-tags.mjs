@@ -18,7 +18,8 @@ export const PACKAGES = [
   '@autional-cn/ui',
   '@autional-cn/shared',
   '@autional-cn/react',
-  '@autional-cn/tsconfig'
+  '@autional-cn/tsconfig',
+  '@autional-cn/eslint-config'
 ];
 export const PKG_DIR = {
   '@autional-cn/tokens': 'packages/tokens',
@@ -26,7 +27,8 @@ export const PKG_DIR = {
   '@autional-cn/ui': 'packages/ui',
   '@autional-cn/shared': 'packages/shared',
   '@autional-cn/react': 'packages/react',
-  '@autional-cn/tsconfig': 'packages/tsconfig'
+  '@autional-cn/tsconfig': 'packages/tsconfig',
+  '@autional-cn/eslint-config': 'packages/eslint-config'
 };
 export const versionOf = (pkg) => JSON.parse(readFileSync(join(ROOT, PKG_DIR[pkg], 'package.json'), 'utf8')).version;
 
