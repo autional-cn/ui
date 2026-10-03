@@ -5,6 +5,8 @@
 
 export { AntdThemeProvider, useAntdApp } from './AntdThemeProvider';
 export type { AntdThemeProviderProps, AntdAppApi } from './AntdThemeProvider';
+export { Breadcrumb, buildBreadcrumbTrail, stripTenantSegment } from './Breadcrumb';
+export type { BreadcrumbProps, BreadcrumbTrailItem } from './Breadcrumb';
 export { DateRangeFilter } from './DateRangeFilter';
 export type { DateRangeFilterProps, DateRangeValue } from './DateRangeFilter';
 

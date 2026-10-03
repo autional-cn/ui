@@ -101,6 +101,8 @@ for (const site of readdirSync(SITES).sort()) {
     { pkg: 'antd', entryDirs: ['antd'] },
     { pkg: 'dayjs', entryDirs: ['antd'] },
     { pkg: 'react-hook-form', entryDirs: ['rhf'] },
+    // react-router 只允许出现在 antd 入口：那里有路由感知的件（Breadcrumb 要把段渲染成 Link）。
+    { pkg: 'react-router', entryDirs: ['antd'] },
   ];
   const matches = (text, pkg) => new RegExp('from\\s+[\'"]' + pkg.replace(/[/-]/g, (c) => '\\' + c) + '([\'"]|/)').test(text);
   // 度量器自检（正负控制）：匹配器一旦失灵，这条闸门会全绿 —— 那比红危险。
