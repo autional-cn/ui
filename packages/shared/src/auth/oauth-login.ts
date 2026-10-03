@@ -244,7 +244,13 @@ export async function handleOAuthCallback(): Promise<void> {
 	// exchanged access_token explicitly — otherwise /auth/me 401s and the apiClient
 	// interceptor routes it through onUnauthorized (no refresh token yet) → bounce back
 	// to the login page with the now-consumed code → infinite redirect loop.
+	// oauth 服务的 id_token（oidc_signer.go SignIDToken）只含 sub/aud/iss/exp 等标准 claim，
+	// 不含 email/username。若直接采信，/auth/me 兜底被短路 → store 落残缺 user →
+	// UserMenu 等消费方显示「未登录」。缺身份字段的解析结果视为信息不足，交棒 /auth/me。
 	let user: User | null = parseUserFromToken(t.id_token);
+	if (user && !user.username && !user.email) {
+		user = null;
+	}
 	if (!user && accessToken) {
 		try {
 			const me = await apiClient.get('/identity/api/v1/auth/me', {
@@ -257,8 +263,8 @@ export async function handleOAuthCallback(): Promise<void> {
 		}
 	}
 	if (!user && accessToken) {
-		// id_token 缺失 + /auth/me 失败时，用 access_token JWT 兜底解析 user
-		// (access_token 由身份服务签发，payload 含 sub/custom.username/email/role)
+		// 最后兜底：/auth/me 也失败时用 access_token JWT 解析 user
+		// (identity 签发，payload 实测含 sub/tenant_id/custom.*，可能无 email/username)
 		user = parseUserFromToken(accessToken);
 	}
 	if (!user) {
