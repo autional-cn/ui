@@ -12,7 +12,7 @@ export type { DateRangeFilterProps, DateRangeValue } from './DateRangeFilter';
 export { PageLoading, PageError } from './PageStatus';
 export type { PageLoadingProps, PageErrorProps } from './PageStatus';
 export { DataTable } from './DataTable';
-export type { DataTableProps, DataTableColumns } from './DataTable';
+export type { DataTableProps, DataTableColumns, DataTablePagination } from './DataTable';
 
 // 类型再导出：站点侧的命令式 API 门面（`export let message` 那类）需要这些类型，
 // 若让它们各自 `import type ... from 'antd/es/message/interface'`，

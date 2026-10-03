@@ -9,7 +9,9 @@
     "other",
     "subpath"
   ],
-  "closedKinds": [],
+  "closedKinds": [
+    "Table"
+  ],
   "tableConvergedSites": [
     "user"
   ],
@@ -29,22 +31,22 @@
     "admin": {
       "themeConverged": true,
       "specifiers": {
-        "Table": 69,
+        "Table": 0,
         "DatePicker": 12,
         "Drawer": 9,
-        "icons": 351,
-        "other": 922,
+        "icons": 350,
+        "other": 915,
         "subpath": 4
       },
-      "filesAntd": 108,
-      "filesIcons": 93,
+      "filesAntd": 107,
+      "filesIcons": 92,
       "bridgeFiles": 1,
       "ownThemeFiles": 0
     },
     "platform": {
       "themeConverged": true,
       "specifiers": {
-        "Table": 20,
+        "Table": 0,
         "DatePicker": 2,
         "Drawer": 3,
         "icons": 149,
@@ -59,11 +61,11 @@
     "security": {
       "themeConverged": true,
       "specifiers": {
-        "Table": 20,
+        "Table": 0,
         "DatePicker": 3,
         "Drawer": 8,
         "icons": 156,
-        "other": 285,
+        "other": 277,
         "subpath": 5
       },
       "filesAntd": 30,

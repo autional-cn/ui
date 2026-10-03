@@ -27,6 +27,13 @@ export type DataTableProps<T extends object = Record<string, unknown>> = TablePr
  */
 export type DataTableColumns<T extends object = Record<string, unknown>> = NonNullable<TableProps<T>['columns']>;
 
+/**
+ * 分页配置类型。站点此前用 antd 的 `TablePaginationConfig`；这个别名是它的替代品 ——
+ * 目标（D10 的 Table 批次）是让控制台**不再从 antd 取任何与表格相关的类型或组件**，
+ * 少一个类型别名，那批就少一处 import antd 的理由。
+ */
+export type DataTablePagination<T extends object = Record<string, unknown>> = Exclude<NonNullable<TableProps<T>['pagination']>, false>;
+
 function DataTableInner<T extends object = Record<string, unknown>>({
 	size = 'middle',
 	pagination,
