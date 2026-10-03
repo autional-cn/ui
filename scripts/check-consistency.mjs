@@ -82,6 +82,7 @@ if (!existsSync(SITES)) {
 // 一处各自为政 —— 实测三个控制台各有 100+ 处直接 import antd。收敛按 D10 分种类分批做，
 // 批次之间必须有个东西记住「现在是多少」，否则这一批刚清掉的 import 会被下一批悄悄加回来。
 const ANTD_REGISTRY_PATH = join(ROOT, 'verification', 'antd-entries.json');
+const CONSOLE_HEADERS_PATH = join(ROOT, 'verification', 'console-headers.json');
 const WRITE_REGISTRY = process.argv.includes('--write-registry');
 const ANTD_KINDS = ['Table', 'DatePicker', 'RangePicker', 'Drawer', 'icons', 'other', 'subpath'];
 // ⚠ 'RangePicker' 是**唯一一个按用法计数的种类**，其余六个都按具名导入计。
@@ -200,6 +201,37 @@ function countHandwrittenTables() {
   return counts;
 }
 
+// ── C10 控制台页头的度量（D5）───────────────────────────────────────────
+// 两种「页头各写一遍」的形态，都要数：
+//   ① inline    页面自己写 <h1 className="… text-xl font-semibold …">
+//   ② marketing 控制台误用了设计系统的营销 PageHeader（居中 hero，text-3xl/sm:text-4xl）
+// ② 是 §2.1「同名不同物」那一条在现实里的样子：实测有三个控制台的 36 个页面把营销 hero 当页头用，
+// 于是同一个产品里一半页面是左对齐小标题、另一半是居中大标题。收敛目标是都用 ConsolePageHeader。
+const CONSOLE_SITES = ['admin', 'platform', 'security'];
+const INLINE_H1_RE = /<h1\b[^>]*>/g;
+function countConsoleHeaders() {
+  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
+  const inline = {};
+  const marketing = {};
+  for (const site of CONSOLE_SITES) {
+    if (!SITES_HAS(site)) continue;
+    const sp = join(SITES, site);
+    let a = 0, b = 0;
+    for (const f of walk(sp, [], (x) => /\.(tsx|jsx)$/.test(x), SKIP)) {
+      const code = strip(readFileSync(f, 'utf8'));
+      for (const m of code.matchAll(INLINE_H1_RE)) {
+        const cls = (m[0].match(/className="([^"]*)"/) || [, ''])[1];
+        if (/\btext-xl\b/.test(cls) && /\bfont-semibold\b/.test(cls)) a++;
+      }
+      // <PageHeader 不匹配 <ConsolePageHeader：正则要求 '<' 紧跟 PageHeader
+      b += (code.match(/<PageHeader\b/g) || []).length;
+    }
+    if (a) inline[site] = a;
+    if (b) marketing[site] = b;
+  }
+  return { inline, marketing };
+}
+
 if (WRITE_REGISTRY) {
   const prev = (antdRegistry && antdRegistry.sites) || {};
   const out = {
@@ -225,6 +257,17 @@ if (WRITE_REGISTRY) {
   }
   writeFileSync(ANTD_REGISTRY_PATH, JSON.stringify(out, null, 2) + '\n');
   console.log('已写入 ' + relative(ROOT, ANTD_REGISTRY_PATH).replace(/\\/g, '/') + '（' + Object.keys(out.sites).length + ' 个站点）');
+
+  const chPrev = existsSync(CONSOLE_HEADERS_PATH) ? JSON.parse(readFileSync(CONSOLE_HEADERS_PATH, 'utf8')) : null;
+  const ch = countConsoleHeaders();
+  writeFileSync(CONSOLE_HEADERS_PATH, JSON.stringify({
+    $comment: '控制台页头台账（棘轮，D5）。inline = 页面自己写 text-xl font-semibold 的 <h1>；marketing = 控制台误用设计系统的营销 PageHeader。两者都只许减不许增，convergedSites 里的站点必须为 0（该站已全部改用 @autional-cn/ui 的 ConsolePageHeader）。',
+    updated: TODAY,
+    convergedSites: (chPrev && chPrev.convergedSites) || [],
+    inline: ch.inline,
+    marketing: ch.marketing,
+  }, null, 2) + '\n');
+  console.log('已写入 ' + relative(ROOT, CONSOLE_HEADERS_PATH).replace(/\\/g, '/') + '（inline ' + Object.values(ch.inline).reduce((x, y) => x + y, 0) + ' 处 / marketing ' + Object.values(ch.marketing).reduce((x, y) => x + y, 0) + ' 处）');
   process.exit(0);
 }
 
@@ -678,6 +721,49 @@ if (!antdRegistry) {
 }
 info.push('C9 手写浮层存量：' + overlayTotal + ' 处，分布在 ' + Object.keys(overlayCounts).length + ' 个站点' +
   (Object.keys(overlayCounts).length ? '（' + Object.entries(overlayCounts).map(([s, n]) => s + ' ' + n).join('、') + '）' : ''));
+
+// ── C10 控制台页头（棘轮 + 收敛开关，D5）────────────────────────────────
+// 度量器自检：解析器一旦失灵，棘轮会全绿 —— 那比红危险。
+{
+  const pos = ('<h1 class="' + 'text-xl font-semibold' + '">x</h1>').match(INLINE_H1_RE);
+  const posCls = pos && pos.length === 1 ? (pos[0].match(/className="([^"]*)"/) || [, ''])[1] : '';
+  const neg = ('<h1 class="' + 'text-2xl font-bold' + '">x</h1>').match(INLINE_H1_RE);
+  const negCls = neg && neg.length === 1 ? (neg[0].match(/className="([^"]*)"/) || [, ''])[1] : '';
+  const okPos = /\btext-xl\b/.test('text-xl font-semibold') && /\bfont-semibold\b/.test('text-xl font-semibold');
+  const okNeg = /\btext-xl\b/.test('text-2xl font-bold') || /\bfont-semibold\b/.test('text-2xl font-bold');
+  if (!pos || !neg || !okPos || okNeg || !/<PageHeader\b/.test('<PageHeader title="x" />') || /<PageHeader\b/.test('<ConsolePageHeader title="x" />')) {
+    problems.push('C10 度量器自检失败（正例 ' + JSON.stringify(posCls) + ' / 反例 ' + JSON.stringify(negCls) + '）——页头计数解析器出错了，棘轮因此失去意义');
+  }
+}
+
+const chCounts = countConsoleHeaders();
+if (!existsSync(CONSOLE_HEADERS_PATH)) {
+  problems.push('C10 verification/console-headers.json 缺失 —— 控制台页头的存量要靠它记账（node scripts/check-consistency.mjs --write-registry）');
+} else {
+  const chReg = JSON.parse(readFileSync(CONSOLE_HEADERS_PATH, 'utf8'));
+  const LABEL = { inline: '页面自己写的 text-xl font-semibold 标题', marketing: '设计系统的营销 PageHeader' };
+  for (const kind of ['inline', 'marketing']) {
+    const recorded = chReg[kind] || {};
+    const now = chCounts[kind] || {};
+    for (const site of CONSOLE_SITES) {
+      const was = recorded[site] || 0;
+      const n = now[site] || 0;
+      if (n > was) {
+        problems.push('C10 ' + site + ' 新增了「' + LABEL[kind] + '」（' + was + ' → ' + n + '）。控制台的页头一律走 @autional-cn/ui 的 ConsolePageHeader：一个产品里一半页面左对齐小标题、另一半居中大标题，正是这一条要消掉的东西。');
+      } else if (n < was) {
+        warns.push('C10 ' + site + ' 的「' + LABEL[kind] + '」从 ' + was + ' 降到 ' + n + ' —— 这是进展，请跑 node scripts/check-consistency.mjs --write-registry 更新台账');
+      }
+    }
+  }
+  for (const site of chReg.convergedSites || []) {
+    if (!SITES_HAS(site)) { problems.push('C10 台账里的 convergedSites 含不存在的站点「' + site + '」——拼错会让该站的闸门静默失效'); continue; }
+    for (const kind of ['inline', 'marketing']) {
+      const n = (chCounts[kind] || {})[site] || 0;
+      if (n > 0) problems.push('C10 ' + site + ' 已登记为「页头已收敛」，但仍有 ' + n + ' 处「' + LABEL[kind] + '」—— 登记与事实不符');
+    }
+  }
+}
+info.push('C10 控制台页头：inline ' + Object.values(chCounts.inline).reduce((a, b) => a + b, 0) + ' 处 / marketing ' + Object.values(chCounts.marketing).reduce((a, b) => a + b, 0) + ' 处（收敛目标是 0，改用 ConsolePageHeader）');
 
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
 const codeOf = (msg) => { const m = /^(C\d)/.exec(msg); return m ? m[1] : null; };
