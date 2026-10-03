@@ -17,5 +17,7 @@ export type { ToastType } from './Toast';
 export type { LoadingScreenProps } from './LoadingScreen';
 export type { ErrorStateProps } from './ErrorState';
 export { ErrorBoundary } from './ErrorBoundary';
+export { FormField, useFormFieldA11y } from './FormField';
+export type { FormFieldProps } from './FormField';
 export { PageContainer } from './PageContainer';
 export type { PageContainerProps } from './PageContainer';

@@ -89,26 +89,37 @@ for (const site of readdirSync(SITES).sort()) {
   if (checked || frozenOk !== null) rows.push({ site, deps: checked, loose, frozen: frozenOk === null ? '—' : (frozenOk ? 'Y' : 'N') });
 }
 
-// ── P3 默认入口不得（直接或间接）引入 antd ─────────────────────────────────
-// 为什么这条属于「依赖策略」而不是别处：@autional-cn/ui 的 antd 是 **optional** peerDependency，
-// 而那个 optional 标记成立的前提是**默认入口不 import antd**。
-// 一旦 src/index.ts 的闭包里出现了 antd，所有消费方（含不吃 antd 的 user、5 个 Astro 站、营销站）
+// ── P3 默认入口不得（直接或间接）引入**可选 peer** ─────────────────────────
+// 为什么这条属于「依赖策略」：@autional-cn/ui 把 antd / dayjs / react-hook-form 声明为
+// **optional** peerDependency，而那个 optional 标记成立的前提是**默认入口不 import 它们**。
+// 一旦 src/index.ts 的闭包里出现了其中之一，所有消费方（含不吃这些库的 user、5 个 Astro 站、营销站）
 // 都被迫安装它 —— 而 peer 的 optional 只是「不报错」，它**阻止不了**这件事。
-// 所以这条把「默认入口零 antd」从口头承诺变成机器判据。
-// 入口是声明式的：只有 src/antd/ 下的文件允许 import antd。
+// 所以这条把「默认入口零可选 peer」从口头承诺变成机器判据：每个可选 peer 只允许出现在它自己的子路径入口下。
 {
   const PKG_SRC = join(ROOT, 'packages', 'ui', 'src');
-  const ANTD_DIR = join(PKG_SRC, 'antd');
+  const OPTIONAL_PEERS = [
+    { pkg: 'antd', entryDirs: ['antd'] },
+    { pkg: 'dayjs', entryDirs: ['antd'] },
+    { pkg: 'react-hook-form', entryDirs: ['rhf'] },
+  ];
+  const matches = (text, pkg) => new RegExp('from\\s+[\'"]' + pkg.replace(/[/-]/g, (c) => '\\' + c) + '([\'"]|/)').test(text);
+  // 度量器自检（正负控制）：匹配器一旦失灵，这条闸门会全绿 —— 那比红危险。
+  if (!matches("import { Table } from 'antd';", 'antd') || matches("import x from 'antd-foo';", 'antd') || !matches("import * as dayjs from 'dayjs';", 'dayjs')) {
+    problems.push('P3 度量器自检失败：包名匹配器出错（\'antd\' 应命中、\'antd-foo\' 不应命中）——「默认入口零可选 peer」因此失去意义');
+  }
+
   const seen = new Set();
   const offenders = [];
-  const isAntdImport = (t) => /from\s+['\"]antd(\/|['\"])/.test(t);
   const walkImports = (file) => {
     if (seen.has(file) || !existsSync(file)) return;
     seen.add(file);
-    const insideAntdEntry = file.startsWith(ANTD_DIR);
+    const dirs = OPTIONAL_PEERS.filter((p) => matches(readFileSync(file, 'utf8'), p.pkg));
+    for (const p of dirs) {
+      const insideOwnEntry = p.entryDirs.some((d) => file.startsWith(join(PKG_SRC, d)));
+      if (!insideOwnEntry) offenders.push(relative(PKG_SRC, file) + ' → ' + p.pkg);
+    }
     const text = readFileSync(file, 'utf8');
-    if (!insideAntdEntry && isAntdImport(text)) offenders.push(relative(PKG_SRC, file));
-    for (const m of text.matchAll(/from\s+['\"](\.\.?\/[^'\"]+)['\"]/g)) {
+    for (const m of text.matchAll(/from\s+['"](\.\.?\/[^'"]+)['"]/g)) {
       const base = join(dirname(file), m[1]);
       for (const ext of ['.ts', '.tsx', '/index.ts', '/index.tsx']) {
         if (existsSync(base + ext)) { walkImports(base + ext); break; }
@@ -119,10 +130,10 @@ for (const site of readdirSync(SITES).sort()) {
   if (existsSync(entry)) {
     walkImports(entry);
     if (offenders.length) {
-      problems.push('P3 默认入口引入了 antd：' + offenders.join(', ') +
-        ' —— antd 是 optional peerDependency，默认入口必须零 antd；要用 antd 的文件请放进 src/antd/ 并从 ./antd 子路径导出');
+      problems.push('P3 默认入口引入了可选 peer：' + offenders.join('、') +
+        ' —— antd / dayjs / react-hook-form 都是 optional peerDependency，默认入口必须零引用；要用它们的文件请放进各自子路径入口目录（src/antd/、src/rhf/）并从对应子路径导出');
     } else {
-      infos.push('P3 默认入口零 antd（遍历 ' + seen.size + ' 个文件）—— optional peerDependency 的前提成立');
+      infos.push('P3 默认入口零可选 peer（遍历 ' + seen.size + ' 个文件，可选 peer：' + OPTIONAL_PEERS.map((p) => p.pkg).join(' / ') + '）—— optional peerDependency 的前提成立');
     }
   }
 }
