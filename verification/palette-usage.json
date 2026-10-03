@@ -1,5 +1,5 @@
 {
-  "$comment": "非设计系统色阶台账（棘轮，C11）。键 = 非 DS 的 Tailwind 色系名（gray/red/green/blue/…），或设计系统内部被锁的类名（如 text-neutral-400）。数字只许减不许增；closedKeys 里的键必须为 0。度量范围排除 src/components/layout/**（并行工作流只读边界，边界解除后一并收敛）。",
+  "$comment": "非设计系统色阶台账（棘轮，C11）。键 = 非 DS 的 Tailwind 色系名（gray/red/green/blue/…），或设计系统内部被锁的类名（如 text-neutral-400）。数字只许减不许增；closedKeys 里的键必须为 0。度量范围排除 src/components/layout/** 与 AppLayout.tsx（并行工作流只读边界，边界解除后一并收敛）。本轮已把 gray 家族与语义色系（red/rose/green/emerald/blue/cyan/indigo/orange/yellow/slate）全部收进设计系统语义槽位；purple/pink 因设计系统**没有对应的分类色**而保留，其存量作为棘轮基线。",
   "updated": "2026-10-03",
   "coveredSites": [
     "admin",
@@ -9,47 +9,33 @@
   ],
   "closedKeys": [
     "gray",
+    "slate",
+    "zinc",
+    "stone",
+    "red",
+    "rose",
+    "green",
+    "emerald",
+    "blue",
+    "cyan",
+    "indigo",
+    "orange",
+    "yellow",
     "text-neutral-400"
   ],
   "usage": {
     "admin": {
-      "blue": 16,
-      "red": 12,
-      "green": 18,
-      "cyan": 3,
-      "orange": 4,
       "purple": 1
     },
     "platform": {
-      "blue": 7,
-      "purple": 1,
-      "green": 3,
-      "red": 2,
-      "orange": 4,
-      "cyan": 1
+      "purple": 1
     },
     "security": {
-      "red": 15,
-      "orange": 6,
-      "yellow": 2,
-      "blue": 12,
-      "green": 8,
-      "purple": 2,
-      "emerald": 2,
-      "cyan": 3,
-      "slate": 1
+      "purple": 2
     },
     "user": {
-      "green": 42,
-      "blue": 67,
-      "red": 69,
       "purple": 15,
-      "yellow": 2,
-      "emerald": 65,
-      "indigo": 1,
-      "rose": 31,
-      "pink": 2,
-      "orange": 3
+      "pink": 2
     }
   }
 }

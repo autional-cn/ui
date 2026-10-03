@@ -246,7 +246,7 @@ function countConsoleHeaders() {
 const DS_FAMILIES = new Set(['primary', 'sky', 'amber', 'neutral']);
 const LOCKED_CLASSES = ['text-neutral-400'];
 const PALETTE_RE = /\b(bg|text|border|ring|divide|from|to|via|fill|stroke|outline|shadow|decoration|placeholder|caret|accent)-(red|green|blue|yellow|orange|emerald|rose|violet|purple|indigo|teal|cyan|lime|pink|gray|grey|slate|zinc|stone)-(\d{2,3})\b/g;
-const PALETTE_EXCLUDE = /(^|[\\/])components[\\/]layout[\\/]/;
+const PALETTE_EXCLUDE = /(^|[\\/])components[\\/]layout[\\/]|[\\/]AppLayout\.tsx$/;
 function countPaletteUsage() {
   const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
   const out = {};
