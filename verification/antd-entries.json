@@ -4,13 +4,15 @@
   "kinds": [
     "Table",
     "DatePicker",
+    "RangePicker",
     "Drawer",
     "icons",
     "other",
     "subpath"
   ],
   "closedKinds": [
-    "Table"
+    "Table",
+    "RangePicker"
   ],
   "tableConvergedSites": [
     "user"
@@ -32,7 +34,8 @@
       "themeConverged": true,
       "specifiers": {
         "Table": 0,
-        "DatePicker": 12,
+        "DatePicker": 7,
+        "RangePicker": 0,
         "Drawer": 9,
         "icons": 350,
         "other": 914,
@@ -48,6 +51,7 @@
       "specifiers": {
         "Table": 0,
         "DatePicker": 2,
+        "RangePicker": 0,
         "Drawer": 3,
         "icons": 149,
         "other": 278,
@@ -63,6 +67,7 @@
       "specifiers": {
         "Table": 0,
         "DatePicker": 3,
+        "RangePicker": 0,
         "Drawer": 8,
         "icons": 156,
         "other": 277,
@@ -78,6 +83,7 @@
       "specifiers": {
         "Table": 0,
         "DatePicker": 0,
+        "RangePicker": 0,
         "Drawer": 0,
         "icons": 0,
         "other": 0,

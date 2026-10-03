@@ -83,10 +83,15 @@ if (!existsSync(SITES)) {
 // 批次之间必须有个东西记住「现在是多少」，否则这一批刚清掉的 import 会被下一批悄悄加回来。
 const ANTD_REGISTRY_PATH = join(ROOT, 'verification', 'antd-entries.json');
 const WRITE_REGISTRY = process.argv.includes('--write-registry');
-const ANTD_KINDS = ['Table', 'DatePicker', 'Drawer', 'icons', 'other', 'subpath'];
+const ANTD_KINDS = ['Table', 'DatePicker', 'RangePicker', 'Drawer', 'icons', 'other', 'subpath'];
+// ⚠ 'RangePicker' 是**唯一一个按用法计数的种类**，其余六个都按具名导入计。
+// 原因是 antd 根本没有顶层导出 `RangePicker`：站点只能写 `const { RangePicker } = DatePicker;`，
+// 于是「有没有用 RangePicker」在导入那一层**看不见**——只数 import 的话，这一批收敛完
+// 再有人加回一个 RangePicker，棘轮会一声不吭。所以它单独扫源码里的 `RangePicker` 标识符（先剥注释）。
 const antdKindOf = (name) => {
   if (name === 'Table') return 'Table';
-  if (name === 'DatePicker' || name === 'RangePicker' || name === 'TimePicker' || name === 'Calendar') return 'DatePicker';
+  if (name === 'RangePicker') return 'DatePicker';
+  if (name === 'DatePicker' || name === 'TimePicker' || name === 'Calendar') return 'DatePicker';
   if (name === 'Drawer') return 'Drawer';
   return 'other';
 };
@@ -95,6 +100,10 @@ const antdKindOf = (name) => {
 function countAntdText(txt) {
   const specifiers = {};
   for (const k of ANTD_KINDS) specifiers[k] = 0;
+  // RangePicker 按用法计（原因见 ANTD_KINDS 旁边的注释）。先剥注释：
+  // 本项目里就有「在注释里解释 RangePicker 这件事」的地方，不剥会把存量凭空加一。
+  const code = txt.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
+  specifiers.RangePicker = (code.match(/\bRangePicker\b/g) || []).length;
   // ⚠ 不能用 [\s\S]*? —— 它会跨语句匹配：从一个普通的 import 开头一路吃到下一个 import 的 }
   // 上，把中间那些导入的名字全算到自己头上。实测踩过：下面的自检样例一开始把 icons 数成 2。
   const reAntd = /import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+['"]antd['"]/g;
@@ -159,12 +168,12 @@ for (const site of readdirSync(SITES)) {
 // 度量器自检（正负控制）。解析器一旦失灵，棘轮会**全绿**——那比红危险得多，
 // 因为它看起来在保护一致性，实际什么都没数。
 {
-  const c = countAntdText("import { Table, Button as B } from 'antd';\nimport type { MessageInstance } from 'antd/es/message/interface';\nimport { PlusOutlined } from '@ant-design/icons';\n");
-  if (!(c.specifiers.Table === 1 && c.specifiers.other === 1 && c.specifiers.subpath === 1 && c.specifiers.icons === 1 && c.touchesAntd && c.touchesIcons)) {
-    problems.push('C5 度量器正向控制失败：解析结果 ' + JSON.stringify(c) + '，期望 Table=1 other=1 subpath=1 icons=1 —— antd 入口计数解析器出错了，棘轮因此失去意义');
+  const c = countAntdText("import { Table, Button as B, DatePicker } from 'antd';\nimport type { MessageInstance } from 'antd/es/message/interface';\nimport { PlusOutlined } from '@ant-design/icons';\nconst { RangePicker } = DatePicker;\n");
+  if (!(c.specifiers.Table === 1 && c.specifiers.other === 1 && c.specifiers.subpath === 1 && c.specifiers.icons === 1 && c.specifiers.DatePicker === 1 && c.specifiers.RangePicker === 1 && c.touchesAntd && c.touchesIcons)) {
+    problems.push('C5 度量器正向控制失败：解析结果 ' + JSON.stringify(c) + '，期望 Table=1 other=1 subpath=1 icons=1 DatePicker=1 RangePicker=1 —— antd 入口计数解析器出错了，棘轮因此失去意义');
   }
-  const n = countAntdText("import { Table } from './table';\nconst x = 'antd';\n// from 'antd'\n");
-  if (n.touchesAntd || n.specifiers.Table !== 0) {
+  const n = countAntdText("import { Table } from './table';\nconst x = 'antd';\n// from 'antd'\n// 用 RangePicker 的地方就该用 DateRangeFilter\n");
+  if (n.touchesAntd || n.specifiers.Table !== 0 || n.specifiers.RangePicker !== 0) {
     problems.push('C5 度量器负向控制失败：不 import antd 的文本被计成了 ' + JSON.stringify(n) + ' —— 度量器在误报，会让闸门失去可信度');
   }
 }
@@ -267,13 +276,16 @@ if (!antdRegistry) {
     }
   }
   let total = 0;
+  let rangeTotal = 0;
   for (const [site, rec] of Object.entries(antdMeasured)) {
     const entry = antdRegistry.sites ? antdRegistry.sites[site] : null;
     if (!entry) {
       problems.push('C5 ' + site + ' 有 antd 直接依赖但没有登记在 verification/antd-entries.json——新出现的消费方先登记（--write-registry）并在评审里说明为什么不能走 @autional-cn/ui/antd');
       continue;
     }
-    for (const k of ANTD_KINDS) total += rec.specifiers[k] || 0;
+    // RangePicker 是用法计数，不进「入口数」这个总数（口径混在一起会让总数失去意义），单独报。
+    for (const k of ANTD_KINDS) if (k !== 'RangePicker') total += rec.specifiers[k] || 0;
+    rangeTotal += rec.specifiers.RangePicker || 0;
     const grew = [];
     const shrank = [];
     for (const k of ANTD_KINDS) {
@@ -285,14 +297,17 @@ if (!antdRegistry) {
     if (grew.length) {
       problems.push('C5 ' + site + ' 新增了直接 import antd 的入口（' + grew.join('、') + '）。全舰队的 antd 入口只减不增：能走 @autional-cn/ui/antd 的走设计系统，确实缺能力就先把能力补进设计系统，而不是在站点里直接 import。');
     }
-    if (closedKinds.has('Table') && (rec.specifiers.Table || 0) > 0) {
-      problems.push('C5 ' + site + ' 仍有 ' + rec.specifiers.Table + ' 处直接从 antd import Table，而种类「Table」在台账里已登记为 closed（该批收敛完了）——closed 的含义是 0 处。');
+    for (const k of closedKinds) {
+      if ((rec.specifiers[k] || 0) > 0) {
+        problems.push('C5 ' + site + ' 仍有 ' + rec.specifiers[k] + ' 处 ' + k + '，而种类「' + k + '」在台账里已登记为 closed（该批收敛完了）——closed 的含义是 0 处。该批次应改走设计系统对应件。');
+      }
     }
     if (shrank.length) {
       warns.push('C5 ' + site + ' 的直接 import 比台账少了（' + shrank.join('、') + '）——这是进展，但请跑 node scripts/check-consistency.mjs --write-registry 更新台账，否则台账会慢慢变成一段没人相信的数字。');
     }
   }
-  info.push('C5 直接 import antd 的入口总数：' + total + ' 处（' + ANTD_KINDS.join(' / ') + '），分布在 ' + Object.keys(antdMeasured).length + ' 个站点');
+  info.push('C5 直接 import antd 的入口总数：' + total + ' 处（' + ANTD_KINDS.filter((k) => k !== 'RangePicker').join(' / ') + '），分布在 ' + Object.keys(antdMeasured).length + ' 个站点');
+  info.push('C5 直接用 antd RangePicker 的处数：' + rangeTotal + ' 处（按用法计；收敛目标是改走 @autional-cn/ui/antd 的 DateRangeFilter）');
 }
 
 
