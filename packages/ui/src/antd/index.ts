@@ -5,6 +5,9 @@
 
 export { AntdThemeProvider, useAntdApp } from './AntdThemeProvider';
 export type { AntdThemeProviderProps, AntdAppApi } from './AntdThemeProvider';
+// 整页占位：控制台的加载 / 加载失败。与 DataTable 同一个入口，站点一次 import 拿全。
+export { PageLoading, PageError } from './PageStatus';
+export type { PageLoadingProps, PageErrorProps } from './PageStatus';
 export { DataTable } from './DataTable';
 export type { DataTableProps, DataTableColumns } from './DataTable';
 

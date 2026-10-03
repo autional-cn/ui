@@ -25,12 +25,12 @@
         "Table": 69,
         "DatePicker": 12,
         "Drawer": 9,
-        "icons": 352,
-        "other": 925,
+        "icons": 351,
+        "other": 922,
         "subpath": 4
       },
-      "filesAntd": 109,
-      "filesIcons": 94,
+      "filesAntd": 108,
+      "filesIcons": 93,
       "bridgeFiles": 1,
       "ownThemeFiles": 0
     },
@@ -40,12 +40,12 @@
         "Table": 20,
         "DatePicker": 2,
         "Drawer": 3,
-        "icons": 150,
-        "other": 282,
+        "icons": 149,
+        "other": 279,
         "subpath": 0
       },
-      "filesAntd": 40,
-      "filesIcons": 34,
+      "filesAntd": 39,
+      "filesIcons": 33,
       "bridgeFiles": 1,
       "ownThemeFiles": 0
     },
