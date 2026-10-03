@@ -49,6 +49,31 @@ describe('AntdThemeProvider（antd 与设计系统令牌之间的唯一桥）', 
 		expect(bridged).toContain(String(antdTheme.light.components.Table.borderColor).toLowerCase());
 	});
 
+	it('middle 尺寸单元格的内间距来自设计系统令牌，不是 antd 出厂值', () => {
+		// 这条用例是被一个**静默失效**逼出来的：DS 起初只写了 cellPaddingBlock / cellPaddingInline，
+		// 而 antd 里这两个是 **large** 尺寸的取值，middle 走 cellPaddingBlockMD。
+		// 于是「配了等于没配」—— 代码里看着有、浏览器里量到的还是 antd 出厂的 12px / 8px，
+		// 没有任何检查会红。判据必须落在**生成出来的样式**上，而不是「配置对象里有这个键」。
+		// 断言落在 antd 真实产出的 **CSS 变量**上：v6 走 CSS 变量模式，
+		// 单元格最终读到的是 var(--ant-table-cell-padding-block-md)。
+		// 也就是说「配置对象里有这个键」和「页面上真的变了」是两件事，只能断言后者。
+		cleanup();
+		render(<Table columns={columns} dataSource={data} pagination={false} />);
+		expect(headCss()).toContain('--ant-table-cell-padding-block-md:12px');
+		cleanup();
+
+		render(
+			<ThemeProvider storageKey="ds-antd-theme-test">
+				<AntdThemeProvider locale="zh-CN">
+					<Table columns={columns} dataSource={data} pagination={false} />
+				</AntdThemeProvider>
+			</ThemeProvider>,
+		);
+		const bridged = headCss();
+		expect(bridged).toContain('--ant-table-cell-padding-block-md:10px');
+		expect(bridged).toContain('--ant-table-cell-padding-inline-md:12px');
+	});
+
 	it('useAntdApp 在桥内部给出 message / modal / notification', () => {
 		const { getByTestId } = render(
 			<ThemeProvider storageKey="ds-antd-theme-test">

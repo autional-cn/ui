@@ -30,7 +30,9 @@ const antdTheme = {
         rowHoverBg: '#f8fbfe',
         borderColor: '#a3c7e3',
         cellPaddingBlock: 10,
-        cellPaddingInline: 12
+        cellPaddingInline: 12,
+        cellPaddingBlockMD: 10,
+        cellPaddingInlineMD: 12
       }
     } },
   dark: { token: {
@@ -54,7 +56,9 @@ const antdTheme = {
         rowHoverBg: '#0a1f30',
         borderColor: '#1a4a65',
         cellPaddingBlock: 10,
-        cellPaddingInline: 12
+        cellPaddingInline: 12,
+        cellPaddingBlockMD: 10,
+        cellPaddingInlineMD: 12
       }
     } },
 };

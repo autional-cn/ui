@@ -20,7 +20,14 @@ import type { TableProps } from 'antd';
 
 export type DataTableProps<T extends object = Record<string, unknown>> = TableProps<T>;
 
-export function DataTable<T extends object = Record<string, unknown>>({
+/**
+ * 列定义类型。单独导出是为了让站点**不必**为了写 columns 去 import antd 的类型 ——
+ * 站点侧一旦 import 了 antd，C5 台账（入口棘轮）就会记上一笔，
+ * 而「一个概念只应有一个入口」正是这一层要守住的东西。
+ */
+export type DataTableColumns<T extends object = Record<string, unknown>> = NonNullable<TableProps<T>['columns']>;
+
+function DataTableInner<T extends object = Record<string, unknown>>({
 	size = 'middle',
 	pagination,
 	...rest
@@ -33,3 +40,36 @@ export function DataTable<T extends object = Record<string, unknown>>({
 
 	return <Table<T> size={size} pagination={mergedPagination} {...rest} />;
 }
+
+/**
+ * 复合成员必须一并透传 —— 这是「薄透传」契约的一部分，不是可选的糖。
+ *
+ * 为什么：antd 的 Table 是**复合组件**（Table.Summary / Column / ColumnGroup / 选择与展开的哨兵）。
+ * 只导出一个函数组件，等于把这些能力从 DS 入口里**删掉** —— 消费方要用汇总行时只剩两条路：
+ *   ① 直接 import antd（C5 台账多一笔，两个入口）；
+ *   ② 自己拼裸 <tr>/<td> 绕过 DS 的表格样式（那就等于没用 DS）。
+ * 两条路都破坏「一个概念一个入口」。
+ * 实测就是这么撞上的：user 的发票明细表需要一行合计（原来的手写表用 <tfoot>）。
+ */
+type DataTableStatics = Pick<
+	typeof Table,
+	| 'Summary'
+	| 'Column'
+	| 'ColumnGroup'
+	| 'SELECTION_COLUMN'
+	| 'SELECTION_ALL'
+	| 'SELECTION_INVERT'
+	| 'SELECTION_NONE'
+	| 'EXPAND_COLUMN'
+>;
+
+export const DataTable = Object.assign(DataTableInner, {
+	Summary: Table.Summary,
+	Column: Table.Column,
+	ColumnGroup: Table.ColumnGroup,
+	SELECTION_COLUMN: Table.SELECTION_COLUMN,
+	SELECTION_ALL: Table.SELECTION_ALL,
+	SELECTION_INVERT: Table.SELECTION_INVERT,
+	SELECTION_NONE: Table.SELECTION_NONE,
+	EXPAND_COLUMN: Table.EXPAND_COLUMN,
+}) as typeof DataTableInner & DataTableStatics;

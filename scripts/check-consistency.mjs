@@ -491,6 +491,59 @@ for (const site of readdirSync(SITES)) {
 }
 info.push('C6 已采纳分块策略的站点：' + c6sites.size + ' 个（' + [...c6sites].join(', ') + '）');
 
+// ── C7 站点测试环境（jsdom 缺口只有一份实现）────────────────────────────
+// 实测踩到：三个控制台各自抄了一份 matchMedia + ResizeObserver 的补丁，user 只有 matchMedia。
+// 于是 user 接入 antd 的当天，**8 个既有用例一起红**在「ResizeObserver is not defined」上，
+// 而那条报错完全指不到真正的原因（它看起来像页面代码坏了）。
+//
+// 判据分两条，依据不同，所以不能合并：
+//   ① 任何站点都不许在**本地**定义 matchMedia / ResizeObserver —— 抄成四份的东西必然有一份漏掉；
+//   ② **用 antd 的站点**必须消费设计系统那一份 —— antd 同时依赖这两个 API。
+//      这一条刻意**不**对全舰队要求：不吃 antd 的站补了也用不上，
+//      那会变成「给 5 个站点加一个用不到的 import」——判据要跟着事实走，不是跟着整齐走。
+const C7_SETUP_IMPORT = '@autional-cn/ui/test-setup';
+const c7setup = new Map();
+for (const site of readdirSync(SITES)) {
+  const sp = join(SITES, site);
+  if (!statSync(sp).isDirectory()) continue;
+  for (const cfg of walk(sp, [], (n) => /^vitest\.config\.[cm]?ts$/.test(n), SKIP)) {
+    const m = /setupFiles\s*:\s*\[([^\]]*)\]/.exec(readFileSync(cfg, 'utf8'));
+    if (!m) continue;
+    const rel = relative(SITES, cfg).replace(/\\/g, '/');
+    const refs = [...m[1].matchAll(/['"]([^'"]+)['"]/g)].map((x) => x[1]);
+    if (!refs.length) {
+      problems.push('C7 ' + rel + ' 声明了 setupFiles 却一个路径都没解析出来——判据会因此静默失效');
+      continue;
+    }
+    const found = c7setup.get(site) || [];
+    for (const ref of refs) {
+      const setupPath = join(dirname(cfg), ref.replace(/^\.\//, ''));
+      if (!existsSync(setupPath)) {
+        problems.push('C7 ' + rel + ' 引用的 setup 文件不存在：' + ref);
+        continue;
+      }
+      found.push({ srel: relative(SITES, setupPath).replace(/\\/g, '/'), st: readFileSync(setupPath, 'utf8') });
+    }
+    c7setup.set(site, found);
+  }
+}
+if (!c7setup.size) {
+  problems.push('C7 一个站点的测试 setup 都没扫到——判据静默失效比误报危险得多（要么工程结构变了，要么解析器坏了）');
+}
+for (const [site, files] of c7setup) {
+  for (const { srel, st } of files) {
+    // ⚠ 必须先剥注释：本文件与站点 setup 的注释里都写着「ResizeObserver」，
+    // 不剥的话这条会把「解释为什么这样做的注释」判成本地又定义了一份。
+    if (/ResizeObserver|matchMedia/.test(stripComments(st))) {
+      problems.push('C7① ' + srel + ' 本地又定义了一遍 matchMedia / ResizeObserver——同一个 jsdom 缺口只能有一份实现（' + C7_SETUP_IMPORT + '），本地再写一份就是又一处会漂移的副本');
+    }
+  }
+  if (antdSites.includes(site) && !files.some((f) => f.st.includes(C7_SETUP_IMPORT))) {
+    problems.push('C7② ' + site + ' 使用 antd（它同时依赖 matchMedia 与 ResizeObserver），但测试 setup 没有 import ' + C7_SETUP_IMPORT + '——实测 user 就是这样，8 个既有用例在接入 antd 的当天一起红，而报错指向完全无关的位置');
+  }
+}
+info.push('C7 有测试 setup 的站点：' + c7setup.size + ' 个（' + [...c7setup.keys()].join(', ') + '）');
+
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
 const codeOf = (msg) => { const m = /^(C\d)/.exec(msg); return m ? m[1] : null; };
 const knownFor = (msg) => { const c = codeOf(msg); return c ? known.find((k) => k.code === c && msg.indexOf(k.match) >= 0) : undefined; };

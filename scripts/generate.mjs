@@ -389,8 +389,17 @@ const antdComponents = (ctx) => ({
     headerSplitColor: ctx.resolve('{color.border-subtle}'),
     rowHoverBg: ctx.resolve('{color.bg-muted}'),
     borderColor: ctx.resolve('{color.border-subtle}'),
+    // ⚠ cellPaddingBlock / cellPaddingInline 是 **large 尺寸** 的取值，
+    // middle / small 走的是 ...MD / ...SM 两组（见 antd es/table/style/index.d.ts）。
+    // 实测踩到：只写前两个时它们**完全不起作用** —— DS 的 DataTable 默认 size='middle'，
+    // 读的是 cellPaddingBlockMD，于是这两行是一条静默失效的配置：
+    // 浏览器里量到的仍是 antd 出厂的 12px，而看不出来任何异常（真正的「配了等于没配」）。
     cellPaddingBlock: 10,
     cellPaddingInline: 12,
+    cellPaddingBlockMD: 10,
+    cellPaddingInlineMD: 12,
+    // SM 刻意**不设**：控制台有 400+ 处 size="small"，改它等于一次性改掉那些表的密度 ——
+    // 那是一个该被单独看见、单独评审的设计决定，不该夹在「修一个静默失效」里顺手做掉。
   },
 });
 
