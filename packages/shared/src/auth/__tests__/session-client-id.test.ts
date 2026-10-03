@@ -85,6 +85,29 @@ describe('AuthService.refreshToken 分流', () => {
 		expect(callsTo(OAUTH_REFRESH)).toHaveLength(0);
 	});
 
+	// 回归锁（2026-10-03 线上缺陷：identity 腿响应是标准信封 {code,message,data:{...}}，
+	// 客户端却按扁平解析 ⇒ data.access_token 恒 undefined ⇒ updateTokens 从不执行 ⇒
+	// 预警点横幅 + 到期拿旧 RT 重放 ⇒ 服务端反重放 revoke-all 全量吊销会话）。
+	// 此前测试用扁平 mock 喂两条腿掩盖了信封形状差异，此处锁真实信封。
+	it('identity 腿（三段式 RT）信封响应必须解包：token 落库 + 返回新 AT', async () => {
+		useAuthStore.setState({ refreshToken: 'a.b.c' });
+		mockPost.mockResolvedValue({
+			data: {
+				code: 0,
+				message: 'success',
+				data: { access_token: 'env-at', refresh_token: 'env-rt' },
+				timestamp: 1728000000000,
+			},
+		});
+
+		const at = await AuthService.refreshToken();
+
+		expect(callsTo(IDENTITY_REFRESH)).toHaveLength(1);
+		expect(at).toBe('env-at');
+		expect(useAuthStore.getState().accessToken).toBe('env-at');
+		expect(useAuthStore.getState().refreshToken).toBe('env-rt');
+	});
+
 	it('刷新成功后新 token 落库（updateTokens 链路）', async () => {
 		persistOAuthClientId('cid-from-session');
 		useAuthStore.setState({ refreshToken: 'rt-opaque-abc' });

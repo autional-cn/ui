@@ -26,6 +26,7 @@ import { loginWithTokens } from './store';
 import { buildLoginUrl, isAuthLoginSurface } from './roles';
 import { traceRedirect } from './auth-trace';
 import { resolveClientIdForSession } from './oauth-client-id-store';
+import { extractItem } from '../utils/response';
 import type { User } from '../types';
 
 // ============ Internal State ============
@@ -305,11 +306,13 @@ export const AuthService = {
 					refreshToken?: string;
 				};
 				if (isJwtRefreshToken || !clientId) {
-					// identity 链：信封响应 { code, data: { access_token, refresh_token } }
+					// identity 链：标准信封响应 { code, message, data: { access_token, refresh_token } }
+					// 必须解包（2026-10-03 线上缺陷：未解包 ⇒ 200 被当失败 ⇒ 预警点横幅 +
+					// 到期旧 RT 重放 ⇒ 服务端反重放 revoke-all 全量吊销）
 					const resp = await axios.post(`${baseUrl}/identity/api/v1/auth/refresh`, {
 						refresh_token: rt,
 					});
-					data = resp.data;
+					data = extractItem(resp.data) ?? resp.data;
 				} else {
 					// OAuth 链：扁平 JSON 响应 { access_token, refresh_token, token_type, expires_in, scope }
 					const resp = await axios.post(`${baseUrl}/oauth/api/v1/oauth/refresh`, {
