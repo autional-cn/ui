@@ -26,7 +26,7 @@
   "handwrittenOverlaysBySite": {
     "auth": 2,
     "authenticator": 2,
-    "user": 2,
+    "user": 1,
     "web": 1
   },
   "sites": {
@@ -38,7 +38,7 @@
         "RangePicker": 0,
         "Drawer": 9,
         "icons": 350,
-        "other": 914,
+        "other": 912,
         "subpath": 4
       },
       "filesAntd": 106,
@@ -54,10 +54,10 @@
         "RangePicker": 0,
         "Drawer": 3,
         "icons": 149,
-        "other": 278,
+        "other": 273,
         "subpath": 0
       },
-      "filesAntd": 38,
+      "filesAntd": 37,
       "filesIcons": 33,
       "bridgeFiles": 1,
       "ownThemeFiles": 0
