@@ -20,6 +20,14 @@
   "dependencies": {
     "@autional-cn/shared": "workspace:*"
   },
+  "devDependencies": {
+    "@autional-cn/tsconfig": "workspace:*",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "typescript": "5.8.3"
+  },
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
