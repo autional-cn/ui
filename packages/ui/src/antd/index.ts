@@ -4,6 +4,12 @@
 // 152 处直接 import，user 侧 0 处、手写 13 个表格）。统一入口之后，一致性才来自 API 而不是巧合。
 
 export { AntdThemeProvider, useAntdApp } from './AntdThemeProvider';
-export type { AntdThemeProviderProps } from './AntdThemeProvider';
+export type { AntdThemeProviderProps, AntdAppApi } from './AntdThemeProvider';
 export { DataTable } from './DataTable';
 export type { DataTableProps } from './DataTable';
+
+// 类型再导出：站点侧的命令式 API 门面（`export let message` 那类）需要这些类型，
+// 若让它们各自 `import type ... from 'antd/es/message/interface'`，
+// 「站点不直接依赖 antd 的内部路径」这条就破了——antd 只是本包的可选 peer。
+export type { MessageInstance } from 'antd/es/message/interface';
+export type { NotificationInstance } from 'antd/es/notification/interface';

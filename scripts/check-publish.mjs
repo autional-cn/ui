@@ -91,7 +91,23 @@ try {
     }
     return out;
   };
+  // 发布口径由 **npm 自己**给出：npm pack --dry-run --json 的 files 列表，就是真实会进包的集合。
+  // 为什么不用手写过滤：这里原本按「顶层 test/ 或 __tests__/」过滤，而 packages/ui/package.json 的
+  // files 排除的是 src/antd/__tests__ 这种**嵌套**目录 —— 手写规则与 files 字段一旦不同步，
+  // 闸门就会朝两个方向出错（先漏报，收紧后又假红）。判据必须从机制派生，不能从「我记得」派生。
+  const packCache = new Map();
+  const packList = (dirRel) => {
+    if (packCache.has(dirRel)) return packCache.get(dirRel);
+    const raw = execFileSync('npm', ['pack', '--dry-run', '--json', '--registry=https://registry.npmjs.org/'], {
+      cwd: join(ROOT, dirRel), stdio: 'pipe', shell: process.platform === 'win32',
+    }).toString();
+    const set = new Set(JSON.parse(raw.slice(raw.indexOf('[')))[0].files.map((f) => f.path.replace(/\\/g, '/')));
+    packCache.set(dirRel, set);
+    return set;
+  };
+  const PKG_DIR_OF = { '@autional-cn/ui': 'packages/ui', '@autional-cn/shared': 'packages/shared', '@autional-cn/react': 'packages/react' };
   let same = 0;
+
   let total = PAIRS.length;
   for (const [pkg, rel, localRel] of PAIRS) {
     const installed = join(tmp, 'node_modules', ...pkg.split('/'), rel);
@@ -106,9 +122,10 @@ try {
     const localDir = join(ROOT, localDirRel);
     const pkgRoot = join(tmp, 'node_modules', ...pkg.split('/'));
     if (!existsSync(localDir)) { problems.push('本地目录缺失：' + localDirRel); continue; }
-    // 测试文件是**刻意不发**的（packages/ui/package.json 的 files 里有 "!src/test" / "!src/__tests__"），
-    // 拿它们比会得到两条假阳性。判据要跟着「发布口径」走，不是跟着目录里有什么走。
-    const files = walk(localDir, localDir, []).filter((f) => !/^(test|__tests__)\//.test(f));
+    // 只比「真的会进包」的文件：测试目录是刻意不发的，拿它们比会得到假阳性。
+    const published = packList(PKG_DIR_OF[pkg]);
+    const prefix = localDirRel.split('/').pop();
+    const files = walk(localDir, localDir, []).filter((f) => published.has(prefix + '/' + f));
     let dirSame = 0;
     for (const rel of files) {
       total++;

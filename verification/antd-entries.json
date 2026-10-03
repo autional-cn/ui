@@ -1,0 +1,75 @@
+{
+  "$comment": "antd 直接依赖台账（棘轮）。specifiers 计的是**入口数**（具名导入个数），不是用法数。数字只许减不许增：新增直接 import antd 会被 C5 判红。closedKinds 里的种类必须为 0（该批收敛完了）。themeConverged=true 的站点另受 C1 强判据约束：不许自己拿 ConfigProvider。",
+  "updated": "2026-10-03",
+  "kinds": [
+    "Table",
+    "DatePicker",
+    "Drawer",
+    "icons",
+    "other",
+    "subpath"
+  ],
+  "closedKinds": [],
+  "sites": {
+    "admin": {
+      "themeConverged": true,
+      "specifiers": {
+        "Table": 69,
+        "DatePicker": 12,
+        "Drawer": 9,
+        "icons": 352,
+        "other": 925,
+        "subpath": 4
+      },
+      "filesAntd": 109,
+      "filesIcons": 94,
+      "bridgeFiles": 1,
+      "ownThemeFiles": 0
+    },
+    "platform": {
+      "themeConverged": true,
+      "specifiers": {
+        "Table": 20,
+        "DatePicker": 2,
+        "Drawer": 3,
+        "icons": 150,
+        "other": 282,
+        "subpath": 0
+      },
+      "filesAntd": 40,
+      "filesIcons": 34,
+      "bridgeFiles": 1,
+      "ownThemeFiles": 0
+    },
+    "security": {
+      "themeConverged": true,
+      "specifiers": {
+        "Table": 20,
+        "DatePicker": 3,
+        "Drawer": 8,
+        "icons": 156,
+        "other": 285,
+        "subpath": 5
+      },
+      "filesAntd": 30,
+      "filesIcons": 28,
+      "bridgeFiles": 1,
+      "ownThemeFiles": 0
+    },
+    "user": {
+      "themeConverged": true,
+      "specifiers": {
+        "Table": 0,
+        "DatePicker": 0,
+        "Drawer": 0,
+        "icons": 0,
+        "other": 0,
+        "subpath": 0
+      },
+      "filesAntd": 0,
+      "filesIcons": 0,
+      "bridgeFiles": 1,
+      "ownThemeFiles": 0
+    }
+  }
+}

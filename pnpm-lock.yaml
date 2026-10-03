@@ -96,10 +96,6 @@ importers:
   packages/tsconfig: {}
 
   packages/ui:
-    dependencies:
-      antd:
-        specifier: '>=6.0.0'
-        version: 6.6.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     devDependencies:
       '@autional-cn/tokens':
         specifier: 0.1.0-rc.4
@@ -122,6 +118,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 4.4.0
         version: 4.4.0(vite@6.4.2(@types/node@26.1.2))
+      antd:
+        specifier: 6.5.0
+        version: 6.5.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       i18next:
         specifier: 26.0.10
         version: 26.0.10(typescript@5.8.3)
@@ -537,8 +536,8 @@ packages:
     resolution: {integrity: sha512-D3AGQwdyE58gmvx6waVSXJ80JGO+IY5L2O8HDnSOex7JNlzB3GuN/4hyHNTdhy2qtOhkpbIjmeAN3tL993wKbA==}
     engines: {node: '>=14.x'}
 
-  '@rc-component/cascader@1.22.0':
-    resolution: {integrity: sha512-SffrA57aS9oub3VuI7ajPhJTPtaNxngSvtRhD40Rd8dwJ5vfWPSrVanWgeepdWFGBt7EHftIK5RUU0u3rCTwWw==}
+  '@rc-component/cascader@1.17.0':
+    resolution: {integrity: sha512-3cVNG0zrQF1PoXq262L3wGCU+/YLEC1mGSVHDl577dQmA0ZKkXFbY6nwyXo+beCcM7buo49t24jkr+QZdL7O8w==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -592,8 +591,8 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@rc-component/image@1.10.0':
-    resolution: {integrity: sha512-BjeZCRQ+hw+4WAhvrw8rJvy5fckA2xpf/X2XQEOABUHvLTNB9inB98X3Mp54jYQ7g10DfWERQWHXeC4ylxp1Uw==}
+  '@rc-component/image@1.9.0':
+    resolution: {integrity: sha512-khF7w7xkBH5B1bsBcI1FSUZdkyd1aqpl2eYyILCqCzzQH3XdfehGUaZTnptyaJJfs09/R5hv9jXWyazOMFIClQ==}
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
@@ -610,23 +609,17 @@ packages:
       react: '>=16.0.0'
       react-dom: '>=16.0.0'
 
-  '@rc-component/listy@1.2.3':
-    resolution: {integrity: sha512-IXiMjV5s0rczLBlfh7G5nB4M3365mrEeedjwKtf5I+Ns3PqRUsebR2h5u8CeFarsVfLUPC2I5p0h09TNoOWyvQ==}
-    peerDependencies:
-      react: '>=18.0.0'
-      react-dom: '>=18.0.0'
-
-  '@rc-component/mentions@1.12.0':
-    resolution: {integrity: sha512-v5MBx8zDcqCT+uybJgKpcx3Fgrvj0m3u+A/15RlSBaMx12lLoJZTTYggC3pbYYfohcKujWWUyBz6O6Gp2vGiNA==}
+  '@rc-component/mentions@1.10.0':
+    resolution: {integrity: sha512-CI1njYUVY0NjHtLhNoVmXlJyy568Sfep9Wsak6vmGjtT6uazx98djGYlCXz2xkHhEm73g91Y3MTvzUyE5avI7w==}
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@rc-component/menu@1.5.0':
-    resolution: {integrity: sha512-RjvzPsZkwVEg3xu+/jDDqDeUCBJAnWylONFlGeQgg5enlNAnlpybqhaMGE/UPEIvr6hL90PGhjFBguJqj0Qb2Q==}
+  '@rc-component/menu@1.4.1':
+    resolution: {integrity: sha512-3GsVRoQ4cnF/AoIQ4P+Z1haBfgfBPQfLT1RJY3Nu4DzOnheTslfCiGSPj7bv/cLj5sW5pHqN25dDXGP3JELAlQ==}
     peerDependencies:
-      react: '>=18.0.0'
-      react-dom: '>=18.0.0'
+      react: '>=16.9.0'
+      react-dom: '>=16.9.0'
 
   '@rc-component/mini-decimal@1.1.4':
     resolution: {integrity: sha512-xiuXcaCwyOWpD8a8scdExFl+bntNphAW8XeenL1ig2en0AAZY0Pcp4pC0dI22qJ+NvxKn9RoNIoRdqYU3BLH4w==}
@@ -664,8 +657,8 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@rc-component/picker@1.12.2':
-    resolution: {integrity: sha512-ZB1A+tzTQkgtR4flPrAMvxIAOelIIOOOsp22fU2Nad6PbZcJacnyGJUJqUH7ZS9mwxeUwurf1pLMKXrVsK1tlA==}
+  '@rc-component/picker@1.11.0':
+    resolution: {integrity: sha512-6qXGKtoJvO8sUd17m5cyNEbEJub0zflCHnaZTBBmj63DPRZYc0WEHN8rp6hFSl+yMCJS/dJY5G+1fQ8bLCuD7A==}
     engines: {node: '>=12.x'}
     peerDependencies:
       date-fns: '>= 2.x'
@@ -717,14 +710,14 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@rc-component/segmented@1.4.0':
-    resolution: {integrity: sha512-NZlpKGSplOYlmF5ukUF1fCLr0ns5WfjNoqMlMkf4AHP0iu90wyiP7hn2qZKRHEuRlG4CvEEz/lF9qRiYnLTofQ==}
+  '@rc-component/segmented@1.3.0':
+    resolution: {integrity: sha512-5J/bJ01mbDnoA6P/FW8SxUvKn+OgUSTZJPzCNnTBntG50tzoP7DydGhqxp7ggZXZls7me3mc2EQDXakU3iTVFg==}
     peerDependencies:
       react: '>=16.0.0'
       react-dom: '>=16.0.0'
 
-  '@rc-component/select@1.10.1':
-    resolution: {integrity: sha512-H+yQsl+qED9NilQ3g6zdpsMwUgwVjrcMTkNHAWRVU/MoNCYgTbDgU+MIMgZDK+rVdd2JUfI/MkysMcZZ0cyQKw==}
+  '@rc-component/select@1.8.2':
+    resolution: {integrity: sha512-HQ9zuYqjfZTlcEMWlU1GAPBajd2OHIMVHyjZSGVTCVARwkfCgvXZMTEn0cduy3L+ejAKkaZluOQvxovZoaJaQw==}
     engines: {node: '>=8.x'}
     peerDependencies:
       react: '*'
@@ -750,22 +743,22 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@rc-component/table@1.11.1':
-    resolution: {integrity: sha512-OWdS6DMmeWb7bJBGqPxYZpQbzBlBiXZUu2sqo6Ii7Sjs9GeK1IsrXrWk26SL2c6KEseabswdxrRj7WUm9LdECw==}
+  '@rc-component/table@1.10.4':
+    resolution: {integrity: sha512-HwoTnrwc29zeoXkXGhWqzJh8FIibGUxi1jM4LtoSzmR9d5Vv5osUQpZxnXKBP8iOCvyD6BQzZm1nXJRcnrxpAg==}
     engines: {node: '>=8.x'}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
-  '@rc-component/tabs@1.13.0':
-    resolution: {integrity: sha512-3FXr+9ZII8tFLWuDWrgjRaxZd2mazkKJAGRFEfVmp4r1qnBglOlxQ78l54Td1aj6/iFaaEReKSAF2HToztU5uw==}
+  '@rc-component/tabs@1.11.0':
+    resolution: {integrity: sha512-hA/drZYOVa/MMIb4M2fWf3yaTyTG4qVuIABmghvEhyfw2nBob5VTH69lMCDjSVKmgODjO6nWlCV+gVn3xBrj5Q==}
     engines: {node: '>=8.x'}
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@rc-component/tooltip@1.5.2':
-    resolution: {integrity: sha512-VLq4BclU3LgRe46g2hTr2bdsM8tFYs7dVwpuD88rPNNg4lCGe8mBSS4FiRzYzS+ffnZ46y4SI8KYKo9K7qBnhw==}
+  '@rc-component/tooltip@1.4.0':
+    resolution: {integrity: sha512-8Rx5DCctIlLI4raR0I0xHjVTf1aF48+gKCNeAAo5bmF5VoR5YED+A/XEqzXv9KKqrJDRcd3Wndpxh2hyzrTtSg==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -777,14 +770,14 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@rc-component/tree-select@1.16.1':
-    resolution: {integrity: sha512-a1Oi6EJhqAhdOxxupdJi6fP0RPHMKn5TcfkX2+llaQ4lF4nwfH7b6SCHcnsybaa2s+pk1yZYwVyeOYkDnEBRdg==}
+  '@rc-component/tree-select@1.11.0':
+    resolution: {integrity: sha512-EhS0X0wtUhBfK4S5TlpSY3MR9ndPMGgujtt1PJW3Ej+ToAlnS/6ohYURtCoXBYGqazUwHmgQGVUDsfpVwhWPkg==}
     peerDependencies:
       react: '*'
       react-dom: '*'
 
-  '@rc-component/tree@1.4.0':
-    resolution: {integrity: sha512-dGsJGDJQedA0BqqVgj3F8BvHXTSZijyhTXdbAdkcx8lynzZkty/CV3Z3LOm/fxz+BCfl3dfGiAQpb7Q5XNvl0Q==}
+  '@rc-component/tree@1.3.2':
+    resolution: {integrity: sha512-bJFj46wEkpBPnWyTm18XmgAgNQ/4YvprxMOPPY2a6rmhGJYxLuNKEFiL5Qej4Qctu9wHJm8WW+v2SYskafE0kA==}
     engines: {node: '>=10.x'}
     peerDependencies:
       react: '*'
@@ -1078,8 +1071,8 @@ packages:
     resolution: {integrity: sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==}
     engines: {node: '>=10'}
 
-  antd@6.6.5:
-    resolution: {integrity: sha512-biJB/aORNU2lvZZCX783S/g8atfE8akrEKRjRrsXVttoMtJbSHLf/Z29niv0blzt6H3BgKvhkQgHoUn5MgCx7w==}
+  antd@6.5.0:
+    resolution: {integrity: sha512-9zbVc9UukfGuqCvIAov01nlpDQWfARNmZQyt21ZhqLX7ilXmi4cdkp12xA48WEmXRXwZvno8A03qQuGE9JG8fg==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -2047,10 +2040,10 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.7
 
-  '@rc-component/cascader@1.22.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/cascader@1.17.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@rc-component/select': 1.10.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/tree': 1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/select': 1.8.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/tree': 1.3.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       clsx: 2.1.1
       react: 19.2.5
@@ -2120,7 +2113,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/image@1.10.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/image@1.9.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/motion': 1.3.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/portal': 2.2.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2145,28 +2138,17 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/listy@1.2.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
-    dependencies:
-      '@rc-component/motion': 1.3.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/portal': 2.2.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/resize-observer': 1.1.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/virtual-list': 1.5.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      clsx: 2.1.1
-      react: 19.2.5
-      react-dom: 19.2.5(react@19.2.5)
-
-  '@rc-component/mentions@1.12.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/mentions@1.10.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/input': 1.3.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/menu': 1.5.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/menu': 1.4.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/trigger': 3.10.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       clsx: 2.1.1
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/menu@1.5.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/menu@1.4.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/motion': 1.3.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/overflow': 1.0.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2217,7 +2199,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/picker@1.12.2(dayjs@1.11.23)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/picker@1.11.0(dayjs@1.11.23)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/overflow': 1.0.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/resize-observer': 1.1.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2262,16 +2244,16 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/segmented@1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/segmented@1.3.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@babel/runtime': 8.0.5
+      '@babel/runtime': 7.29.7
       '@rc-component/motion': 1.3.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       clsx: 2.1.1
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/select@1.10.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/select@1.8.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/overflow': 1.0.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/trigger': 3.10.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2302,7 +2284,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/table@1.11.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/table@1.10.4(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/context': 2.0.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/resize-observer': 1.1.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2312,10 +2294,10 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/tabs@1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/tabs@1.11.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/dropdown': 1.0.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/menu': 1.5.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/menu': 1.4.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/motion': 1.3.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/resize-observer': 1.1.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2323,7 +2305,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/tooltip@1.5.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/tooltip@1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/trigger': 3.10.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2340,16 +2322,16 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/tree-select@1.16.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/tree-select@1.11.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@rc-component/select': 1.10.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/tree': 1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/select': 1.8.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/tree': 1.3.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       clsx: 2.1.1
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@rc-component/tree@1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@rc-component/tree@1.3.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@rc-component/motion': 1.3.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2617,7 +2599,7 @@ snapshots:
 
   ansi-styles@5.2.0: {}
 
-  antd@6.6.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
+  antd@6.5.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
     dependencies:
       '@ant-design/colors': 8.0.1
       '@ant-design/cssinjs': 2.1.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2626,7 +2608,7 @@ snapshots:
       '@ant-design/icons': 6.3.4(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@ant-design/react-slick': 2.0.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@babel/runtime': 7.29.7
-      '@rc-component/cascader': 1.22.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/cascader': 1.17.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/checkbox': 2.0.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/collapse': 1.2.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/color-picker': 3.1.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2634,32 +2616,31 @@ snapshots:
       '@rc-component/drawer': 1.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/dropdown': 1.0.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/form': 1.8.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/image': 1.10.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/image': 1.9.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/input': 1.3.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/input-number': 1.6.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/listy': 1.2.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/mentions': 1.12.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/menu': 1.5.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/mentions': 1.10.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/menu': 1.4.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/motion': 1.3.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/mutate-observer': 2.0.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/notification': 2.0.9(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/pagination': 1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/picker': 1.12.2(dayjs@1.11.23)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/picker': 1.11.0(dayjs@1.11.23)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/progress': 1.0.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/qrcode': 2.0.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/rate': 1.0.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/resize-observer': 1.1.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/segmented': 1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/select': 1.10.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/segmented': 1.3.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/select': 1.8.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/slider': 1.1.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/steps': 1.2.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/switch': 1.0.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/table': 1.11.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/tabs': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/tooltip': 1.5.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/table': 1.10.4(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/tabs': 1.11.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/tooltip': 1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/tour': 2.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/tree': 1.4.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@rc-component/tree-select': 1.16.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/tree': 1.3.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rc-component/tree-select': 1.11.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/trigger': 3.10.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/upload': 1.1.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@rc-component/util': 1.13.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)

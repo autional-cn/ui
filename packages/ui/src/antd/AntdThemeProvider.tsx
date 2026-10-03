@@ -71,7 +71,5 @@ export function useAntdApp() {
 	return AntdApp.useApp();
 }
 
-/** 供测试与调试：断言 Provider 确实挂上了。 */
-export function useAntdThemeReady(): boolean {
-	return true;
-}
+/** `App.useApp()` 的返回类型（message / notification / modal 三个命令式 API）。 */
+export type AntdAppApi = ReturnType<typeof AntdApp.useApp>;
