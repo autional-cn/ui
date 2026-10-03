@@ -67,6 +67,29 @@ describe('@autional-cn/ui/rhf 绑定控件', () => {
 		expect(screen.getByLabelText('邮箱').getAttribute('aria-invalid')).toBeNull();
 	});
 
+	it('装饰（leading/trailing）渲染在控件内部，并自动让出内边距', () => {
+		function Adorned() {
+			const { control } = useForm<Values>({ defaultValues: { email: '1', plan: 'pro', note: '' } });
+			return (
+				<FormInput<Values>
+					name="email"
+					control={control}
+					label="金额"
+					leading="¥"
+					trailing={<button type="button">显示</button>}
+				/>
+			);
+		}
+		const { container } = render(<Adorned />);
+		const input = screen.getByLabelText('金额');
+		// 装饰必须在**输入框所在的定位块**里（不是整个字段块），否则 top-1/2 会算到标签上。
+		expect(container.querySelector('.relative > input')).toBeTruthy();
+		expect(input.className).toContain('pl-8');
+		expect(input.className).toContain('pr-10');
+		expect(screen.getByText('¥')).toBeTruthy();
+		expect(screen.getByRole('button', { name: '显示' })).toBeTruthy();
+	});
+
 	it('error 覆盖优先于表单库给的消息（页面自己控制报错文案）', async () => {
 		// 本项目的 zod message 是 i18n 键，页面按字段给自己的键；没有这个口子就会悄悄换掉用户看到的文案。
 		function Overridden() {

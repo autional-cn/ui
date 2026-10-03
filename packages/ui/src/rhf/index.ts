@@ -11,7 +11,8 @@ export type { FormSelectProps } from './FormSelect';
 export { FormTextarea } from './FormTextarea';
 export type { FormTextareaProps } from './FormTextarea';
 export type { FormControlBaseProps } from './shared';
-// 自研控件要接同一套 a11y 接线时用这两个：
-export { useBoundField } from './shared';
+// 自研控件（或需要自定义装饰/布局的字段）要接同一套 a11y 接线时用这两个：
+// 实测两个页面为了「装饰贴着输入框」各自复制了一份 ControlSlot —— 导出它正是为了让这种复制没有理由发生。
+export { useBoundField, ControlSlot } from './shared';
 export { FormField, useFormFieldA11y } from '../molecules/FormField';
 export type { FormFieldProps } from '../molecules/FormField';
