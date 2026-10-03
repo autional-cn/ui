@@ -14,6 +14,11 @@ export interface User {
 	updatedAt?: string;
 	lastLoginAt?: string;
 	avatarUrl?: string;
+	/**
+	 * 展示名（OIDC userinfo 的 nickname→name，登录时合入）。
+	 * 消费方展示优先级：displayName → username → email。
+	 */
+	displayName?: string;
 	phone?: string;
 	roles?: RoleSummary[];
 	department?: DepartmentSummary;

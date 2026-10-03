@@ -37,6 +37,14 @@ describe('deriveUserInitials', () => {
 	it('无用户名回落邮箱', () => {
 		expect(deriveUserInitials({ email: 'demo@localhost' })).toBe('D');
 	});
+	it('displayName 优先于 username/email', () => {
+		expect(
+			deriveUserInitials({ displayName: 'Demo Admin', username: 'acme_admin', email: 'a@b.c' }),
+		).toBe('D');
+	});
+	it('displayName 空白串回落 username', () => {
+		expect(deriveUserInitials({ displayName: '   ', username: 'acme_admin' })).toBe('A');
+	});
 	it('空用户回落 U', () => {
 		expect(deriveUserInitials(null)).toBe('U');
 		expect(deriveUserInitials({})).toBe('U');
@@ -219,5 +227,24 @@ describe('UserMenu', () => {
 		await user.click(trigger());
 		const link = screen.getByRole('menuitem', { name: '个人资料' });
 		expect(link).toHaveAttribute('href', 'https://user.autional.cn/acme-corp/profile');
+	});
+
+	it('displayName 优先展示：触发钮与面板头均取 displayName，邮箱退为次行', async () => {
+		const user = userEvent.setup();
+		renderMenu({
+			user: { displayName: 'Demo Admin', username: 'demo-admin', email: 'demo-admin@demo.localhost' },
+		});
+		expect(screen.getByText('Demo Admin')).toBeInTheDocument();
+		expect(screen.queryByText('demo-admin')).not.toBeInTheDocument();
+		await user.click(trigger());
+		// 面板头：displayName + email 次行
+		expect(screen.getAllByText('Demo Admin')).toHaveLength(2);
+		expect(screen.getByText('demo-admin@demo.localhost')).toBeInTheDocument();
+	});
+
+	it('displayName 为空白串时回落 username（既有链保持）', async () => {
+		const user = userEvent.setup();
+		renderMenu({ user: { displayName: '   ', username: 'acme_admin', email: 'a@b.c' } });
+		expect(screen.getByText('acme_admin')).toBeInTheDocument();
 	});
 });

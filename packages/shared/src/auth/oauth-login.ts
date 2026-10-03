@@ -54,7 +54,7 @@ function parseUserFromToken(token?: string, apiUser?: unknown): User {
 				username: ((p as any).custom?.username || (p as any).username) as string,
 				email: p.email as string,
 				status: 'active',
-				avatar_url: p.picture as string,
+				avatarUrl: p.picture as string,
 			} as unknown as User;
 		}
 	}
@@ -269,6 +269,25 @@ export async function handleOAuthCallback(): Promise<void> {
 	}
 	if (!user) {
 		user = { id: '', username: '', email: '' } as User;
+	}
+
+	// OIDC userinfo（oauth 服务经 BFF：/bff/oauth/api/v1/oauth/userinfo）补充展示身份：
+	// id_token 与 /auth/me 都不含展示名（name/nickname/picture）。同样须显式带 access_token
+	// （loginWithTokens 尚未执行，拦截器无 token 可用）。失败静默降级——缺 displayName 时
+	// 消费方按 displayName → username → email 链回落，不影响登录。
+	if (accessToken) {
+		try {
+			const res = await apiClient.get('/oauth/api/v1/oauth/userinfo', {
+				// @generated-api-exempt
+				headers: { Authorization: `Bearer ${accessToken}` },
+			});
+			const info = res.data as { nickname?: string; name?: string; picture?: string };
+			const displayName = (info?.nickname || '').trim() || (info?.name || '').trim();
+			if (displayName) user.displayName = displayName;
+			if (info?.picture) user.avatarUrl = info.picture;
+		} catch {
+			// userinfo 失败不阻断登录（同上，按缺省链回落）
+		}
 	}
 
 	// 兑换成功后落持久层（同 TASK-09 / D8；兑换前的持久值可能来自旧租户）

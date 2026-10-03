@@ -4,6 +4,7 @@ import { ChevronDown, LogOut, Settings, UserRound } from 'lucide-react';
 import { useMenuButton } from '../internal/use-menu-button';
 
 export interface UserMenuUserInfo {
+	displayName?: string | null;
 	username?: string | null;
 	email?: string | null;
 	avatarUrl?: string | null;
@@ -38,7 +39,8 @@ export interface UserMenuProps {
 }
 
 export function deriveUserInitials(user?: UserMenuUserInfo | null): string {
-	const source = user?.username?.trim() || user?.email?.trim() || '';
+	const source =
+		user?.displayName?.trim() || user?.username?.trim() || user?.email?.trim() || '';
 	return source ? source[0]!.toUpperCase() : 'U';
 }
 
@@ -70,7 +72,8 @@ export function UserMenu({
 
 	const { open, setOpen, triggerRef, menuRef, triggerProps, menuProps } = useMenuButton();
 
-	const displayName = user?.username?.trim() || user?.email?.trim() || text.emptyUser;
+	const displayName =
+		user?.displayName?.trim() || user?.username?.trim() || user?.email?.trim() || text.emptyUser;
 	const initials = deriveUserInitials(user);
 	// 统一口径：退出登录恒在末位（APG/NN-g 惯例），其余保持调用方顺序
 	const ordered = [...items].sort(
