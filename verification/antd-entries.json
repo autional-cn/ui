@@ -12,7 +12,8 @@
   ],
   "closedKinds": [
     "Table",
-    "RangePicker"
+    "RangePicker",
+    "Drawer"
   ],
   "tableConvergedSites": [
     "user"
@@ -36,8 +37,8 @@
         "Table": 0,
         "DatePicker": 7,
         "RangePicker": 0,
-        "Drawer": 9,
-        "icons": 350,
+        "Drawer": 0,
+        "icons": 351,
         "other": 912,
         "subpath": 4
       },
@@ -52,7 +53,7 @@
         "Table": 0,
         "DatePicker": 2,
         "RangePicker": 0,
-        "Drawer": 3,
+        "Drawer": 0,
         "icons": 149,
         "other": 273,
         "subpath": 0
@@ -68,7 +69,7 @@
         "Table": 0,
         "DatePicker": 3,
         "RangePicker": 0,
-        "Drawer": 8,
+        "Drawer": 0,
         "icons": 156,
         "other": 277,
         "subpath": 5
