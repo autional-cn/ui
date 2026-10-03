@@ -69,7 +69,12 @@ export type { BootstrapState } from './hooks/useBootstrap';
 export { useSodMode, useIsAuditRestricted } from './hooks/useSodMode';
 export type { SodMode } from './hooks/useSodMode';
 export { useCurrentRole } from './hooks/useCurrentRole';
-export { usePortalCatalog } from './hooks/usePortalCatalog';
+export {
+	usePortalCatalog,
+	isPortalVisible,
+	PLATFORM_TENANT_ID,
+	ADMIN_PLANE_ROLES,
+} from './hooks/usePortalCatalog';
 export type {
 	PortalCatalogEntry,
 	PortalCatalogAudience,

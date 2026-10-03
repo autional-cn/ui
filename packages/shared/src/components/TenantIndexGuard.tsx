@@ -76,7 +76,7 @@ export interface TenantIndexGuardProps {
 function DefaultLoadingSkeleton() {
 	return (
 		<>
-			<style>{`@keyframes authms-guard-spin { to { transform: rotate(360deg); } }`}</style>
+			<style>{`@keyframes autional-guard-spin { to { transform: rotate(360deg); } }`}</style>
 			<div
 				role="status"
 				aria-live="polite"
@@ -96,7 +96,7 @@ function DefaultLoadingSkeleton() {
 						borderRadius: '9999px',
 						border: '3px solid var(--color-border-subtle)',
 						borderTopColor: 'var(--color-brand)',
-						animation: 'authms-guard-spin 0.8s linear infinite',
+						animation: 'autional-guard-spin 0.8s linear infinite',
 					}}
 				/>
 			</div>

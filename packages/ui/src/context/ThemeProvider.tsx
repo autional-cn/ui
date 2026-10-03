@@ -17,7 +17,7 @@ interface ThemeProviderProps {
 	storageKey?: string;
 }
 
-export function ThemeProvider({ children, storageKey = 'authms-theme' }: ThemeProviderProps) {
+export function ThemeProvider({ children, storageKey = 'autional-theme' }: ThemeProviderProps) {
 	const [theme, setTheme] = useState<Theme>(() => {
 		if (typeof window !== 'undefined') {
 			const saved = localStorage.getItem(storageKey) as Theme;

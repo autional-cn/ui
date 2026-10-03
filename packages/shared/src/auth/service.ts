@@ -59,7 +59,7 @@ function emit(event: string, data?: unknown) {
 
 // ============ Cross-tab Sync (BroadcastChannel) ============
 
-const BC_CHANNEL = 'authms-auth';
+const BC_CHANNEL = 'autional-auth';
 let bc: BroadcastChannel | null = null;
 
 function initBroadcastChannel(): void {
@@ -76,7 +76,7 @@ function initBroadcastChannel(): void {
 					// 另一个 tab 触发了登出 → 同步清除本 tab 状态
 					useAuthStore.getState().clearAuth();
 					if (typeof window !== 'undefined') {
-						localStorage.removeItem('authms-auth-v1');
+						localStorage.removeItem('autional-auth-v1');
 						localStorage.removeItem('access_token');
 						localStorage.removeItem('refresh_token');
 					}
@@ -199,7 +199,7 @@ export const AuthService = {
 
 		// 2. 清除所有持久化数据
 		if (typeof window !== 'undefined') {
-			localStorage.removeItem('authms-auth-v1');
+			localStorage.removeItem('autional-auth-v1');
 			localStorage.removeItem('access_token');
 			localStorage.removeItem('refresh_token');
 			localStorage.removeItem('__oauth_bridge_token');
@@ -346,7 +346,7 @@ export const AuthService = {
 		useAuthStore.getState().clearAuth();
 		if (typeof window !== 'undefined') {
 			// 清除 localStorage（同步，立即生效）
-			localStorage.removeItem('authms-auth-v1');
+			localStorage.removeItem('autional-auth-v1');
 			localStorage.removeItem('access_token');
 			localStorage.removeItem('refresh_token');
 		}

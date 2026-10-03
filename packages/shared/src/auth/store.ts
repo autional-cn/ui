@@ -77,7 +77,7 @@ export const useAuthStore = create<AuthState>()(
 				}),
 		}),
 		{
-			name: 'authms-auth-v1',
+			name: 'autional-auth-v1',
 			version: 1,
 			// Custom merge: validate persisted data integrity before merging into store.
 			// This prevents corrupted localStorage entries from silently breaking auth.

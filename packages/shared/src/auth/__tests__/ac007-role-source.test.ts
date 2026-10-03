@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useAuthStore, getCurrentRole } from '../store';
 
 // 注：node 测试环境下 zustand persist 中间件会打印一条无害的 storage 降级警告
-// （"Unable to update item 'authms-auth-v1'"），这是 store.ts 既有 persist 的
+// （"Unable to update item 'autional-auth-v1'"），这是 store.ts 既有 persist 的
 // 标准降级行为，不影响被测的 getCurrentRole 派生逻辑。
 
 const TENANTS = [
