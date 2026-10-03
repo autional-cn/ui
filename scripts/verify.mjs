@@ -32,6 +32,7 @@ const STEPS = [
   { key: 'ds-classes', label: '设计系统组件类生成（导入的组件用到的类必须在产物 CSS 里）', cmd: ['node', 'scripts/check-ds-classes.mjs'] },
   { key: 'non-tenant', label: '业务路由名单（各 portal 注册的非租户首段 vs 自己的路由表）', cmd: ['node', 'scripts/check-non-tenant.mjs'] },
   { key: 'consistency', label: '跨 portal 视觉一致性（antd 主题 / 入口台账棘轮 / 硬编码色 / 组件库份数 / 令牌覆盖 / 分块策略）', cmd: ['node', 'scripts/check-consistency.mjs'] },
+  { key: 'hook-naming', label: 'hooks 命名口径（文件名 kebab-case / hook 函数名 useXxx）', cmd: ['node', 'scripts/check-hook-naming.mjs'] },
   { key: 'visual', label: '站点视觉回归（无产物/无浏览器时自动跳过）', cmd: ['node', 'scripts/visual.mjs', 'check'] },
   { key: 'contrast', label: '对比度 AA（真实页面渲染出来的前景/背景）', cmd: ['node', 'scripts/check-contrast.mjs'] }
 ];
