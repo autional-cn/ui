@@ -21,5 +21,7 @@ export { FormField, useFormFieldA11y } from './FormField';
 export type { FormFieldProps } from './FormField';
 export { PageContainer } from './PageContainer';
 export type { PageContainerProps } from './PageContainer';
+export { AppShell } from './AppShell';
+export type { AppShellProps } from './AppShell';
 export { ConsolePageHeader } from './ConsolePageHeader';
 export type { ConsolePageHeaderProps } from './ConsolePageHeader';
