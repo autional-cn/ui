@@ -21,7 +21,7 @@
 // （theme_color、CDN 版本、tokens.json 的 schema 版本 vs npm 包版本，都是同一句话）。
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve, relative } from 'node:path';
+import { join, resolve, relative, dirname } from 'node:path';
 import { ROOT } from './lib/tokens.mjs';
 
 const AS_JSON = process.argv.includes('--json');
@@ -87,6 +87,44 @@ for (const site of readdirSync(SITES).sort()) {
   }
 
   if (checked || frozenOk !== null) rows.push({ site, deps: checked, loose, frozen: frozenOk === null ? '—' : (frozenOk ? 'Y' : 'N') });
+}
+
+// ── P3 默认入口不得（直接或间接）引入 antd ─────────────────────────────────
+// 为什么这条属于「依赖策略」而不是别处：@autional-cn/ui 的 antd 是 **optional** peerDependency，
+// 而那个 optional 标记成立的前提是**默认入口不 import antd**。
+// 一旦 src/index.ts 的闭包里出现了 antd，所有消费方（含不吃 antd 的 user、5 个 Astro 站、营销站）
+// 都被迫安装它 —— 而 peer 的 optional 只是「不报错」，它**阻止不了**这件事。
+// 所以这条把「默认入口零 antd」从口头承诺变成机器判据。
+// 入口是声明式的：只有 src/antd/ 下的文件允许 import antd。
+{
+  const PKG_SRC = join(ROOT, 'packages', 'ui', 'src');
+  const ANTD_DIR = join(PKG_SRC, 'antd');
+  const seen = new Set();
+  const offenders = [];
+  const isAntdImport = (t) => /from\s+['\"]antd(\/|['\"])/.test(t);
+  const walkImports = (file) => {
+    if (seen.has(file) || !existsSync(file)) return;
+    seen.add(file);
+    const insideAntdEntry = file.startsWith(ANTD_DIR);
+    const text = readFileSync(file, 'utf8');
+    if (!insideAntdEntry && isAntdImport(text)) offenders.push(relative(PKG_SRC, file));
+    for (const m of text.matchAll(/from\s+['\"](\.\.?\/[^'\"]+)['\"]/g)) {
+      const base = join(dirname(file), m[1]);
+      for (const ext of ['.ts', '.tsx', '/index.ts', '/index.tsx']) {
+        if (existsSync(base + ext)) { walkImports(base + ext); break; }
+      }
+    }
+  };
+  const entry = join(PKG_SRC, 'index.ts');
+  if (existsSync(entry)) {
+    walkImports(entry);
+    if (offenders.length) {
+      problems.push('P3 默认入口引入了 antd：' + offenders.join(', ') +
+        ' —— antd 是 optional peerDependency，默认入口必须零 antd；要用 antd 的文件请放进 src/antd/ 并从 ./antd 子路径导出');
+    } else {
+      infos.push('P3 默认入口零 antd（遍历 ' + seen.size + ' 个文件）—— optional peerDependency 的前提成立');
+    }
+  }
 }
 
 if (AS_JSON) console.log(JSON.stringify({ rows, infos, problems }, null, 2));
