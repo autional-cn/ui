@@ -112,14 +112,14 @@ function classesInFile(abs, seen) {
   for (const re of [LIT, LIT_CURLY]) {
     for (const m of text.matchAll(re)) {
       if (!looksLikeClasses(m[1])) continue;
-      for (const t of m[1].trim().split(/\s+/)) out.add(stripVariant(t));
+      for (const t of m[1].trim().split(/\s+/)) out.add(t);
     }
   }
   for (const m of text.matchAll(LIT_STYLE)) {
     if (!looksLikeClasses(m[1])) continue;
     const toks = m[1].trim().split(/\s+/);
     if (!toks.some((t) => SEP.test(t))) continue;   // 见 LIT_STYLE 上方注释
-    for (const t of toks) out.add(stripVariant(t));
+    for (const t of toks) out.add(t);
   }
   for (const m of text.matchAll(/from\s*'(\.\.?\/[^']+)'/g)) {
     const dir = dirname(abs);
