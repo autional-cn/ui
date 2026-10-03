@@ -60,6 +60,7 @@ export {
 	useCurrentTenantId,
 	useTenants,
 } from './hooks/useAuth';
+export { useCurrentTenantIdOr } from './hooks/useCurrentTenantIdOr';
 export type { AuthSnapshot, AuthActions } from './hooks/useAuth';
 export { usePermission } from './hooks/usePermission';
 export type { PermissionResult } from './hooks/usePermission';
