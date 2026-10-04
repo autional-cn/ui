@@ -39,7 +39,7 @@
       "name": "user-invoices-table",
       "root": "../.artifacts/storybook-user",
       "path": "/iframe.html?id=pages-invoices--default&viewMode=story",
-      "note": "**表格外观的静态目标页**（计划 L3）。三个理由让它必须是 Storybook 而不是站点 dist：① 站点是 SPA + 租户路由，静态托管一个带表格的页面需要登录态与后端，只会在基线里留下一张白页；② 这个 story 是**预置查询缓存**渲染真实页面组件（第 25 轮把 vi.mock 拆了才渲染得出来），所以看到的就是生产代码路径；③ 五行数据正好覆盖 success/warning/danger/info/neutral 五档徽标，**徽标只有在真实底色上才能看出对比度够不够** —— 对比度闸门读的是同一份目标清单，所以这一页同时进了两道闸门。产物不随仓库走，先跑：cd sites/user/apps/end-user-portal && pnpm build-storybook --output-dir ../../../../.artifacts/storybook-user（目录不存在时本闸门跳过，与其他目标同一约定）。"
+      "note": "**表格外观的静态目标页**（计划 L3）。三个理由让它必须是 Storybook 而不是站点 dist：① 站点是 SPA + 租户路由，静态托管一个带表格的页面需要登录态与后端，只会在基线里留下一张白页；② 这个 story 是**预置查询缓存**渲染真实页面组件（第 25 轮把 vi.mock 拆了才渲染得出来），所以看到的就是生产代码路径；③ 五行数据正好覆盖 success/warning/danger/info/neutral 五档徽标，**徽标只有在真实底色上才能看出对比度够不够** —— 对比度闸门读的是同一份目标清单，所以这一页同时进了两道闸门。产物不随仓库走，先跑：cd sites/user/apps/end-user-portal && pnpm build-storybook --output-dir ../../../../.artifacts/storybook-user（目录不存在时本闸门跳过，与其他目标同一约定）。**第 28 轮起 story 套真实外壳**（src/test/portal-chrome.tsx）：外框归 AppShell 之后，单独渲染页面在生产里不会出现 —— 那一版基线量的是个假取景。品牌/导航/右上角是占位内容，本目标因此同时量到 user 门户的**外框几何**。"
     }
   ]
 }

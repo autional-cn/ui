@@ -10,6 +10,11 @@
 //   ① 使用设计系统的 <AppShell>（把外壳交出去）；
 //   ② 源码里不再出现自己实现的外壳元素。
 //
+// 第 28 轮加了第二条：**页面外框**（沟槽 p-6 + 内容面）也归外壳。它此前散在四个布局文件里
+// —— 三个控制台各抄了一份逐字相同的面板、user 一份都没有，而 34 个页面又在面板里再补一层内边距，
+// 页面内缩因此在 24px 与 48px 之间随机、同一个门户的相邻两页都能不一样。
+// 判据与顶栏那条同型，两边都验：① 站点源码里不再出现外框标记；② DS 那一份真的实现了外框。
+//
 // 为什么按元素而不是按文件：本轮实测，平台站把 Sidebar.tsx 改成 NavMenu.tsx 之后，
 // 「文件还在」但「外壳已经不在了」—— 按文件数验收会把已经收敛的站判成没收敛。
 // 反过来，一个叫 AppShell.tsx 的站点文件如果里面写着 <Sider>，按文件名验收又会假绿。
@@ -37,7 +42,11 @@ const FORBIDDEN = [
   { re: /const\s*\{[^}]*\bSider\b[^}]*\}\s*=\s*Layout/g, why: '从 antd Layout 解构出 Sider' },
   { re: /const\s*\{[^}]*\bHeader\b[^}]*\}\s*=\s*Layout/g, why: '从 antd Layout 解构出 Header' },
   { re: /<header\b[^>]*className="[^"]*\bsticky\b/g, why: '自己写的 sticky 顶栏' },
-  { re: /<aside\b[^>]*className="[^"]*\b(?:inset-y-0|fixed)\b/g, why: '自己写的固定侧栏' }
+  { re: /<aside\b[^>]*className="[^"]*\b(?:inset-y-0|fixed)\b/g, why: '自己写的固定侧栏' },
+  // 页面外框。这一条挡的是**本轮实测存在过的那种写法**（布局里抄一份 min-h-[calc(100vh…)] 的内容面、
+  // 或给外壳传 contentClassName 调沟槽）。换个写法的外框它挡不住 —— 那就靠评审，不假装闸门能做到。
+  { re: /min-h-\[calc\(100vh/g, why: '自己写的内容面（页面外框归 <AppShell>）' },
+  { re: /contentClassName/g, why: '覆盖外壳的内容区沟槽（留白归 <AppShell>）' }
 ];
 const USES_SHELL = /<AppShell\b/;
 // 先剥注释再扫：本轮实测踩到 —— 迁移后的文件里写着「它过去是 <Sider> 外壳」这句解释，
@@ -57,8 +66,25 @@ function walk(d, out) {
   return out;
 }
 
+// ── DS 那一份真的实现了外框吗 ──────────────────────────────────────────────
+// 与 check-headers 的 H2 同一条教训：站点把外框交出去之后，闸门必须转向 DS，
+// 否则「改用共享外壳」会变成绕过外框契约的后门（外壳里根本没有内容面，而四站源码都是干净的）。
+const SHELL_SRC = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'AppShell.tsx');
 const problems = [];
 const rows = [];
+{
+  // 断言钉在 <main> 那一块上，不在整份文件里找 —— 文件里随便哪处出现 rounded-lg 都不算数。
+  const s = existsSync(SHELL_SRC) ? readFileSync(SHELL_SRC, 'utf8') : '';
+  const main = /<main\b[\s\S]*?<\/main>/.exec(s);
+  const body = main ? main[0] : '';
+  const ok = !!body && /rounded-lg/.test(body) && /bg-\[var\(--color-bg-surface\)\]/.test(body) &&
+    /\bp-6\b/.test(body) && !/contentClassName/.test(s);
+  if (!ok) {
+    problems.push('C13 设计系统的 AppShell 不满足页面外框契约（' +
+      SHELL_SRC.replace(/\\/g, '/') + ' 的 <main> 里需要 rounded-lg + bg-[var(--color-bg-surface)] + p-6，' +
+      '且全文件不含 contentClassName）—— 站点把外框交给它之后，外框就没有人实现了');
+  }
+}
 
 if (!existsSync(SITES_DIR)) {
   console.log('check-shell：本次工作区没有 sites/，跳过（CI 里同样跳过）');
@@ -86,7 +112,7 @@ for (const p of PORTALS) {
       '§9 第 5 条「外壳四份 → 0」）。要么迁移，要么把它从在册清单里去掉并说明理由。');
   }
   for (const h of hits) {
-    problems.push('C13 ' + p.site + '：' + h.file + ' 里仍有「' + h.why + '」—— 自己实现的外壳元素一律改走 <AppShell>（外壳拥有 chrome 与行为，站点只提供内容）。');
+    problems.push('C13 ' + p.site + '：' + h.file + ' 里仍有「' + h.why + '」—— 外壳（含页面外框）拥有 chrome 与行为，站点只提供内容，一律改走 <AppShell>。');
   }
 }
 
