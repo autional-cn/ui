@@ -22,11 +22,32 @@ const T = loadTokens();
 const CORE = stripMeta(T.core);
 const coreFlat = flatten(CORE);
 
-// ── 上下文：profile × 主题 ────────────────────────────────────────────────
+// ── 上下文：profile × 主题 × 静态主题变体 ────────────────────────────────
 const PROFILES = Object.keys(T.profiles);
 const THEMES = ['dark'];
 // 只检查「有覆盖」的 profile：console / marketing 无覆盖，等价于基线，重复计算没有意义
 const EFFECTIVE_PROFILES = PROFILES.filter((p) => Object.keys(flatten(stripMeta(T.profiles[p]))).length > 0);
+// 静态「主题变体」也要进 T08 上下文：它们和 light/dark 一样能整体独立生效，但此前
+// 从未被对比度契约评估过 —— authenticator 变体 on-brand 对 brand 填充只有 2.77:1
+// （审计 F1 家族）就是这样漏掉的（G4 盲区）。
+// 挑选判据沿用 T10 的既有口径（变体与 $extends 展开见下方 T10 注释与 lib/tokens.mjs）：
+//   · $kind:"runtime"（如 auth-tenant）—— 样式表不落地、变量由页面运行期注入，无常量可断言；
+//   · 无 $colorScheme 的浅色面局部覆盖（portal / auth）—— 按设计有意不完整，且 brand 值是
+//     运行期 var(--color-brand-base, …) 表达式，静态对比度不可判定（纳入只会产生假红）。
+const allVariantNodes = variantMap(T);
+const STATIC_THEME_VARIANTS = orderedVariants(T).filter((n) => {
+  if (n === 'dark') return false; // 已由 THEMES 枚举，避免重复
+  const node = allVariantNodes[n];
+  return !!node && node.$kind !== 'runtime' && !!node.$colorScheme;
+});
+const EXCLUDED_VARIANT_CONTEXTS = orderedVariants(T).filter(
+  (n) => n !== 'dark' && !STATIC_THEME_VARIANTS.includes(n),
+);
+function variantExclusionReason(name) {
+  const node = allVariantNodes[name] || {};
+  if (node.$kind === 'runtime') return '运行期变体（$kind:"runtime"）：样式表不落地、变量由页面运行期注入';
+  return '浅色面局部覆盖（无 $colorScheme）：按设计有意不完整，且 brand 为运行期 var() 表达式，静态不可判定';
+}
 function contexts() {
   const out = [];
   for (const theme of ['light'].concat(THEMES)) {
@@ -36,6 +57,11 @@ function contexts() {
     for (const theme of ['light'].concat(THEMES)) {
       out.push({ name: p + '-' + theme, profile: p, variant: theme === 'dark' ? 'dark' : null });
     }
+  }
+  // 静态主题变体（当前 = authenticator）：不带 profile —— 变体块在 tokens.css 里最后加载，
+  // 且 profiles 的深色守卫选择器已显式 :not([data-theme="authenticator"])。
+  for (const v of STATIC_THEME_VARIANTS) {
+    out.push({ name: v, profile: null, variant: v });
   }
   return out;
 }
@@ -277,6 +303,10 @@ if (AS_JSON) {
 } else {
   console.log('令牌 lint：core 叶子 ' + Object.keys(coreFlat).length + ' 条 / profile ' + PROFILES.length + ' 个 / 变体 ' + orderedVariants(T).length + ' 个');
   console.log('  上下文 ' + contexts().length + ' 个 / 对比度检查 ' + contrastChecked + ' 项');
+  if (STATIC_THEME_VARIANTS.length) console.log('  T08 含静态主题变体：' + STATIC_THEME_VARIANTS.join('、'));
+  if (EXCLUDED_VARIANT_CONTEXTS.length) {
+    console.log('  T08 排除变体：' + EXCLUDED_VARIANT_CONTEXTS.map((n) => n + '（' + variantExclusionReason(n) + '）').join('；'));
+  }
   for (const v of variantReport) console.log('  变体 ' + v.variant.padEnd(14) + '覆盖 ' + v.overrides + ' 条');
   console.log('');
   for (const f of errors) console.log('  [ERROR] ' + f.code + ' ' + f.key + '  ' + f.message + (f.detail ? '\n          ' + f.detail : ''));

@@ -395,6 +395,7 @@ declare const tokens: {
         "border-strong": string;
         brand: string;
         "brand-hover": string;
+        "on-brand": string;
       };
       focus: {
         "ring-color": string;

@@ -361,9 +361,9 @@
 --color-info-soft: #0a2540;
 --color-warning-text: var(--color-warning);
 --color-text-disabled: var(--color-neutral-500);
---color-brand: var(--color-primary-500);
---color-brand-hover: var(--color-primary-400);
---color-on-brand: var(--color-on-brand-dark);
+--color-brand: var(--color-primary-600);
+--color-brand-hover: var(--color-primary-500);
+--color-on-brand: var(--color-on-brand-base);
 --color-brand-soft: var(--color-sky-700);
 --color-chart-1: #75abd5;
 --color-chart-2: #bde6f5;

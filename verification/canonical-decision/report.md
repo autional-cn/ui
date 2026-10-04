@@ -118,5 +118,5 @@ legacy 解析为品牌天蓝，canonical 解析为另一档——代码没动，
 
 ---
 
-本报告基于令牌快照 hash 431bff2298a090e4。令牌变更后需重新生成本报告（pnpm delta）。
+本报告基于令牌快照 hash 0b3cc8bde4c6f607。令牌变更后需重新生成本报告（pnpm delta）。
 
