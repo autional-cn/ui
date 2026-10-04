@@ -1,7 +1,18 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UI_I18N_NS, uiText } from '../i18n';
+
+// UP-19：dialog 语义与焦点管理此前整体缺失（裸 div 覆盖层 —— 屏幕阅读器读不到
+// 「这是一个对话框」，Tab 能溜到背后的页面，关闭后焦点丢到 body）。
+// 列在这里的只含可聚焦元素；弹窗内元素在渲染时必然可见，无需再做可见性过滤
+// （jsdom 算不出布局，加了过滤器反而把测试和真实浏览器行为拉开差距）。
+const FOCUSABLE_SELECTOR =
+	'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(root: HTMLElement): HTMLElement[] {
+	return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+}
 
 interface ModalProps {
 	open: boolean;
@@ -40,9 +51,49 @@ export const Modal = React.memo(function Modal({
 		defaultValue: uiText(i18n.language, 'modal.close') ?? '关闭',
 	});
 
+	const panelRef = useRef<HTMLDivElement>(null);
+	const previouslyFocused = useRef<HTMLElement | null>(null);
+	const wasOpen = useRef(false);
+	const dialogId = useId();
+	const titleId = `${dialogId}-title`;
+	const descriptionId = `${dialogId}-description`;
+
+	// 打开的那次渲染里记下「开弹窗前的焦点」。必须赶在提交之前 —— 消费方若在弹窗里标了
+	// autoFocus，React 会在提交期就把焦点送进输入框，效果函数里再读就晚了（读到的是输入框自己，
+	// 我们就把「从哪来」弄丢了，关闭时也无处归还）。读 activeElement 无副作用，重复渲染幂等。
+	if (open && !wasOpen.current) {
+		previouslyFocused.current = (document.activeElement as HTMLElement | null) ?? null;
+	}
+	wasOpen.current = open;
+
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent) => {
-			if (e.key === 'Escape') onClose();
+			if (e.key === 'Escape') {
+				onClose();
+				return;
+			}
+			if (e.key !== 'Tab') return;
+			const panel = panelRef.current;
+			if (!panel) return;
+			const focusable = getFocusableElements(panel);
+			if (focusable.length === 0) {
+				e.preventDefault();
+				panel.focus();
+				return;
+			}
+			const first = focusable[0];
+			const last = focusable[focusable.length - 1];
+			const active = document.activeElement as HTMLElement | null;
+			const inside = active != null && panel.contains(active);
+			if (e.shiftKey) {
+				if (!inside || active === first) {
+					e.preventDefault();
+					last.focus();
+				}
+			} else if (!inside || active === last) {
+				e.preventDefault();
+				first.focus();
+			}
 		},
 		[onClose],
 	);
@@ -58,20 +109,43 @@ export const Modal = React.memo(function Modal({
 		};
 	}, [open, handleKeyDown]);
 
+	useEffect(() => {
+		if (!open) return;
+		const panel = panelRef.current;
+		if (panel) {
+			// 焦点已在面板内（React 提交期把 autoFocus 元素聚焦了）就不动它；否则移入首个可聚焦元素。
+			const active = document.activeElement as HTMLElement | null;
+			if (!active || !panel.contains(active)) {
+				const focusable = getFocusableElements(panel);
+				(focusable[0] ?? panel).focus();
+			}
+		}
+		return () => {
+			// 焦点归还只在元素还在文档里时做 —— 触发按钮随页面跳转消失的场景静默跳过。
+			if (previouslyFocused.current?.isConnected) previouslyFocused.current.focus();
+		};
+	}, [open]);
+
 	if (!open) return null;
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
 			<div className="absolute inset-0" onClick={onClose} />
 			<div
-				className={`relative w-full ${maxWidthClasses[maxWidth]} rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-lg ${className}`}
+				ref={panelRef}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={title ? titleId : undefined}
+				aria-describedby={title && description ? descriptionId : undefined}
+				tabIndex={-1}
+				className={`relative w-full ${maxWidthClasses[maxWidth]} rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-lg outline-none ${className}`}
 			>
 				{title && (
 					<div className="flex items-start justify-between gap-4 border-b border-[var(--color-border-subtle)] px-6 py-4">
 						<div>
-							<h3 className="text-base font-semibold text-[var(--color-text-primary)]">{title}</h3>
+							<h3 id={titleId} className="text-base font-semibold text-[var(--color-text-primary)]">{title}</h3>
 							{description && (
-								<p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">{description}</p>
+								<p id={descriptionId} className="mt-0.5 text-sm text-[var(--color-text-secondary)]">{description}</p>
 							)}
 						</div>
 						<button
