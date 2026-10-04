@@ -64,6 +64,21 @@ describe('Alert', () => {
 		expect((onlyTitle.firstElementChild as HTMLElement).textContent).toBe('只有标题');
 	});
 
+	it('action 落在右侧（与关闭按钮同排）', () => {
+		render(
+			<Alert variant="warning" title="试用即将到期" action={<button>升级</button>} closable closeLabel="收起">
+				到期后数据会被删除。
+			</Alert>
+		);
+		const el = screen.getByRole('alert');
+		expect(screen.getByRole('button', { name: '升级' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: '收起' })).toBeTruthy();
+		// 顺序：内容 → 动作 → 关闭
+		const texts = Array.from(el.children).map((c) => (c.textContent || '').trim());
+		expect(texts[texts.length - 1]).toBe('');
+		expect(texts[texts.length - 2]).toBe('升级');
+	});
+
 	it('className 是追加（配色不能被调用方换掉）', () => {
 		const { container } = render(<Alert className="mt-4">x</Alert>);
 		const cls = (container.firstElementChild as HTMLElement).className;

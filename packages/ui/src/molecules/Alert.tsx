@@ -32,6 +32,15 @@ export interface AlertProps {
 	children?: React.ReactNode;
 	/** 图标：默认按档位给一个；显式传 `null` 可以不要图标。 */
 	icon?: React.ReactNode | null;
+	/**
+	 * 右侧动作区（一个按钮/链接）。
+	 *
+	 * 第 39 轮补上：D18 当初写的是「`action` 在舰队里 0 处使用」，**那条证据是错的** ——
+	 * 它来自「数 `<Alert` 出现次数」，而从没数过这些 Alert 用了哪些属性。
+	 * 按属性数过之后：三个控制台里 `action` 有 **5 个**真实消费者（security 4 + admin 1），
+	 * 那 5 处因此一直收不过来（它们不是配色不同，是形态不同）。够「≥2 份」的口径，所以补上。
+	 */
+	action?: React.ReactNode;
 	/** 是否可关闭（受控：真正的关闭动作在 onClose 里）。 */
 	closable?: boolean;
 	/** 点关闭按钮时调用。 */
@@ -55,6 +64,7 @@ export const Alert = React.memo(function Alert({
 	title,
 	children,
 	icon,
+	action,
 	closable = false,
 	onClose,
 	closeLabel = '关闭',
@@ -74,6 +84,7 @@ export const Alert = React.memo(function Alert({
 				{title ? <p className="font-semibold">{title}</p> : null}
 				{children ? <div className={title ? 'mt-1' : ''}>{children}</div> : null}
 			</div>
+			{action ? <div className="ml-auto shrink-0 self-center pl-2">{action}</div> : null}
 			{closable ? (
 				<button
 					type="button"
