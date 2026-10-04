@@ -32,14 +32,33 @@ describe('AppShell', () => {
 		const main = container.querySelector('main') as HTMLElement;
 		expect(main.className).toContain('overflow-auto');
 		expect(main.className).toContain('min-h-0');
-		expect(main.className).toContain('p-4 lg:p-8');
+		expect(main.className).toContain('p-6');
 	});
 
 	it('内容内边距可覆盖（个别页面不需要默认留白时可以换掉）', () => {
 		const { container } = setup({ contentClassName: 'p-0' });
 		const main = container.querySelector('main') as HTMLElement;
 		expect(main.className).toContain('p-0');
-		expect(main.className).not.toContain('p-4 lg:p-8');
+		expect(main.className).not.toContain('p-6');
+	});
+
+	it('页面外框归外壳：内容被包在「内容面」里，且面板在 main 之内', () => {
+		const { container } = setup();
+		const main = container.querySelector('main') as HTMLElement;
+		const surface = main.firstElementChild as HTMLElement;
+		expect(surface).toBeTruthy();
+		expect(surface.className).toContain('rounded-lg');
+		expect(surface.className).toContain('bg-[var(--color-bg-surface)]');
+		expect(surface.className).toContain('p-6');
+		expect(surface.textContent).toContain('content');
+	});
+
+	it('内容面的最小高度由顶栏令牌推导，不写死像素', () => {
+		// 112px = 顶栏 64px + 内容沟槽上下各 24px。写死会在顶栏改高度那天悄悄错位。
+		const { container } = setup();
+		const surface = (container.querySelector('main') as HTMLElement).firstElementChild as HTMLElement;
+		expect(surface.className).toContain('min-h-[calc(100vh-var(--layout-header-height)-3rem)]');
+		expect(surface.className).not.toContain('100vh-112px');
 	});
 
 	it('移动端抽屉：未打开时不渲染遮罩，也不平移', () => {
