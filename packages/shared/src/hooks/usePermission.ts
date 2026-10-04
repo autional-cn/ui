@@ -21,14 +21,26 @@ export interface PermissionResult {
 
 const PERMISSION_MAP: Record<string, string[]> = {
 	'user:create': ['tenant:user:read'],
-	'user:read': ['tenant:user:read', 'tenant:dashboard:read', 'self:profile:read'],
+	// B1 裁撤（TASK-AB1-12）：去掉 'tenant:user:read' —— member/guest 仅持 user:read 不再见 /users；
+	// user_manager 经 'user:create' 仍映射到 'tenant:user:read'（不回归）。
+	'user:read': ['tenant:dashboard:read', 'self:profile:read'],
 	'user:update': ['tenant:user:read'],
 	'user:delete': ['tenant:user:read'],
 	'role:create': ['tenant:role:read'],
-	'role:read': ['tenant:role:read'],
+	// B2 裁撤（TASK-AB1-12）：role:read 不再映射 'tenant:role:read' —— security_admin
+	// （11 码集仅 role:read）不再见 /roles 与 /role-activations；无其他映射源可授予导航键。
+	'role:read': [],
 	'role:update': ['tenant:role:read'],
 	'role:delete': ['tenant:role:read'],
 	'audit:read': ['tenant:audit:read', 'tenant:compliance:read'],
+	// D4 补源（TASK-AB1-12）：NHI 父键 + 叶（/agents、/robots、/devices、/policies/nhi）可见性
+	'agent:read': ['tenant:nhi:read'],
+	'robot:read': ['tenant:nhi:read'],
+	'device:read': ['tenant:nhi:read'],
+	// D4 补源（TASK-AB1-12）：/status 监控面（status:read）
+	'status:read': ['tenant:monitor:read'],
+	// D4 补源（TASK-AB1-12）：/oauth-clients 开发者面（oauth:read）
+	'oauth:read': ['tenant:oauth:read'],
 	'profile:read': ['tenant:profile:read'],
 	'profile:write': ['tenant:profile:read'],
 	'profile:archive': ['tenant:profile:read'],

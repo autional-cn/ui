@@ -46,6 +46,8 @@ function setupInterceptors(instance: AxiosInstance) {
 		}
 
 		// 请求体 camelCase → snake_case 转换（后端 Go 期望 snake_case）
+		// 【契约指针】请求参数/体构造一律用 camel 书面写，键名转换由本拦截器承担；
+		// 分页参数请经 shared `toPageParams`（utils/page.ts）构造，勿手写 snake 键字面量。
 		if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
 			config.data = snakeCaseKeys(config.data);
 		}
@@ -97,6 +99,9 @@ function setupInterceptors(instance: AxiosInstance) {
 				}
 
 				// PascalCase → camelCase 转换
+				// 【契约指针】响应键名转换单点在拦截器；页面读取形状请用
+				// `extractList` / `extractItem`（唯一形状适配点，utils/response.ts），
+				// 分页归一用 `fromPageResult`（utils/page.ts）——勿在页面里手写转换/解包。
 				res.data = camelCaseKeys(payload);
 			}
 

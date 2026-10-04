@@ -126,17 +126,22 @@ export function RequireAuth({
 	}
 
 	// status === 'ready' or 'authenticated'
+	// 守卫三原则（ADR-AB1-01 / A-445 修复口径）：
+	//   ① 精确角色相等：allowedRoles.includes(role) 直通——禁止任何子串/前缀判定
+	//      （历史缺陷：权限码对角色白名单做子串包含判定，security_admin 借 14 条
+	//      `*:admin` 权限码穿透一切含 'admin' 的白名单路由 = A-445）；
+	//   ② '*' 单豁免：持全量通配 '*' 的非白名单角色放行（唯一豁免通道）；
+	//   ③ 空权限 fail-closed：非白名单角色且无 '*' ⇒ 拒绝（fallback / null），
+	//      空权限数组不再构成放行旁路。
+	// role === null 保持穿透为锁定现语义（叠加语义）：更严闸门（AuthGuard /
+	// PortalGuard）在更外层裁决未知角色，本组件不把 null 判为拒绝
+	// （对抗用例④为防误改回归锁，改前先改裁定）。
 	if (allowedRoles && allowedRoles.length > 0) {
 		const role = AuthService.getCurrentRole();
 		if (role && !allowedRoles.includes(role)) {
 			const permissions = AuthService.getPermissions();
-			if (!permissions || permissions.length === 0) {
-				return loadingFallback ? <>{loadingFallback}</> : <>{children}</>;
-			}
-			const hasAdminPermission = permissions.some(
-				(p: string) => p === '*' || allowedRoles.some((r) => p.includes(r)),
-			);
-			if (!hasAdminPermission) {
+			const hasWildcard = !!permissions && permissions.some((p: string) => p === '*');
+			if (!hasWildcard) {
 				if (fallback) return <>{fallback}</>;
 				return null;
 			}

@@ -206,6 +206,9 @@ export { getVapidPublicKey, subscribeBrowserPush, unsubscribeBrowserPush } from 
 // Utils
 export { urlBase64ToUint8Array } from './utils/browser';
 export { camelCaseKeys, snakeCaseKeys } from './utils/case';
+// 分页/形状单点（H008 收敛口径）：新页面一律经 toPageParams / fromPageResult 适配
+export { toPageParams, fromPageResult } from './utils/page';
+export type { PageParams, PageResult } from './utils/page';
 export { extractApiErrorMessage, extractApiError, createHandleApiError } from './utils/error';
 export {
 	extractList,

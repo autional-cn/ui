@@ -1,6 +1,13 @@
 /**
  * Standardized API response unwrapping utilities.
  * Replaces ad-hoc `res?.data?.items ?? res?.data ?? []` patterns across all apps.
+ *
+ * 【契约声明 · 唯一形状适配点】本文件是前端读取响应的**唯一形状适配点**：
+ *   - 信封解包（{code,message,data} 的 data/items 分支）与 items/扁平双分支兼容在此收口；
+ *   - snake→camel 深转换由 `api/client.ts` 响应拦截器（:100）承担，本文件不做键名转换。
+ * 新页面禁止再写 `res?.data?.items ?? res?.data ?? []` 式手搓解包——列表用
+ * `extractList` / `extractListResult`，单条用 `extractItem`，分页参数与归一用
+ * `utils/page.ts` 的 `toPageParams` / `fromPageResult`（见 index.ts 导出）。
  */
 
 export interface PaginationInfo {
@@ -14,6 +21,7 @@ export interface ListResult<T> {
 	pagination: PaginationInfo;
 }
 
+/** 列表形状适配唯一入口（信封解包 + items/扁平双分支兼容；键名已为 camel）。 */
 export function extractList<T = Record<string, any>>(res: unknown): T[] {
 	if (!res) return [];
 	if (Array.isArray(res)) return res as T[];
@@ -23,6 +31,7 @@ export function extractList<T = Record<string, any>>(res: unknown): T[] {
 	return Array.isArray(items) ? (items as T[]) : [];
 }
 
+/** 单条形状适配唯一入口（信封解包；键名已为 camel）。新页面一律经此读取。 */
 export function extractItem<T = Record<string, any>>(res: unknown): T | null {
 	if (!res) return null;
 	const r = res as Record<string, unknown>;
