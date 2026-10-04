@@ -21,7 +21,7 @@ import { X } from 'lucide-react';
 // 顶栏高度走 var(--layout-header-height)：第 13 道闸门（顶栏契约）认这个令牌，
 // 写死 h-16 会被它判红 —— 外壳必须满足同一份契约。
 //
-// **页面外框也归外壳**（第 28 轮）：沟槽（contentClassName，默认 p-6）+ 内容面（白色圆角面板）。
+// **页面外框也归外壳**（第 28 轮）：沟槽（p-6）+ 内容面（白色圆角面板）。
 // 这条边界不是审美选择，是「同一个东西只能有一个所有者」：外框原本分散在 4 个布局文件里，
 // 结果三个控制台各抄了一份逐字相同的面板、user 一份都没有，而 34 个页面又在面板里再补一层内边距
 // —— 页面内缩因此在 24px 与 48px 之间随机，同一个门户的相邻两页都能不一样。
@@ -47,8 +47,6 @@ export interface AppShellProps {
 	closeLabel?: string;
 	/** 桌面端侧栏是否收起（只影响宽度：w-64 ↔ w-16）。 */
 	sidebarCollapsed?: boolean;
-	/** 内容区**外层**的类名（沟槽）。默认 p-6 —— 与三个控制台原有的 `contentClassName="p-6"` 同值。 */
-	contentClassName?: string;
 	/** 追加类名。 */
 	className?: string;
 }
@@ -64,7 +62,6 @@ export const AppShell = React.memo(function AppShell({
 	onMobileClose,
 	closeLabel = 'Close menu',
 	sidebarCollapsed = false,
-	contentClassName = 'p-6',
 	className = '',
 }: AppShellProps) {
 	return (
@@ -113,7 +110,8 @@ export const AppShell = React.memo(function AppShell({
 
 				    min-height 用顶栏令牌表达：112px = 顶栏 64px + 内容区上下沟槽各 24px（p-6），
 				    写成 calc 之后顶栏高度一变它跟着变 —— 写死的 112 会在顶栏改高度那天悄悄错位。 */}
-				<main className={`min-h-0 flex-1 overflow-auto ${contentClassName}`}>
+				{/* 沟槽写死在外壳里：它同时是四站唯一的留白来源。放在调用方手里 = 又允许四个门户各调各的。 */}
+				<main className="min-h-0 flex-1 overflow-auto p-6">
 					<div className="min-h-[calc(100vh-var(--layout-header-height)-3rem)] rounded-lg bg-[var(--color-bg-surface)] p-6">
 						{children}
 					</div>

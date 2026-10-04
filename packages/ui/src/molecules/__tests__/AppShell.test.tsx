@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { AppShell } from '../AppShell';
 
 const setup = (props: Partial<React.ComponentProps<typeof AppShell>> = {}) =>
@@ -35,11 +37,11 @@ describe('AppShell', () => {
 		expect(main.className).toContain('p-6');
 	});
 
-	it('内容内边距可覆盖（个别页面不需要默认留白时可以换掉）', () => {
-		const { container } = setup({ contentClassName: 'p-0' });
-		const main = container.querySelector('main') as HTMLElement;
-		expect(main.className).toContain('p-0');
-		expect(main.className).not.toContain('p-6');
+	it('沟槽没有出口：不留「各站自己调留白」的口子（第 28 轮）', () => {
+		// 证否式断言：留白一旦有了调用方开关，四个门户迟早各调各的 —— 这正是第 28 轮收掉的那件事。
+		// 类型在运行时被抹掉，所以直接读源码。
+		const src = readFileSync(join(process.cwd(), 'src', 'molecules', 'AppShell.tsx'), 'utf8');
+		expect(src).not.toContain('contentClassName');
 	});
 
 	it('页面外框归外壳：内容被包在「内容面」里，且面板在 main 之内', () => {
