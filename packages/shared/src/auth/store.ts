@@ -9,6 +9,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types';
+import { traceRedirect } from './auth-trace';
 
 interface AuthState {
 	// State
@@ -197,10 +198,17 @@ export function loginWithTokens(
  * 退出登录（清除认证状态 + localStorage/cookie）
  * 委托给 AuthService.logout() 统一实现
  * 使用动态 import 避免 circular dependency (service.ts → store.ts)
+ *
+ * redirectTo（U350）：显式落点（会话过期→auth /error、注销完成→/<slug>/login?account_deleted=true 等
+ * 旗标页）——清理完成后整页前往。缺省仅清会话、不导航；注意与 useLogout 口径区分：该 hook 走
+ * buildLogoutUrl 登出意图流（logout=1 交入口路由定落点），不得用于需要保留业务 query 旗标的目标。
  */
-export async function logout(_redirectTo?: string): Promise<void> {
+export async function logout(redirectTo?: string): Promise<void> {
 	const { AuthService } = await import('./service');
-	return AuthService.logout();
+	await AuthService.logout();
+	if (redirectTo) {
+		traceRedirect(redirectTo, { reason: 'logout', assign: true });
+	}
 }
 
 function decodeJwtPayload(token: string): { exp?: number } | null {

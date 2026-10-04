@@ -19,20 +19,20 @@ function setupInterceptors(instance: AxiosInstance) {
 	// ============ Request Interceptor ============
 	instance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
 		// 预判式 Token 刷新：如果 Token 已过期或即将过期（60s 缓冲），先刷新再发请求
+		// U352：刷新成功只替换本次 bearer —— 不得提前 return，否则跳过后方全部注入
+		// （X-Tenant-ID / namespace / body·params snakeCase / entry-plane / traceparent）。
 		const token = AuthService.getAccessToken();
+		let bearer = token;
 		if (token && AuthService.isTokenExpired(token)) {
 			try {
 				const newToken = await AuthService.refreshToken();
-				if (newToken) {
-					config.headers.Authorization = `Bearer ${newToken}`;
-					return config;
-				}
+				if (newToken) bearer = newToken;
 			} catch (e) {
 				console.warn('[API] token pre-refresh failed', (e as Error)?.message || '');
 			}
 		}
-		if (token) {
-			config.headers.Authorization = `Bearer ${token}`;
+		if (bearer) {
+			config.headers.Authorization = `Bearer ${bearer}`;
 		}
 
 		const tenantId = AuthService.getCurrentTenantId();

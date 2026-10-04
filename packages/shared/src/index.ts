@@ -88,7 +88,8 @@ export { API as API_PATHS } from './constants/api-paths';
 
 // Config
 export {
-	getAUTH_PAGES_URL as AUTH_PAGES_URL,
+	// U351：AUTH_PAGES_URL 别名导出已移除（字符串模板误用会静默产出函数源码）；
+	// 消费方一律 `getAUTH_PAGES_URL()`（其余别名族 93 行起保留，登记为同族潜伏面）。
 	getAUTH_PAGES_URL,
 	getADMIN_CONSOLE_URL as ADMIN_CONSOLE_URL,
 	getADMIN_CONSOLE_URL,
