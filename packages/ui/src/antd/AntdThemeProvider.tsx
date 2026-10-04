@@ -17,6 +17,11 @@ import { App as AntdApp, ConfigProvider, theme as antdAlgorithm } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
 import { useTranslation } from 'react-i18next';
+// UP-31：antd 的 locale 只提供格式串（如 yearFormat 'YYYY年'），日期面板的月份/星期缩写
+// 由 rc-picker 经 `dayjs().locale(lang.locale).localeData()` 取 —— locale 定义未加载时
+// dayjs 静默回落 'en'，面板呈「2026年 / Oct / Su Mo」中英混排。在此加载 zh-cn 定义
+// （en 为 dayjs 内置默认，无需加载），所有挂本桥的门户日期控件一并生效。
+import 'dayjs/locale/zh-cn';
 // antd 主题由设计系统下发，这里**不写死任何色值**。
 // （控制台此前硬编码过 5 个色值 + borderRadius:6，那是 KI-011：令牌变更传导不到，各控制台各自漂移。）
 import antdTheme from '@autional-cn/tokens/antd-theme';

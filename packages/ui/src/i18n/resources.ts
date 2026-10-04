@@ -29,6 +29,9 @@ export const uiI18nResources: Record<'zh-CN' | 'en-US', Record<string, string>> 
 		'pageStatus.loading': '加载中…',
 		'pageStatus.loadError': '数据加载失败',
 		'pageStatus.retry': '重试',
+		// ThemeToggle 默认文案（UP-04：原为组件内硬编码中文，EN 站点顶栏出现中文标签）
+		'theme.toggleDark': '切换到深色模式',
+		'theme.toggleLight': '切换到浅色模式',
 	},
 	'en-US': {
 		'portal.switcher': 'Switch portal',
@@ -47,5 +50,7 @@ export const uiI18nResources: Record<'zh-CN' | 'en-US', Record<string, string>> 
 		'pageStatus.loading': 'Loading...',
 		'pageStatus.loadError': 'Data loading failed',
 		'pageStatus.retry': 'Retry',
+		'theme.toggleDark': 'Switch to dark mode',
+		'theme.toggleLight': 'Switch to light mode',
 	},
 };
