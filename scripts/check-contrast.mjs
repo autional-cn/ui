@@ -132,6 +132,12 @@ const PROBE = () => {
     if ((el.textContent || '').trim()) continue;
     const svg = el.querySelector('svg');
     if (!svg) continue;
+    // 可见性要看**控件本身**，不能看那个 <svg>：svg 自己的 computed display 是 block，
+    // 即使祖先被 display:none 隐藏 —— 第 34 轮实测踩到：闸门唯一量到的那个「图标控件」
+    // 其实是 `display:none` 的移动端抽屉关闭按钮（它在 1440 视口下根本不渲染）。
+    // 用 getClientRects().length === 0 判「没有渲染」，它同时覆盖 display:none 祖先、零尺寸、
+    // visibility:hidden 这些情况。**假的样本和没有样本一样坏**。
+    if (el.getClientRects().length === 0) continue;
     const cs = getComputedStyle(svg);
     if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) continue;
     const stroke = cs.stroke && cs.stroke !== 'none' ? parse(cs.stroke) : null;
@@ -171,6 +177,7 @@ const targets = CFG.targets || [];
 let port = 19060;
 let checked = 0;
 let iconChecked = 0;
+const iconlessTargets = [];
 let skipped = 0;
 const worst = [];
 for (const t of targets) {
@@ -222,6 +229,7 @@ for (const t of targets) {
     // ── 非文字对比度（1.4.11）：图标控件的图形 ≥3:1 ──────────────────────────
     const icons = res.nonText || [];
     iconChecked += icons.length;
+    if (icons.length === 0) iconlessTargets.push(t.name);
     for (const ic of icons) {
       if (ic.ratio < 3) {
         problems.push('AA2 ' + t.name + '：图标控件 ' + ic.sel + ' 的图形对比度 ' + ic.ratio + ':1 < 3:1（前景 rgb(' +
@@ -279,6 +287,12 @@ if (AS_JSON) {
     (skipped ? '（另有 ' + skipped + ' 段因背景是图像或渐变而无法静态判定，已跳过）' : ''));
   console.log('');
   for (const i of info) console.log('  [INFO ] ' + i);
+  if (iconChecked === 0) {
+    warns.push('AA2 四个目标页里一个**可见的**图标控件都没有量到 —— 「零样本不是通过」：这条判据现在覆盖不到真实顶栏里那几个纯图标按钮' +
+      '（它们只出现在真实门户外壳里，而 user 那条目标页的外壳来自 story 取景框的占位 chrome）。缺口登记为 L24');
+  } else if (iconlessTargets.length) {
+    info.push('AA2 未量到图标控件的目标页：' + iconlessTargets.join(' / '));
+  }
   for (const w of warns) console.log('  [WARN ] ' + w);
   for (const a of active) console.log('  [ERROR] ' + a);
   console.log('');
