@@ -74,7 +74,9 @@ export const Result = React.memo(function Result({
 			{title ? (
 				<h2 className={`mt-4 text-lg font-semibold ${tinted ? '' : 'text-[var(--color-text-primary)]'}`}>{title}</h2>
 			) : null}
-			{description ? <p className={`mt-2 text-sm ${tinted ? '' : textTone(variant)}`}>{description}</p> : null}
+			{/* 用 div 而不是 p：description 允许放块级内容（控制台的模拟登录页往里放了 antd 的 <Space>，
+			    它是一个 div —— 塞进 <p> 里就是非法嵌套，React 会在开发模式告警、浏览器会把 DOM 拆开）。 */}
+			{description ? <div className={`mt-2 text-sm ${tinted ? '' : textTone(variant)}`}>{description}</div> : null}
 			{action ? <div className="mt-6 flex flex-wrap items-center justify-center gap-3">{action}</div> : null}
 		</div>
 	);

@@ -30,9 +30,13 @@ describe('Result', () => {
 	it('说明文字永远用 -text 那一档，不许出现裸的语义色', () => {
 		for (const v of ['success', 'warning', 'danger', 'info'] as const) {
 			const { container, unmount } = render(<Result variant={v} description="说明" />);
-			const p = container.querySelector('p') as HTMLElement;
-			expect(p.className).toContain('text-' + v + '-text');
-			expect(p.className).not.toMatch(new RegExp('text-' + v + '(?!-text)'));
+			// description 渲染在 div 里（允许块级内容），所以按文本内容找那个容器。
+			// 取**叶子**那个 div：根容器的 textContent 也是「说明」（没有标题时），只按文本找会取到根。
+			const d = Array.from(container.querySelectorAll('div')).find(
+				(x) => x.textContent === '说明' && x.querySelector('div') === null
+			) as HTMLElement;
+			expect(d.className).toContain('text-' + v + '-text');
+			expect(d.className).not.toMatch(new RegExp('text-' + v + '(?!-text)'));
 			unmount();
 		}
 	});
