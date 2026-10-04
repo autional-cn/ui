@@ -873,6 +873,10 @@ if (!existsSync(PALETTE_PATH)) {
   const isHandCard = (cls) => {
     if (!SURFACES.some((s) => cls.includes(s))) return false;
     if (/bg-(info|danger|success|warning|amber|primary)-/.test(cls)) return false; // 着色提示块归 Alert 那一类，见 L20
+    // 边框带语义色的同样排除：那 5 处是「结果/状态卡」（错误态、成功态、危险区），
+    // 设计系统既没有 Alert 也没有带语义边框的卡片变体 —— 第一版迁移把这 5 处的边框色吃掉了，
+    // 是回退时逐条比对才发现的：**判据的范围要跟着「设计系统有没有这个能力」走**。
+    if (/border-(info|danger|success|warning|amber|primary)-/.test(cls)) return false;
     if (cls.includes('hover:') || cls.includes('animate-pulse') || cls.includes('absolute')) return false; // 可点行 / 骨架 / 浮层
     if (!cls.includes('rounded-lg')) return false;
     const toks = cls.split(/\s+/);
