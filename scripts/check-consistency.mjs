@@ -33,6 +33,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from '
 import { join, resolve, relative, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT, loadTokens, stripMeta, flatten } from './lib/tokens.mjs';
+import { PORTALS } from './lib/portals.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -855,6 +856,65 @@ if (!existsSync(PALETTE_PATH)) {
     }
   }
   info.push('C11 非设计系统色阶：' + pTotal + ' 处，分布在 ' + Object.keys(paletteCounts).length + ' 个站点；已 closed 的键：' + ((pReg.closedKeys || []).join(' / ') || '无'));
+}
+
+// ── C12 手写卡片容器（硬零 + 设计系统那一份的规格）──────────────────────
+// 「区块容器」是四站里最后一件形态各异的通用件：控制台 363 张 antd Card + 46 处 <SectionCard>，
+// 而 user 门户 62 处手写 —— rounded-lg + border + bg-white + p-5/p-6 + shadow-sm 的排列组合有 27 种
+// （其中 3 处还写着 `bg-card` 这个**根本不存在的类**，等于没有底色）。
+// 收敛之后判据是硬零，不是棘轮：四站在册的手写卡片容器 = 0。
+// 两边都验（同 H1/H2/C13 的形状）——站点侧干净了不等于设计系统那一份是对的：
+//   ① 站点侧：源码里 0 处「中性面 + 边框 + rounded-lg」的手写容器；
+//   ② DS 侧：SectionCard 必须落在设计系统的档位上（rounded-lg / border-subtle / bg-surface）。
+// 第 30 轮实测：收敛后四站都是 0，所以这里可以是硬零而不是台账。
+{
+  const BT = String.fromCharCode(96);
+  const SURFACES = ['bg-white', 'bg-card', 'bg-[var(--color-bg-surface)]'];
+  const isHandCard = (cls) => {
+    if (!SURFACES.some((s) => cls.includes(s))) return false;
+    if (/bg-(info|danger|success|warning|amber|primary)-/.test(cls)) return false; // 着色提示块归 Alert 那一类，见 L20
+    if (cls.includes('hover:') || cls.includes('animate-pulse') || cls.includes('absolute')) return false; // 可点行 / 骨架 / 浮层
+    if (!cls.includes('rounded-lg')) return false;
+    const toks = cls.split(/\s+/);
+    if (!toks.includes('border') && !toks.some((t) => t.startsWith('border-'))) return false;
+    return true;
+  };
+  // ── 度量器自检：正例必须命中、反例必须不命中（C11 同款）
+  const selfPos = isHandCard('rounded-lg border border-neutral-200 bg-white p-6 shadow-sm');
+  const selfNeg1 = isHandCard('rounded-lg border border-info-soft bg-info-soft p-4');
+  const selfNeg2 = isHandCard('rounded-lg border border-neutral-200 bg-white p-4 hover:shadow-md');
+  const selfNeg3 = isHandCard('rounded-lg border border-neutral-200 bg-white p-4');
+  if (!selfPos || selfNeg1 || selfNeg2 || !selfNeg3) {
+    problems.push('C12 度量器自检失败（正例 ' + (selfPos ? 1 : 0) + '、着色 ' + (selfNeg1 ? 1 : 0) + '、可点 ' + (selfNeg2 ? 1 : 0) + '、非卡片 ' + (selfNeg3 ? 0 : 1) + '）——手写卡片计数解析器出错了，硬零因此失去意义');
+  }
+  const CARD_RE = new RegExp('<div\\s+className=(?:"([^"]*)"|\\{' + BT + '([^' + BT + ']*)' + BT + '\\})', 'g');
+  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
+  let total = 0;
+  const detail = [];
+  for (const site of PORTALS.map((p) => p.site)) {
+    if (!SITES_HAS(site)) continue;
+    let n = 0;
+    for (const file of walk(join(SITES, site), [], (x) => /\.(tsx|jsx)$/.test(x), SKIP)) {
+      const t = strip(readFileSync(file, 'utf8'));
+      CARD_RE.lastIndex = 0; let m;
+      while ((m = CARD_RE.exec(t))) {
+        const cls = (m[1] || m[2] || '').replace(/\s+/g, ' ').trim();
+        if (isHandCard(cls)) { n++; detail.push(site + '/' + file.slice(join(SITES, site).length + 1).replace(/\\/g, '/') + ' :: ' + cls.slice(0, 70)); }
+      }
+    }
+    total += n;
+    if (n > 0) {
+      problems.push('C12 ' + site + ' 里有 ' + n + ' 处手写卡片容器 —— 区块容器一律走设计系统的 <SectionCard>（它固定了圆角/边框/底色/阴影与内边距档位）。前几处：' + detail.slice(0, 3).join(' | '));
+    }
+  }
+  const SECTION_CARD = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'SectionCard.tsx');
+  const sc = existsSync(SECTION_CARD) ? strip(readFileSync(SECTION_CARD, 'utf8')) : '';
+  const scOk = /rounded-lg/.test(sc) && /border-\[var\(--color-border-subtle\)\]/.test(sc) && /bg-\[var\(--color-bg-surface\)\]/.test(sc);
+  if (!scOk) {
+    problems.push('C12 设计系统的 SectionCard 不满足卡片契约（' + SECTION_CARD.replace(/\\/g, '/') +
+      ' 需要 rounded-lg + border-[var(--color-border-subtle)] + bg-[var(--color-bg-surface)]，且圆角要走 --radius-lg 这一档）—— 站点把卡片交给它之后，卡片契约就没有人满足了');
+  }
+  info.push('C12 手写卡片容器：' + total + ' 处（四站在册，判据是硬零）');
 }
 
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
