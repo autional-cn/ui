@@ -20,14 +20,9 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { ROOT } from './lib/tokens.mjs';
+import { PORTALS } from './lib/portals.mjs';
 
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
-const PORTALS = [
-  { site: 'admin', app: 'apps/admin-console' },
-  { site: 'platform', app: 'apps/platform-console' },
-  { site: 'security', app: 'apps/security-dashboard' },
-  { site: 'user', app: 'apps/end-user-portal' }
-];
 
 const problems = [];
 const info = [];

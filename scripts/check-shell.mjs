@@ -24,16 +24,10 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT } from './lib/tokens.mjs';
+import { PORTALS } from './lib/portals.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES_DIR = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
-// 在册门户（与 §1.3 的外壳表同一批）。其余站点不在本契约范围内。
-const PORTALS = [
-  { site: 'admin', app: 'apps/admin-console' },
-  { site: 'platform', app: 'apps/platform-console' },
-  { site: 'security', app: 'apps/security-dashboard' },
-  { site: 'user', app: 'apps/end-user-portal' }
-];
 
 // 「自己实现的外壳元素」。每一条都要能说清它在说什么，否则它会慢慢长成一张许愿单。
 const FORBIDDEN = [

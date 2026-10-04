@@ -15,11 +15,15 @@
 //   H3 顶栏 position 必须是 sticky 或 fixed（不能随内容滚走）
 //   H4 顶栏里的品牌标必须是品牌资产，不能是图标组件
 //
+// 第 29 轮加了 H5：**页面级标题必须由设计系统的 <ConsolePageHeader> 产出**。
+// 顶栏之下紧接着就是页头标题 —— 它是「同一个产品」的第二条水平线。
+//
 // 用法: node scripts/check-headers.mjs [--json]
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT } from './lib/tokens.mjs';
+import { PORTALS } from './lib/portals.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -187,7 +191,57 @@ for (const site of readdirSync(SITES)) {
   rows.push({ site, headers: hits.length, tokenOk, stickyOk, file: primary.file + ':' + primary.line });
 }
 
-if (AS_JSON) console.log(JSON.stringify({ rows, problems }, null, 2));
+// ── H5 页面级标题（第 29 轮）───────────────────────────────────────────────
+// 顶栏之下紧接着就是**页头标题**：它是「同一个产品」的第二条水平线。
+// 收敛前实测（2026-10-04）：三个控制台 **139 处**走 <ConsolePageHeader>（text-xl font-semibold），
+// 而 user 门户 **33 个页面各写各的** —— 8 处 text-2xl font-bold、21 处 text-xl font-bold、
+// 2 处 text-2xl、1 处 text-3xl、1 处标题里还塞了图标。同一个页面的第一行两种字号两种字重。
+//
+// 判据两边都验（与 H1/H2 同型，理由同 check-headers 的 H2：**「改用共享组件」不能变成绕过契约的后门**）：
+//   ① 站点侧：手写页面标题的**存量**进台账（登记制棘轮，只许减不许增），且必须**确实在用**那个组件
+//      ——「零命中不是通过」这条纪律在这里表现为：dsHeaders 为 0 也算不达标；
+//   ② DS 侧：ConsolePageHeader 必须真的渲染出一个 <h1>，且字号/字重是契约里那一档。
+const TITLE_PAT = /<h[12][^>]*(?:text-(?:xl|2xl|3xl|4xl)|font-bold)/g;
+const TITLE_BASELINE = join(ROOT, 'verification', 'page-title-baseline.json');
+const HEADER_COMPONENT = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'ConsolePageHeader.tsx');
+// 扫源码前先剥注释：这条纪律在这份计划里已经踩过四次（C2/C8/C9/C13）。
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
+const titleRows = [];
+const warns = [];
+{
+  const hdrSrc = existsSync(HEADER_COMPONENT) ? readFileSync(HEADER_COMPONENT, 'utf8') : '';
+  const h1Tag = /<h1\b[^>]*>/.exec(hdrSrc);
+  if (!h1Tag || !/text-xl/.test(h1Tag[0]) || !/font-semibold/.test(h1Tag[0])) {
+    problems.push('H5 设计系统的 ConsolePageHeader 不再渲染契约里的页面标题（' + HEADER_COMPONENT.replace(/\\/g, '/') +
+      ' 需要一个带 text-xl font-semibold 的 <h1>）—— 四个门户的页头都交给它之后，页头契约就没有人满足了');
+  }
+  const base = existsSync(TITLE_BASELINE) ? (JSON.parse(readFileSync(TITLE_BASELINE, 'utf8')).apps || {}) : null;
+  if (!base) {
+    problems.push('H5 verification/page-title-baseline.json 缺失 —— 手写页面标题的存量要靠它记账（登记制棘轮）');
+  } else {
+    for (const p of PORTALS) {
+      const src = join(SITES, p.site, p.app, 'src');
+      if (!existsSync(src)) { titleRows.push({ site: p.site, verdict: '不在本工作区' }); continue; }
+      let code = '';
+      for (const file of walk(src, [])) code += stripComments(readFileSync(file, 'utf8')) + '\n';
+      const handWritten = (code.match(TITLE_PAT) || []).length;
+      const dsHeaders = (code.match(/<ConsolePageHeader/g) || []).length;
+      const was = base[p.site] ?? 0;
+      titleRows.push({ site: p.site, handWritten, was, dsHeaders });
+      if (handWritten > was) {
+        problems.push('H5 ' + p.site + '：手写页面标题从 ' + was + ' 涨到 ' + handWritten +
+          ' —— 页面级标题一律改走 <ConsolePageHeader>（台账只许减不许增）');
+      } else if (handWritten < was) {
+        warns.push('H5 ' + p.site + '：手写页面标题从 ' + was + ' 降到 ' + handWritten + ' —— 这是进展，请更新 verification/page-title-baseline.json');
+      }
+      if (!dsHeaders) {
+        problems.push('H5 ' + p.site + '：源码里 0 处 <ConsolePageHeader> —— 闸门对这个站的页头什么都没验（零命中不是通过）');
+      }
+    }
+  }
+}
+
+if (AS_JSON) console.log(JSON.stringify({ rows, titleRows, problems, warns }, null, 2));
 else {
   console.log('顶栏契约闸门：' + rows.length + ' 个站点');
   console.log('');
@@ -199,7 +253,16 @@ else {
     const t = mark(r.tokenOk), s = mark(r.stickyOk);
     console.log('  ' + r.site.padEnd(15) + String(r.headers).padStart(5) + String(t).padStart(9) + String(s).padStart(8));
   }
+  if (titleRows.length) {
+    console.log('');
+    console.log('  页头标题'.padEnd(15) + '手写(台账)  ConsolePageHeader');
+    for (const r of titleRows) {
+      if (r.verdict) { console.log('  ' + r.site.padEnd(15) + r.verdict); continue; }
+      console.log('  ' + r.site.padEnd(15) + String(r.handWritten + '(' + r.was + ')').padStart(10) + String(r.dsHeaders).padStart(18));
+    }
+  }
   console.log('');
+  for (const w of warns) console.log('  [WARN ] ' + w);
   for (const p of problems) console.log('  [ERROR] ' + p);
   console.log(problems.length ? '结论：顶栏契约有 ' + problems.length + ' 项不达标' : '结论：顶栏契约一致（' + rows.length + ' 站）');
 }

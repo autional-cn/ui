@@ -22,17 +22,11 @@ import { readFileSync, writeFileSync, existsSync, mkdtempSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ROOT } from './lib/tokens.mjs';
+import { PORTALS as APPS } from './lib/portals.mjs';
 
 const WRITE = process.argv.includes('--write-registry');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
 const BASELINE = join(ROOT, 'verification', 'lint-baseline.json');
-
-const APPS = [
-  { site: 'admin', app: 'apps/admin-console' },
-  { site: 'platform', app: 'apps/platform-console' },
-  { site: 'security', app: 'apps/security-dashboard' },
-  { site: 'user', app: 'apps/end-user-portal' }
-];
 
 const problems = [];
 const warns = [];

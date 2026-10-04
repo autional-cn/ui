@@ -138,8 +138,26 @@ for (const t of targets) {
     await page.goto('http://127.0.0.1:' + (port - 1) + t.path, { waitUntil: 'load', timeout: 45000 });
     await page.addStyleTag({ content: '*, *::before, *::after { animation: none !important; transition: none !important; }' });
     await page.evaluate(async () => { await document.fonts.ready; });
-    await page.waitForTimeout(400);
-    const res = await page.evaluate(PROBE);
+    // ── 取样前必须等页面**渲染稳定**，不能等一个固定毫秒数 ──────────────────────
+    // 第 29 轮实测（同一个目标页 user-invoices-table）：
+    //   固定等 400ms        → 16 段文本（缺的 43 段是外壳与整张表）
+    //   networkidle + 1500ms → 59 段文本（连测两次都是 59，即真值）
+    // 而闸门当时报的是「检查 16 段文本，全部达到 AA」——**量的是半张页面**，
+    // 而且这个数字还被抄进了计划文档（第 26 轮记的「检查 16 段文本」）。
+    // Storybook 那类异步挂载的页面尤其容易踩：先出现骨架、再挂载真实内容。
+    // 所以这里与视觉闸门同一套口径（networkidle + settleMs），再加一层**稳定性判据**：
+    // 连续两次取样的文本签名相同才认为渲染完毕；上限 8 次。
+    // 固定等待无论调多大都是赌，稳定性判据不是。
+    try { await page.waitForLoadState('networkidle', { timeout: 10000 }); } catch (e) { /* 长连接站点属正常 */ }
+    await page.waitForTimeout(CFG.settleMs || 1500);
+    const sig = (x) => x.items.map((i) => i.sel + '\u0000' + i.text).join('\u0001');
+    let res = await page.evaluate(PROBE);
+    for (let i = 0; i < 8; i++) {
+      await page.waitForTimeout(400);
+      const again = await page.evaluate(PROBE);
+      if (sig(again) === sig(res)) break;
+      res = again;
+    }
     skipped += res.skippedGradient;
 
     // 零样本 = 没验，不是通过。这一条是补一个实际存在的假绿：
