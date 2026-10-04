@@ -76,6 +76,12 @@ const PROBE = () => {
     b: fg.b * fg.a + bg.b * (1 - fg.a),
     a: 1
   });
+  // 页面内的对比度比值（PROBE 是在浏览器里跑的，用不到 Node 侧那个同名函数）
+  const lumIn = (c) => {
+    const g = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * g(c.r) + 0.7152 * g(c.g) + 0.0722 * g(c.b);
+  };
+  const contrast = (a, b) => { const l1 = lumIn(a), l2 = lumIn(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
   const out = [];
   let skippedGradient = 0;
   for (const el of document.querySelectorAll('body *')) {
@@ -114,7 +120,45 @@ const PROBE = () => {
       size: Math.round(size * 10) / 10, weight, large
     });
   }
-  return { items: out, skippedGradient };
+  // ── 非文字对比度：图标控件的图形（WCAG 1.4.11，门槛 3:1）────────────────────
+  // 只量**图标是控件唯一视觉内容**的那一类（按钮/链接里没有文字、只有一个 <svg>）——
+  // 那是「靠图形理解这个控件是什么」的典型场景。有文字的控件由上面那段文字对比度覆盖；
+  // 纯装饰图标（`aria-hidden` 且不在控件里）不量，1.4.11 对纯装饰不适用。
+  // 为什么必须有这一条（第 27 轮登记的 L14）：那一轮把三级文字从 neutral-500 提到 neutral-600，
+  // 但**图标留在 neutral-500**（3.02:1，只比 3:1 高 0.7%）—— 任何一次调色板微调都会把它压到线下，
+  // 而当时没有任何一道闸门会报。
+  const nonText = [];
+  for (const el of document.querySelectorAll('button, a[href], [role="button"]')) {
+    if ((el.textContent || '').trim()) continue;
+    const svg = el.querySelector('svg');
+    if (!svg) continue;
+    const cs = getComputedStyle(svg);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) continue;
+    const stroke = cs.stroke && cs.stroke !== 'none' ? parse(cs.stroke) : null;
+    const fill = cs.fill && cs.fill !== 'none' ? parse(cs.fill) : null;
+    const raw = fill && fill.a > 0 ? fill : stroke;
+    if (!raw) continue;
+    let nbg = null, nblocked = false, node = el;
+    while (node && node !== document.documentElement.parentElement) {
+      const s = getComputedStyle(node);
+      if (s.backgroundImage && s.backgroundImage !== 'none') { nblocked = true; break; }
+      if (s.backdropFilter && s.backdropFilter !== 'none') { nblocked = true; break; }
+      const c = parse(s.backgroundColor);
+      if (c && c.a >= 0.95) { nbg = c; break; }
+      if (c && c.a > 0) nbg = nbg ? over(nbg, c) : c;
+      node = node.parentElement;
+    }
+    if (nblocked) continue;
+    if (!nbg) nbg = { r: 255, g: 255, b: 255, a: 1 };
+    const nf = raw.a < 1 ? over(raw, nbg) : raw;
+    nonText.push({
+      sel: el.tagName.toLowerCase() + (el.getAttribute('aria-label') ? '[aria-label=' + el.getAttribute('aria-label') + ']' : ''),
+      fg: [Math.round(nf.r), Math.round(nf.g), Math.round(nf.b)],
+      bg: [Math.round(nbg.r), Math.round(nbg.g), Math.round(nbg.b)],
+      ratio: Math.round(contrast(nf, nbg) * 100) / 100
+    });
+  }
+  return { items: out, skippedGradient, nonText };
 };
 
 const lum = ([r, g, b]) => {
@@ -126,6 +170,7 @@ const ratio = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l
 const targets = CFG.targets || [];
 let port = 19060;
 let checked = 0;
+let iconChecked = 0;
 let skipped = 0;
 const worst = [];
 for (const t of targets) {
@@ -174,6 +219,20 @@ for (const t of targets) {
         '零样本不是通过：把 target 换成一个真能渲染的路径，或者把它从 target 名单里去掉');
     }
 
+    // ── 非文字对比度（1.4.11）：图标控件的图形 ≥3:1 ──────────────────────────
+    const icons = res.nonText || [];
+    iconChecked += icons.length;
+    for (const ic of icons) {
+      if (ic.ratio < 3) {
+        problems.push('AA2 ' + t.name + '：图标控件 ' + ic.sel + ' 的图形对比度 ' + ic.ratio + ':1 < 3:1（前景 rgb(' +
+          ic.fg.join(',') + ') 对背景 rgb(' + ic.bg.join(',') + ')）—— 图标是控件的唯一视觉内容，靠它才认得出这是什么按钮');
+      }
+    }
+    if (icons.length && !icons.some((x) => x.ratio < 3)) {
+      const minIcon = icons.reduce((a, b) => (a.ratio <= b.ratio ? a : b));
+      info.push('AA2 ' + t.name + '：图标控件 ' + icons.length + ' 个，最低 ' + minIcon.ratio + ':1（门槛 3:1）');
+    }
+
     const bad = [];
     for (const it of res.items) {
       checked++;
@@ -214,9 +273,9 @@ for (const e of EXEMPT) {
 }
 
 if (AS_JSON) {
-  console.log(JSON.stringify({ targets: targets.length, checked, skipped, active, warns, info }, null, 2));
+  console.log(JSON.stringify({ targets: targets.length, checked, iconChecked, skipped, active, warns, info }, null, 2));
 } else {
-  console.log('对比度 AA 闸门：' + targets.length + ' 个目标页 / 检查 ' + checked + ' 段文本' +
+  console.log('对比度 AA 闸门：' + targets.length + ' 个目标页 / 检查 ' + checked + ' 段文本 + ' + iconChecked + ' 个图标控件' +
     (skipped ? '（另有 ' + skipped + ' 段因背景是图像或渐变而无法静态判定，已跳过）' : ''));
   console.log('');
   for (const i of info) console.log('  [INFO ] ' + i);
