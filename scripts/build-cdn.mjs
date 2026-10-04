@@ -341,6 +341,8 @@ const html = [
   '<!doctype html>',
   '<html lang="zh-CN"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width,initial-scale=1">',
+  // noindex 须由生成器承载（e47e864 语义）—— 缺这行 build:cdn 回写目录页时会静默抹掉
+  '<meta name="robots" content="noindex, nofollow">',
   '<title>Autional CDN — 设计系统运行期资产</title>',
   '<style>',
   'body{font:14px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#1e293b}',
