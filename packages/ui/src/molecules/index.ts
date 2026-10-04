@@ -27,3 +27,5 @@ export { ConsolePageHeader } from './ConsolePageHeader';
 export type { ConsolePageHeaderProps } from './ConsolePageHeader';
 export { Alert } from './Alert';
 export type { AlertProps, AlertVariant } from './Alert';
+export { Result } from './Result';
+export type { ResultProps, ResultSurface } from './Result';
