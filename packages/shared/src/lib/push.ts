@@ -4,11 +4,14 @@ import { urlBase64ToUint8Array } from '../utils/browser';
 
 export async function getVapidPublicKey(): Promise<string> {
 	const res = await pushVapidPublicKey();
-	const data = extractItem(res) as { public_key?: string } | null;
-	if (!data?.public_key) {
+	// 拦截器已把 data.public_key 深转为 camelCase（api/client.ts）；
+	// snake 兜底与本包既有双键读取惯例一致。
+	const data = extractItem(res) as { publicKey?: string; public_key?: string } | null;
+	const key = data?.publicKey ?? data?.public_key;
+	if (!key) {
 		throw new Error('Failed to get VAPID public key');
 	}
-	return data.public_key;
+	return key;
 }
 
 export async function subscribeBrowserPush(
