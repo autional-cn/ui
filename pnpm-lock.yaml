@@ -127,8 +127,8 @@ importers:
   packages/ui:
     devDependencies:
       '@autional-cn/tokens':
-        specifier: 0.1.0-rc.5
-        version: 0.1.0-rc.5
+        specifier: 0.1.0-rc.6
+        version: 0.1.0-rc.6
       '@testing-library/jest-dom':
         specifier: 6.9.1
         version: 6.9.1
@@ -239,8 +239,8 @@ packages:
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
-  '@autional-cn/tokens@0.1.0-rc.5':
-    resolution: {integrity: sha512-oBx9EahkzB2CxT3KZQ3KT7Jeo337O3bxFY9yxl8pQxWkJN7BZbzJKwDCpQ6tSpP3fOHLxeks2iHoKi04gWtTbg==}
+  '@autional-cn/tokens@0.1.0-rc.6':
+    resolution: {integrity: sha512-Jb3QMCeJj+Kv/kVVa9A9rZiTH9xud/Rsh2kgXgOswQVmznUsJAsdbkAUN6acJvxIZRm4+r67zJ5M3Q10mvIAhQ==}
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -2237,7 +2237,7 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@autional-cn/tokens@0.1.0-rc.5': {}
+  '@autional-cn/tokens@0.1.0-rc.6': {}
 
   '@babel/code-frame@7.29.7':
     dependencies:
