@@ -25,3 +25,5 @@ export { AppShell } from './AppShell';
 export type { AppShellProps } from './AppShell';
 export { ConsolePageHeader } from './ConsolePageHeader';
 export type { ConsolePageHeaderProps } from './ConsolePageHeader';
+export { Alert } from './Alert';
+export type { AlertProps, AlertVariant } from './Alert';
