@@ -918,9 +918,57 @@ if (!existsSync(PALETTE_PATH)) {
     problems.push('C12 设计系统的 SectionCard 不满足卡片契约（' + SECTION_CARD.replace(/\\/g, '/') +
       ' 需要 rounded-lg + border-[var(--color-border-subtle)] + bg-[var(--color-bg-surface)]，且圆角要走 --radius-lg 这一档）—— 站点把卡片交给它之后，卡片契约就没有人满足了');
   }
-  info.push('C12 手写卡片容器：' + total + ' 处（四站在册，判据是硬零）');
+  // ── 着色提示块（第 31 轮并入同一条判据）────────────────────────────────
+  // Alert 落地之后，手写的着色提示块同样是硬零。判定范围**故意与 Alert 的能力对齐**：
+  // 居中的结果卡、徽标、可点行、以及内边距不在 p-4 档的那些，都不是 Alert 能表达的东西
+  // （设计系统还没有 Result / 带品牌色的提示块），它们登记在 L21 而不是被这条判据逼着改造。
+  const isHandAlert = (cls) => {
+    if (!/bg-(success|warning|danger|info)-soft\b/.test(cls) && !/\bbg-amber-50\b/.test(cls)) return false;
+    if (cls.includes('text-center')) return false;
+    if (cls.includes('rounded-full') || cls.includes('hover:')) return false;
+    if (/\bh-(9|10|12|14|16|20)\b/.test(cls) && /\bw-(9|10|12|14|16|20)\b/.test(cls)) return false;
+    if (/\bp-([368]|12)\b/.test(cls)) return false;
+    return true;
+  };
+  const alertSelfPos = isHandAlert('rounded-lg border border-info-soft bg-info-soft p-4');
+  const alertSelfNeg1 = isHandAlert('rounded-lg border border-success-soft bg-success-soft p-8 text-center');
+  const alertSelfNeg2 = isHandAlert('flex h-10 w-10 items-center justify-center rounded-md bg-primary-50');
+  const alertSelfNeg3 = isHandAlert('rounded-md border border-danger-soft bg-white p-6 shadow-sm');
+  if (!alertSelfPos || alertSelfNeg1 || alertSelfNeg2 || alertSelfNeg3) {
+    problems.push('C12 提示块度量器自检失败 —— 正例/反例判定错了，硬零因此失去意义');
+  }
+  let alerts = 0;
+  const alertDetail = [];
+  for (const site of PORTALS.map((p) => p.site)) {
+    if (!SITES_HAS(site)) continue;
+    let n = 0;
+    for (const file of walk(join(SITES, site), [], (x) => /\.(tsx|jsx)$/.test(x), SKIP)) {
+      const t = strip(readFileSync(file, 'utf8'));
+      CARD_RE.lastIndex = 0; let m;
+      while ((m = CARD_RE.exec(t))) {
+        const cls = (m[1] || m[2] || '').replace(/\s+/g, ' ').trim();
+        if (!isHandAlert(cls)) continue;
+        // 必须真的有文字，否则那是图标徽标之类
+        const tail = t.slice(m.index, t.indexOf('</div>', m.index) + 6);
+        if (!(/>[^<>{}]{2,}</.test(tail) || /\{t\(/.test(tail))) continue;
+        n++;
+        alertDetail.push(site + '/' + file.slice(join(SITES, site).length + 1).replace(/\\/g, '/') + ' :: ' + cls.slice(0, 60));
+      }
+    }
+    alerts += n;
+    if (n > 0) {
+      problems.push('C12 ' + site + ' 里有 ' + n + ' 处手写着色提示块 —— 提示一律走设计系统的 <Alert>（它固定了 -soft/-text 配对与边框）。前几处：' + alertDetail.slice(0, 3).join(' | '));
+    }
+  }
+  const ALERT_SRC = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'Alert.tsx');
+  const aSrc = existsSync(ALERT_SRC) ? strip(readFileSync(ALERT_SRC, 'utf8')) : '';
+  const alertOk = /SOFT_TEXT\[variant\]/.test(aSrc) && /SOFT_BORDER\[variant\]/.test(aSrc);
+  if (!alertOk) {
+    problems.push('C12 设计系统的 Alert 不满足提示契约（' + ALERT_SRC.replace(/\\/g, '/') +
+      ' 必须用 internal/semantic-styles 的 SOFT_TEXT / SOFT_BORDER 配对，而不是自己写一套 bg-X / text-X）—— 站点把提示交给它之后，对比度契约就没有人满足了');
+  }
+  info.push('C12 手写容器：卡片 ' + total + ' 处 · 着色提示块 ' + alerts + ' 处（四站在册，判据是硬零）');
 }
-
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
 const codeOf = (msg) => { const m = /^(C\d)/.exec(msg); return m ? m[1] : null; };
 const knownFor = (msg) => { const c = codeOf(msg); return c ? known.find((k) => k.code === c && msg.indexOf(k.match) >= 0) : undefined; };
