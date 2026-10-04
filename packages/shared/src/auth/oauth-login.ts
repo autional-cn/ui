@@ -15,6 +15,7 @@ import { generatePKCE } from './pkce';
 import { getPortalUrl } from '../config';
 import { persistOAuthClientId } from './oauth-client-id-store';
 import { traceRedirect } from './auth-trace';
+import { decodeJwtPayload } from './jwt-payload';
 import type { User } from '../types';
 
 function getAppConfig(): Record<string, string> | undefined {
@@ -34,16 +35,6 @@ const SK = {
 
 // 防重入拦截后的一次性重试 timer（避免 10 秒窗口内快速刷新导致 OAuth 跳转被吞、页面卡住）
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
-
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-	try {
-		const parts = token.split('.');
-		if (parts.length !== 3) return null;
-		return JSON.parse(atob(parts[1]));
-	} catch {
-		return null;
-	}
-}
 
 function parseUserFromToken(token?: string, apiUser?: unknown): User {
 	if (token) {

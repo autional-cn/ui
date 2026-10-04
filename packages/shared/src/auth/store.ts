@@ -10,6 +10,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types';
 import { traceRedirect } from './auth-trace';
+import { decodeJwtPayload } from './jwt-payload';
 
 interface AuthState {
 	// State
@@ -96,16 +97,15 @@ export const useAuthStore = create<AuthState>()(
 				}
 				// Fix: has accessToken but user is missing — recover from JWT
 				if (state.accessToken && !state.user) {
-					try {
-						const payload = JSON.parse(atob(state.accessToken.split('.')[1]));
+					const payload = decodeJwtPayload(state.accessToken);
+					if (payload) {
 						state.user = {
 							id: (payload.sub || payload.user_id) as string,
-							username: (payload.custom?.username || payload.username) as string,
+							username: ((payload.custom as Record<string, unknown> | undefined)?.username ||
+								payload.username) as string,
 							email: (payload.email as string) || '',
 							status: 'active',
 						};
-					} catch {
-						/* keep null user */
 					}
 				}
 
@@ -211,18 +211,11 @@ export async function logout(redirectTo?: string): Promise<void> {
 	}
 }
 
-function decodeJwtPayload(token: string): { exp?: number } | null {
-	try {
-		return JSON.parse(atob(token.split('.')[1]));
-	} catch {
-		return null;
-	}
-}
-
 export function isTokenExpired(token: string): boolean {
 	const payload = decodeJwtPayload(token);
-	if (!payload?.exp) return true;
-	return Date.now() >= payload.exp * 1000;
+	const exp = payload?.exp as number | undefined;
+	if (!exp) return true;
+	return Date.now() >= exp * 1000;
 }
 
 export async function refreshAccessToken(): Promise<string | null> {

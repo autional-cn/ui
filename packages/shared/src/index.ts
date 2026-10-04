@@ -24,6 +24,7 @@ export { AuthService } from './auth/service';
 export { generatePKCE, generateCodeChallenge } from './auth/pkce';
 export type { PKCEPair } from './auth/pkce';
 export { initiateOAuthLogin, handleOAuthCallback, isOAuthEnabled } from './auth/oauth-login';
+export { decodeJwtPayload } from './auth/jwt-payload';
 export { buildLoginUrl } from './auth/roles';
 export { traceRedirect, traceEvent, traceDump } from './auth/auth-trace';
 export type { AuthTraceEntry, AuthTraceRedirectOptions } from './auth/auth-trace';
