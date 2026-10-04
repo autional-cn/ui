@@ -962,12 +962,59 @@ if (!existsSync(PALETTE_PATH)) {
   }
   const ALERT_SRC = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'Alert.tsx');
   const aSrc = existsSync(ALERT_SRC) ? strip(readFileSync(ALERT_SRC, 'utf8')) : '';
-  const alertOk = /SOFT_TEXT\[variant\]/.test(aSrc) && /SOFT_BORDER\[variant\]/.test(aSrc);
+  // 判据钉在**那一处表达式**上：第一版写的是「文件里能找到 SOFT_TEXT[variant] 与 SOFT_BORDER[variant]」，
+  // 阳性对照当场证明它不成立 —— 把 surface 那一行换成裸的 bg-danger-soft 之后闸门照样绿，
+  // 因为别处（textTone / badgeCls）还留着 SOFT_TEXT[variant]。与 H2 那次同型：**判据要落在它要说的那个元素上**。
+  const PAIR = 'SOFT_TEXT[variant]} ${SOFT_BORDER[variant]';
+  const alertOk = aSrc.includes(PAIR);
   if (!alertOk) {
     problems.push('C12 设计系统的 Alert 不满足提示契约（' + ALERT_SRC.replace(/\\/g, '/') +
       ' 必须用 internal/semantic-styles 的 SOFT_TEXT / SOFT_BORDER 配对，而不是自己写一套 bg-X / text-X）—— 站点把提示交给它之后，对比度契约就没有人满足了');
   }
-  info.push('C12 手写容器：卡片 ' + total + ' 处 · 着色提示块 ' + alerts + ' 处（四站在册，判据是硬零）');
+  // ── 结果块（第 32 轮并入同一条判据）────────────────────────────────────
+  // 与 Result 的能力对齐：居中的、圆角的、有底色（白面或同色浅底）、内边距在 p-6/p-8 档的那些。
+  const isHandResult = (cls) => {
+    if (!cls.includes('text-center')) return false;
+    if (!/rounded-(lg|md)\b/.test(cls)) return false;
+    if (!/(bg-white|bg-(success|warning|danger|info)-soft)\b/.test(cls)) return false;
+    if (!/\bp-[68]\b/.test(cls)) return false;
+    if (cls.includes('hover:')) return false;
+    return true;
+  };
+  const resultSelfPos = isHandResult('rounded-lg border border-success-soft bg-white p-6 shadow-sm text-center');
+  const resultSelfPos2 = isHandResult('rounded-lg border border-success-soft bg-success-soft p-8 text-center shadow-sm');
+  const resultSelfNeg = isHandResult('rounded-lg border border-danger-soft bg-white p-6 shadow-sm');
+  if (!resultSelfPos || !resultSelfPos2 || resultSelfNeg) {
+    problems.push('C12 结果块度量器自检失败 —— 硬零因此失去意义');
+  }
+  let results = 0;
+  const resultDetail = [];
+  for (const site of PORTALS.map((p) => p.site)) {
+    if (!SITES_HAS(site)) continue;
+    let n = 0;
+    for (const file of walk(join(SITES, site), [], (x) => /\.(tsx|jsx)$/.test(x), SKIP)) {
+      const t = strip(readFileSync(file, 'utf8'));
+      CARD_RE.lastIndex = 0; let m;
+      while ((m = CARD_RE.exec(t))) {
+        const cls = (m[1] || m[2] || '').replace(/\s+/g, ' ').trim();
+        if (!isHandResult(cls)) continue;
+        n++;
+        resultDetail.push(site + '/' + file.slice(join(SITES, site).length + 1).replace(/\\/g, '/') + ' :: ' + cls.slice(0, 60));
+      }
+    }
+    results += n;
+    if (n > 0) {
+      problems.push('C12 ' + site + ' 里有 ' + n + ' 处手写结果块 —— 结果块一律走设计系统的 <Result>（居中的图标 + 标题 + 说明 + 一个动作）。前几处：' + resultDetail.slice(0, 3).join(' | '));
+    }
+  }
+  const RESULT_SRC = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'Result.tsx');
+  const rSrc = existsSync(RESULT_SRC) ? strip(readFileSync(RESULT_SRC, 'utf8')) : '';
+  const resultOk = rSrc.includes(PAIR);
+  if (!resultOk) {
+    problems.push('C12 设计系统的 Result 不满足结果块契约（' + RESULT_SRC.replace(/\\/g, '/') +
+      ' 必须用 internal/semantic-styles 的 SOFT_TEXT / SOFT_BORDER 配对）—— 站点把结果块交给它之后，对比度契约就没有人满足了');
+  }
+  info.push('C12 手写容器：卡片 ' + total + ' 处 · 着色提示块 ' + alerts + ' 处 · 结果块 ' + results + ' 处（四站在册，判据是硬零）');
 }
 // ── 已知问题登记（与其它检查同一套约定）────────────────────────────────
 const codeOf = (msg) => { const m = /^(C\d)/.exec(msg); return m ? m[1] : null; };
