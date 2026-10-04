@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-10-01 16:48:56
+// Generated: 2026-10-05 00:34:30
 
 // ============================================================
 // Shared generic types
@@ -11350,6 +11350,7 @@ export interface FileMetadataResponse {
   createdAt?: string;  // 创建时间 | @example 2026-04-15T10:00:00Z
   etag?: string;  // ETag | @example "abc123def456"
   fileId?: string;  // 文件ID | @example file_abc123
+  isDirectory?: boolean;  // 是否为文件夹 | @example False
   isPublic?: boolean;  // 可见性? | @example False
   mimeType?: string;  // MIME类型 | @example image/jpeg
   name?: string;  // 文件名称 | @example avatar.jpg

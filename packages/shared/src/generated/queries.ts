@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-10-01 16:48:56
+// Generated: 2026-10-05 00:34:30
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from './api';

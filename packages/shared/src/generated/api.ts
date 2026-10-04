@@ -1,6 +1,6 @@
 // Auto-generated from swagger.json annotations
 // DO NOT EDIT — run `python scripts/generate_api_ts.py` to regenerate
-// Generated: 2026-10-01 16:48:56
+// Generated: 2026-10-05 00:34:30
 
 // @ts-nocheck — auto-generated; validated by check-generated-api.py
 import type * as Types from './types';
@@ -10805,13 +10805,14 @@ export async function adminStorageTrashRestoreByTrashPost(trashId: string) {
 
 /**
  * 获取文件列表
- * 获取当前用户在指定文件夹下的文件列表，支持分页和文件名关键词搜索，结果按创建时间倒序排列。参考：GDPR Art 32 (Security of Processing)。
+ * 获取当前用户在指定文件夹下的文件列表，支持分页和文件名关键词搜索，结果按创建时间倒序排列；include_directories=true 时同时返回子文件夹（目录浏览）。参考：GDPR Art 32 (Security of Processing)。
  */
 export async function files(params?: {
   parent_id?: string;  // 父文件夹ID，不填则查询根目录文件
   page?: number;  // 页码（默认1）
   page_size?: number;  // 每页条数（默认20，最大100）
   keyword?: string;  // 文件名关键词搜索
+  include_directories?: boolean;  // 是否包含子文件夹（默认false仅文件）
 }) {
   const res = await api.get(`/storage/api/v1/files`, { params });
   return res.data;
