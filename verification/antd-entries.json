@@ -38,10 +38,10 @@
         "RangePicker": 0,
         "Drawer": 0,
         "icons": 348,
-        "other": 911,
+        "other": 907,
         "subpath": 4
       },
-      "filesAntd": 107,
+      "filesAntd": 106,
       "filesIcons": 92,
       "bridgeFiles": 1,
       "ownThemeFiles": 0
@@ -53,12 +53,12 @@
         "DatePicker": 2,
         "RangePicker": 0,
         "Drawer": 0,
-        "icons": 141,
-        "other": 253,
+        "icons": 0,
+        "other": 237,
         "subpath": 0
       },
       "filesAntd": 36,
-      "filesIcons": 32,
+      "filesIcons": 0,
       "bridgeFiles": 1,
       "ownThemeFiles": 0
     },

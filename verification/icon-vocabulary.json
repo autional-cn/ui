@@ -50,6 +50,12 @@
         "CirclePlus"
       ]
     },
+    "pause": {
+      "canonical": "PauseCircle",
+      "synonyms": [
+        "CirclePause"
+      ]
+    },
     "spinner": {
       "canonical": "Loader2",
       "synonyms": [
