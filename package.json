@@ -30,6 +30,7 @@
     "build:cdn": "node scripts/build-cdn.mjs",
     "bump:cdn": "node scripts/bump-cdn-version.mjs",
     "antd:bridge": "node scripts/check-antd-bridge.mjs",
+    "icon-vocabulary": "node scripts/check-icon-vocabulary.mjs",
     "visual": "node scripts/visual.mjs check",
     "visual:baseline": "node scripts/visual.mjs baseline"
   },

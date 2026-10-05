@@ -1,0 +1,70 @@
+{
+  "$comment": "图标词汇表（棘轮）。设计系统不收图标代码层（14 站里 7 站直连 lucide-react，DS 自己 15 个组件也直连），但**词汇**必须有判据：同一个概念被两个站选成两个名字，就是「看起来不像同一个产品」的最细一处。synonyms 是 lucide 的**同字形重命名对**（旧名 ↔ 新名），canonical 取舰队与设计系统**正在用**的那一个；判据只判「同义词有没有被用」（数字只许减不许增），并给每个同义词标出规范名。",
+  "updated": "2026-10-05",
+  "concepts": {
+    "warning": {
+      "canonical": "AlertTriangle",
+      "synonyms": [
+        "TriangleAlert"
+      ]
+    },
+    "error": {
+      "canonical": "XCircle",
+      "synonyms": [
+        "CircleX"
+      ]
+    },
+    "alert-circle": {
+      "canonical": "AlertCircle",
+      "synonyms": [
+        "CircleAlert"
+      ]
+    },
+    "success": {
+      "canonical": "CheckCircle2",
+      "synonyms": [
+        "CircleCheckBig"
+      ]
+    },
+    "success-plain": {
+      "canonical": "CheckCircle",
+      "synonyms": [
+        "CircleCheck"
+      ]
+    },
+    "help": {
+      "canonical": "HelpCircle",
+      "synonyms": [
+        "CircleHelp"
+      ]
+    },
+    "minus": {
+      "canonical": "MinusCircle",
+      "synonyms": [
+        "CircleMinus"
+      ]
+    },
+    "plus": {
+      "canonical": "PlusCircle",
+      "synonyms": [
+        "CirclePlus"
+      ]
+    },
+    "spinner": {
+      "canonical": "Loader2",
+      "synonyms": [
+        "LoaderCircle"
+      ]
+    },
+    "close": {
+      "canonical": "X",
+      "synonyms": [
+        "XIcon",
+        "CloseIcon"
+      ]
+    }
+  },
+  "converged": [],
+  "synonymUsage": {},
+  "$vocabulary": "security 第 48 轮迁移时落定的 14 个「舰队外来词」，它们从那一轮起就是舰队词汇的一部分（理由见 PORTAL-SHARED-LAYER-DESIGN.md 第 48 轮的 66 行映射表附录）：Plug / ClipboardCheck / Bug / FileImage / FileType / FileLock / FileArchive / PanelLeftClose / PanelLeftOpen / MessageCircle / MinusCircle / HelpCircle / Radar / Bot"
+}
