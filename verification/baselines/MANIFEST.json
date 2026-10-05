@@ -1,6 +1,6 @@
 {
   "$description": "视觉基线环境固化。跨机器复用基线与字体差异必然误报——本基线绑定下列环境。",
-  "generatedAt": "2026-10-05T00:38:21.000Z",
+  "generatedAt": "2026-10-05T01:53:14.908Z",
   "config": {
     "viewport": {
       "width": 1440,
@@ -23,10 +23,27 @@
   },
   "results": [
     {
-      "name": "web-home",
+      "name": "authenticator-harness",
       "action": "baseline-written",
-      "bytes": 525610,
-      "sha256": "b4e02fe89c04334a",
+      "bytes": 60309,
+      "sha256": "dcb4963db3f0b881",
+      "env": {
+        "browser": "149.0.7827.55",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "dpr": 1,
+        "platform": "win32",
+        "node": "v24.15.0"
+      },
+      "httpFailures": []
+    },
+    {
+      "name": "authenticator-harness-light",
+      "action": "baseline-written",
+      "bytes": 66155,
+      "sha256": "47b8b681c1003d0c",
       "env": {
         "browser": "149.0.7827.55",
         "viewport": {
