@@ -5622,6 +5622,7 @@ export interface PublicAuthConfigResponse {
   displayName?: string;  // @example My Tenant
   identityThreshold?: number;
   ipThreshold?: number;
+  issuer?: string;  // @example https://api.autional.cn/acme
   loginMethods?: string[];
   magicLinkEnabled?: boolean;
   maxConcurrentSessions?: number;
