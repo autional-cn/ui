@@ -31,6 +31,7 @@
     "bump:cdn": "node scripts/bump-cdn-version.mjs",
     "antd:bridge": "node scripts/check-antd-bridge.mjs",
     "icon-vocabulary": "node scripts/check-icon-vocabulary.mjs",
+    "attribute": "node scripts/attribute-delta.mjs",
     "visual": "node scripts/visual.mjs check",
     "visual:baseline": "node scripts/visual.mjs baseline"
   },
