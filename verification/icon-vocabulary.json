@@ -56,6 +56,24 @@
         "CirclePause"
       ]
     },
+    "unlock": {
+      "canonical": "Unlock",
+      "synonyms": [
+        "LockOpen"
+      ]
+    },
+    "cloud-download": {
+      "canonical": "DownloadCloud",
+      "synonyms": [
+        "CloudDownload"
+      ]
+    },
+    "chart-bar": {
+      "canonical": "BarChart3",
+      "synonyms": [
+        "ChartColumn"
+      ]
+    },
     "spinner": {
       "canonical": "Loader2",
       "synonyms": [

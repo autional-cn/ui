@@ -4,7 +4,7 @@
   "apps": {
     "admin": {
       "@typescript-eslint/no-explicit-any": 233,
-      "@typescript-eslint/no-unused-vars": 125,
+      "@typescript-eslint/no-unused-vars": 110,
       "react-hooks/exhaustive-deps": 14
     },
     "platform": {
