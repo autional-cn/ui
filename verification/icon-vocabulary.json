@@ -85,6 +85,48 @@
       "synonyms": [
         "XIcon"
       ]
+    },
+    "user-circle": {
+      "canonical": "UserCircle",
+      "synonyms": [
+        "CircleUser"
+      ]
+    },
+    "home": {
+      "canonical": "Home",
+      "synonyms": [
+        "House"
+      ]
+    },
+    "filter": {
+      "canonical": "Filter",
+      "synonyms": [
+        "Funnel"
+      ]
+    },
+    "code-xml": {
+      "canonical": "Code2",
+      "synonyms": [
+        "CodeXml"
+      ]
+    },
+    "arrow-down-circle": {
+      "canonical": "ArrowDownCircle",
+      "synonyms": [
+        "CircleArrowDown"
+      ]
+    },
+    "edit": {
+      "canonical": "Edit2",
+      "synonyms": [
+        "Pen"
+      ]
+    },
+    "more-vertical": {
+      "canonical": "MoreVertical",
+      "synonyms": [
+        "EllipsisVertical"
+      ]
     }
   },
   "converged": [],

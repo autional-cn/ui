@@ -40,8 +40,11 @@ if (!existsSync(SITES)) {
 const REG = JSON.parse(readFileSync(REG_PATH, 'utf8'));
 const CONCEPTS = REG.concepts || {};
 const synonymOf = new Map(); // synonym -> { concept, canonical }
+const registeredNames = new Set(); // 规范名 + 同义词（覆盖率判据用）
 for (const [concept, def] of Object.entries(CONCEPTS)) {
+  registeredNames.add(def.canonical);
   for (const s of def.synonyms || []) synonymOf.set(s, { concept, canonical: def.canonical });
+  for (const s of def.synonyms || []) registeredNames.add(s);
 }
 
 const SKIP = (e) => ['node_modules', '.git', 'dist', '.astro', '.next', '.turbo', '.vercel'].includes(e.name);
@@ -71,6 +74,18 @@ function countSynonyms(txt) {
   return found;
 }
 
+// 同上，但收**全部**用到的名字（覆盖率判据要知道舰队到底用了哪些旧别名）
+function countAllNames(txt) {
+  const out = new Set();
+  for (const m of txt.matchAll(LUCIDE_RE)) {
+    for (const raw of m[1].split(',')) {
+      const name = raw.trim().split(/\s+as\s+/)[0].trim();
+      if (name) out.add(name);
+    }
+  }
+  return out;
+}
+
 // ── 自检两向（正例必须命中、反例必须不命中）────────────────────────────
 {
   const pos = countSynonyms("import { TriangleAlert, CircleX } from 'lucide-react';");
@@ -93,6 +108,8 @@ function countSynonyms(txt) {
 // CheckCircle2 的真同义词是 CircleCheck，而 CheckCircleBig 属于 CheckCircle；写反之后，
 // 闸门会照着这张表去劝别人改名，**等于把人往另一个字形上指**。
 // 判据取自 lucide 自己的导出映射（dist/esm/lucide-react.js：每个导出名 → 图标模块），不是 kebab 猜名。
+// 同一份映射还用来算「旧别名 → 新名」，供下面的覆盖率判据使用。
+const VOCAB_SHIM = new Map();
 {
   const load = (() => {
     let pkgPath;
@@ -119,6 +136,17 @@ function countSynonyms(txt) {
     info.push('图标词汇表自检跳过：' + load.skip);
   } else {
     const glyph = (n) => load.map.get(n);
+    // 旧别名 = kebab 名与它指向的图标模块**不一致**的那些（这就是 lucide 的重命名壳）
+    const kebabOf = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Z])([A-Z][a-z])/g, '$1-$2').replace(/([a-zA-Z])(\d)/g, '$1-$2').toLowerCase();
+    const canonicalNameOf = new Map();
+    for (const [name, id] of load.map) {
+      if (name.startsWith('Lucide') || name.endsWith('Icon')) continue;
+      if (kebabOf(name) === id) canonicalNameOf.set(id, name);
+    }
+    for (const [name, id] of load.map) {
+      if (name.startsWith('Lucide') || name.endsWith('Icon')) continue;
+      if (kebabOf(name) !== id) VOCAB_SHIM.set(name, canonicalNameOf.get(id) || id);
+    }
     // 两向对照：正例是**真**同字形，反例是**假**同字形（L29 那一对）—— 两个方向都得对，自检才可信
     for (const [a, b, want] of [['AlertTriangle', 'TriangleAlert', true], ['CheckCircle2', 'CircleCheckBig', false]]) {
       const got = !!glyph(a) && glyph(a) === glyph(b);
@@ -147,15 +175,20 @@ function countSynonyms(txt) {
 }
 
 const measured = {};
+const usedNamesBySite = {};
 let sitesScanned = 0;
 for (const site of readdirSync(SITES)) {
   const sp = join(SITES, site);
   try { if (!statSync(sp).isDirectory()) continue; } catch (e) { continue; }
   const per = {};
+  const all = new Set();
   for (const f of walk(sp, [])) {
-    const found = countSynonyms(readFileSync(f, 'utf8'));
+    const txt = readFileSync(f, 'utf8');
+    for (const n of countAllNames(txt)) all.add(n);
+    const found = countSynonyms(txt);
     for (const [k, v] of Object.entries(found)) per[k] = (per[k] || 0) + v;
   }
+  if (all.size) usedNamesBySite[site] = all;
   if (Object.keys(per).length) { measured[site] = per; sitesScanned++; }
 }
 
@@ -180,6 +213,35 @@ for (const [site, per] of Object.entries(REG.synonymUsage || {})) {
     const now = ((measured[site] || {})[name]) || 0;
     if (now === 0 && was > 0) warns.push('图标词汇 ' + site + ' 的「' + name + '」已归零（' + was + ' → 0）——跑 --write-registry 更新台账');
   }
+}
+
+// ── 覆盖率判据：舰队用到的每个「旧别名」都必须在 concepts 里有名分 ────────
+// 为什么需要它（L28 量化时实测出来的洞）：闸门此前只能判**已登记**的同义词 ——
+// 表里没有的旧别名，它的新名写法**没有任何东西在看**。20 个在用旧名里有 7 个没登记
+// （UserCircle / Home / Filter / Code2 / ArrowDownCircle / Edit2 / MoreVertical），
+// 也就是说「明天有人写 House / Funnel / Pen」当时是**静默**的（不报红、也不进台账）。
+// 口径：旧别名**继续用作规范名**（L28 的结论：lucide v1 未删这些别名，没有改名压力），
+// 但必须**成对登记**，否则它的新名无人把守。
+if (VOCAB_SHIM.size) {
+  const unregistered = (names) => [...names].filter((n) => VOCAB_SHIM.has(n) && !registeredNames.has(n));
+  // 两向对照：已登记的旧别名不许被报、未登记的旧别名必须被报
+  const ctlBad = [...VOCAB_SHIM.keys()].find((n) => !registeredNames.has(n));
+  if (unregistered(['AlertTriangle']).length !== 0) {
+    problems.push('图标词汇覆盖率自检失败：已登记的 AlertTriangle 被判成未登记');
+  }
+  if (ctlBad && unregistered([ctlBad]).length !== 1) {
+    problems.push('图标词汇覆盖率自检失败：未登记的旧别名 ' + ctlBad + ' 没被判出来 —— 覆盖率判据坏了');
+  }
+  const inUse = new Set();
+  for (const names of Object.values(usedNamesBySite)) for (const n of names) if (VOCAB_SHIM.has(n)) inUse.add(n);
+  for (const [site, names] of Object.entries(usedNamesBySite)) {
+    for (const n of unregistered(names)) {
+      problems.push('图标词汇表缺登记：' + site + ' 用了旧别名「' + n + '」，但它不在 concepts 里 —— 它的新名「' +
+        VOCAB_SHIM.get(n) + '」因此无人把守（谁写了都不报）。补一条 concepts（canonical ' + n + '，synonyms 放新名）');
+    }
+  }
+  info.push('图标词汇覆盖率：lucide 共 ' + VOCAB_SHIM.size + ' 个旧别名；舰队在用 ' + inUse.size + ' 个，其中已登记 ' +
+    [...inUse].filter((n) => registeredNames.has(n)).length + ' 个');
 }
 
 const conceptList = Object.entries(CONCEPTS).map(([c, d]) => c + '=' + d.canonical).join(' / ');
