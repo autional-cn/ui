@@ -401,6 +401,20 @@ const antdComponents = (ctx) => ({
     // SM 刻意**不设**：控制台有 400+ 处 size="small"，改它等于一次性改掉那些表的密度 ——
     // 那是一个该被单独看见、单独评审的设计决定，不该夹在「修一个静默失效」里顺手做掉。
   },
+  // L19 卡片边框色三值并存。antd 的 Card 边框走 antd 出厂的 `colorBorderSecondary`
+  // （近白灰 #f0f0f0），而设计系统的 `SectionCard` 走 `--color-border-subtle`
+  // （primary-200 / #a3c7e3）。控制台一个页面里**两种卡片并排出现**（363 张 antd Card +
+  // 46 处 SectionCard），边框色却不是一个 —— 这是「看起来不像同一个产品」里最容易被眼睛
+  // 抓到的一处。
+  // 方向是**站点跟着设计系统走**（令牌是 SSOT），而不是把设计系统改成 antd 的出厂值。
+  // 只覆盖 Card 这一个组件：全局 `colorBorderSecondary` 会连带改掉 Divider / Table /
+  // Select / Descriptions 等**所有**吃这个令牌的组件 —— 那是一次没人评审过的全舰队换色，
+  // 不属于「卡片边框收敛」这一批的内容。
+  // ⚠ 组件级 token 有「配了等于没配」的先例（见上面 cellPaddingBlockMD）：这一条**必须**在
+  // 浏览器里量到 antd Card 的真实边框色才算数，静态断言不算。
+  Card: {
+    colorBorderSecondary: ctx.resolve('{color.border-subtle}'),
+  },
 });
 
 outputs.set(

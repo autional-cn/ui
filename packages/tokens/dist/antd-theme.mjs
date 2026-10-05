@@ -33,6 +33,9 @@ const antdTheme = {
         cellPaddingInline: 12,
         cellPaddingBlockMD: 10,
         cellPaddingInlineMD: 12
+      },
+      Card: {
+        colorBorderSecondary: '#a3c7e3'
       }
     } },
   dark: { token: {
@@ -59,6 +62,9 @@ const antdTheme = {
         cellPaddingInline: 12,
         cellPaddingBlockMD: 10,
         cellPaddingInlineMD: 12
+      },
+      Card: {
+        colorBorderSecondary: '#1a4a65'
       }
     } },
 };

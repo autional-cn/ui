@@ -29,10 +29,12 @@
     "upstream:diff": "node scripts/upstream-diff.mjs",
     "build:cdn": "node scripts/build-cdn.mjs",
     "bump:cdn": "node scripts/bump-cdn-version.mjs",
+    "antd:bridge": "node scripts/check-antd-bridge.mjs",
     "visual": "node scripts/visual.mjs check",
     "visual:baseline": "node scripts/visual.mjs baseline"
   },
   "devDependencies": {
+    "esbuild": "0.25.12",
     "playwright-core": "1.61.1"
   }
 }

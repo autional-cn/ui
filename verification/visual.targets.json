@@ -27,7 +27,7 @@
       "name": "admin-console",
       "root": "../sites/admin/apps/admin-console/dist",
       "path": "/404",
-      "note": "console SPA 的 404 页（antd Result 组件）。**刻意不用 / ：** 该路径会尝试跳转 auth（依赖后端），渲染出来一段文本都没有 —— 于是视觉基线是一张白页、对比度闸门报「检查 0 段文本，全部达到 AA」。两个闸门都在量空气。换成 /404 后两件事都成立：基线有内容，对比度有 4 段真实文本。"
+      "note": "console SPA 的 404 页（antd Result 组件）。**刻意不用 / ：** 该路径会尝试跳转 auth（依赖后端），渲染出来一段文本都没有 —— 于是视觉基线是一张白页、对比度闸门报「检查 0 段文本，全部达到 AA」。两个闸门都在量空气。换成 /404 后两件事都成立：基线有内容，对比度有 3 段真实文本（第 46 轮复量：0 → 3，原记录写的是 4，口径按闸门实测为准）。"
     },
     {
       "name": "developer-home",
@@ -40,6 +40,12 @@
       "root": "../.artifacts/storybook-user",
       "path": "/iframe.html?id=pages-invoices--default&viewMode=story",
       "note": "**表格外观的静态目标页**（计划 L3）。三个理由让它必须是 Storybook 而不是站点 dist：① 站点是 SPA + 租户路由，静态托管一个带表格的页面需要登录态与后端，只会在基线里留下一张白页；② 这个 story 是**预置查询缓存**渲染真实页面组件（第 25 轮把 vi.mock 拆了才渲染得出来），所以看到的就是生产代码路径；③ 五行数据正好覆盖 success/warning/danger/info/neutral 五档徽标，**徽标只有在真实底色上才能看出对比度够不够** —— 对比度闸门读的是同一份目标清单，所以这一页同时进了两道闸门。产物不随仓库走，先跑：cd sites/user/apps/end-user-portal && pnpm build-storybook --output-dir ../../../../.artifacts/storybook-user（目录不存在时本闸门跳过，与其他目标同一约定）。**第 28 轮起 story 套真实外壳**（src/test/portal-chrome.tsx）：外框归 AppShell 之后，单独渲染页面在生产里不会出现 —— 那一版基线量的是个假取景。品牌/导航/右上角是占位内容，本目标因此同时量到 user 门户的**外框几何**。"
+    },
+    {
+      "name": "user-shell-header",
+      "root": "../.artifacts/storybook-user",
+      "path": "/iframe.html?id=shell-userappshell--default&viewMode=story",
+      "note": "**门户外壳本身的目标页**（计划 L24）。在此之前，对比度闸门的 AA2（图标是控件唯一视觉内容时必须 ≥3:1）一个样本都量不到：admin 的 /404 在外壳之外（headers 0 / asides 0），另外几条页面 story 的取景框是 PortalChrome 的占位顶栏，里面连一个 button 都没有。这一页渲染的是 **user 门户真实的 AppLayout**：真导航项、真面包屑、真内容区，被替换的只有数据（真实查询键 + 预置缓存）与鉴权守卫（直接挂路由），其余全是生产代码路径。实测到 **4 个可见的纯图标控件**：切换门户 36×36 / 通知中心 34×34 / 系统公告 34×34 / 切换到深色模式 18×18（另有 2 个 1440 下 lg:hidden 的移动端菜单键，按第 34 轮的可见性判据不计入）。残余的假只有租户名与门户目录的那两条文字，不影响被量的那几个按钮的类名与配色。产物同 user-invoices-table：cd sites/user/apps/end-user-portal && pnpm build-storybook --output-dir ../../../../.artifacts/storybook-user。⚠ story 里**刻意不给 user.id、不调 AuthService.setAuth** —— 否则 useNotificationStream 会判定会话过期，把整页 window.location 跳走，闸门量到的就是一张白页。"
     }
   ]
 }

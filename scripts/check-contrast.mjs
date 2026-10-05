@@ -288,8 +288,9 @@ if (AS_JSON) {
   console.log('');
   for (const i of info) console.log('  [INFO ] ' + i);
   if (iconChecked === 0) {
-    warns.push('AA2 四个目标页里一个**可见的**图标控件都没有量到 —— 「零样本不是通过」：这条判据现在覆盖不到真实顶栏里那几个纯图标按钮' +
-      '（它们只出现在真实门户外壳里，而 user 那条目标页的外壳来自 story 取景框的占位 chrome）。缺口登记为 L24');
+    warns.push('AA2 全部目标页里一个**可见的**图标控件都没有量到 —— 「零样本不是通过」：这条判据现在覆盖不到真实顶栏里那几个纯图标按钮' +
+      '（它们只出现在真实门户外壳里。第 46 轮起 user-shell-header 目标页渲染的**就是**真实 AppLayout，正常情况下应当量到 4 个 —— 一个都量不到时先怀疑那条目标页的产物没构建或构建坏了，而不是先怀疑设计系统）；' +
+      '另外注意：AA2 的门槛是 3:1（非文字），别拿它当 4.5:1 用');
   } else if (iconlessTargets.length) {
     info.push('AA2 未量到图标控件的目标页：' + iconlessTargets.join(' / '));
   }
