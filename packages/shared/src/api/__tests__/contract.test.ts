@@ -153,4 +153,20 @@ describe('apiClient 拦截器契约（AC-AB1-51 · T1 护栏）', () => {
 		});
 		expect((res.data as Record<string, unknown>).raw_key).toBeUndefined();
 	});
+
+	it('G8 请求体：缩写键 acronym-aware（U385：clientDataJSON → client_data_json，走真实拦截器）', async () => {
+		await apiClient.post('/contract/probe', {
+			clientDataJSON: 'cdj',
+			attestationObject: 'ao',
+			rawId: 'rid',
+			userID: 'u-1',
+		});
+		expect(captured).toHaveLength(1);
+		expect(captured[0].body).toEqual({
+			client_data_json: 'cdj',
+			attestation_object: 'ao',
+			raw_id: 'rid',
+			user_id: 'u-1',
+		});
+	});
 });

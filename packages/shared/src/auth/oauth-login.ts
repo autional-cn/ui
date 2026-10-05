@@ -33,6 +33,20 @@ const SK = {
 	CID: 'oauth_client_id',
 };
 
+/**
+ * AUTH-46②：OAuth 回调失败错误——携稳定 code，消费方（OAuthCallbackPage 等）按 code
+ * 映射本地化文案；message 保留英文原文供 console/诊断。此前直接 throw 英文裸句
+ * （"State mismatch — possible CSRF attack" 等）落用户屏。
+ */
+export class OAuthCallbackError extends Error {
+	readonly code: string;
+	constructor(code: string, message: string) {
+		super(message);
+		this.name = 'OAuthCallbackError';
+		this.code = code;
+	}
+}
+
 // 防重入拦截后的一次性重试 timer（避免 10 秒窗口内快速刷新导致 OAuth 跳转被吞、页面卡住）
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -177,11 +191,14 @@ export async function handleOAuthCallback(): Promise<void> {
 
 	const err = q.get('error');
 	if (err) {
-		throw new Error(q.get('error_description') || `OAuth error: ${err}`);
+		throw new OAuthCallbackError(
+			'oauth.provider_error',
+			q.get('error_description') || `OAuth error: ${err}`,
+		);
 	}
 
 	const code = q.get('code');
-	if (!code) throw new Error('Missing authorization code');
+	if (!code) throw new OAuthCallbackError('oauth.missing_code', 'Missing authorization code');
 
 	const storedState = sessionStorage.getItem(SK.STATE) || '';
 	const verifier = sessionStorage.getItem(SK.PKCE) || '';
@@ -196,17 +213,29 @@ export async function handleOAuthCallback(): Promise<void> {
 			if (parsed.csrf && parsed.csrf === storedState) {
 				oauthRedirectTarget = parsed.redirect || null;
 			} else if (parsed.csrf) {
-				throw new Error('State mismatch — possible CSRF attack');
+				throw new OAuthCallbackError(
+					'oauth.state_mismatch',
+					'State mismatch — possible CSRF attack',
+				);
 			}
-		} catch {
+		} catch (e) {
+			if (e instanceof OAuthCallbackError) throw e;
 			// Backward compat: plain string state (should not happen after Fix 3)
 			if (rawState !== storedState) {
-				throw new Error('State mismatch — possible CSRF attack');
+				throw new OAuthCallbackError(
+					'oauth.state_mismatch',
+					'State mismatch — possible CSRF attack',
+				);
 			}
 		}
 	}
 
-	if (!verifier) throw new Error('Missing PKCE verifier — page reload may have cleared storage');
+	if (!verifier) {
+		throw new OAuthCallbackError(
+			'oauth.pkce_cleared',
+			'Missing PKCE verifier — page reload may have cleared storage',
+		);
+	}
 
 	// Derive redirectUri from getConfig() for consistency with initiateOAuthLogin
 	const cbCfg = getConfig();

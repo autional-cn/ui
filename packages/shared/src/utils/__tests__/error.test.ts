@@ -36,3 +36,37 @@ describe('extractApiError message 键链（UP-17-B / AC-401）', () => {
 		expect(extractApiErrorMessage(err, 'fallback')).toBe('TOTP already enabled');
 	});
 });
+
+// AUTH-46 回归锁：i18n_key 透出（消费方按 key 映射本地化文案，不再暴露英文裸句）。
+describe('extractApiError i18n_key 透出（AUTH-46）', () => {
+	it('Problem 体带 i18n_key → i18nKey 字段透出（snake 形）', () => {
+		const err = {
+			response: {
+				data: {
+					code: 400,
+					title: 'Invalid Parameter',
+					detail: 'state not found',
+					i18n_key: 'error.oauth_state_missing',
+				},
+			},
+		};
+		const out = extractApiError(err, 'fallback');
+		expect(out.i18nKey).toBe('error.oauth_state_missing');
+		// message 键链不回归（title 优先于 detail）
+		expect(out.message).toBe('Invalid Parameter');
+	});
+
+	it('响应拦截器深 camel 后（i18nKey）同样识别', () => {
+		const err = { response: { data: { code: 400, i18nKey: 'error.sso_provider_not_configured' } } };
+		expect(extractApiError(err, 'fallback').i18nKey).toBe('error.sso_provider_not_configured');
+	});
+
+	it('无 i18n_key → undefined（向后兼容，不改变既有形状）', () => {
+		expect(extractApiError(new Error('boom'), 'fallback').i18nKey).toBeUndefined();
+		expect(extractApiError({}, 'fallback')).toEqual({
+			code: 'UNKNOWN',
+			message: 'fallback',
+			i18nKey: undefined,
+		});
+	});
+});
