@@ -20,7 +20,8 @@
 //   在那之前判据守的是「**别再引入第二种写法**」。
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve, relative } from 'node:path';
+import { join, resolve, relative, dirname } from 'node:path';
+import { createRequire } from 'node:module';
 import { ROOT } from './lib/tokens.mjs';
 
 const AS_JSON = process.argv.includes('--json');
@@ -83,6 +84,65 @@ function countSynonyms(txt) {
   }
   if (Object.keys(neg2).length !== 0) {
     problems.push('图标词汇度量器负向控制失败：字符串/前缀相似的名字被计成 ' + JSON.stringify(neg2));
+  }
+}
+
+// ── 词汇表自检：登记的「同字形对」必须**真的是**同字形 ──────────────────
+// 为什么加它（L29）：这张表自称 synonyms 是「lucide 的同字形重命名对」，但这份**数据本身**
+// 此前没有任何判据在看。实测 success / success-plain 两条的同义词被**写反了** ——
+// CheckCircle2 的真同义词是 CircleCheck，而 CheckCircleBig 属于 CheckCircle；写反之后，
+// 闸门会照着这张表去劝别人改名，**等于把人往另一个字形上指**。
+// 判据取自 lucide 自己的导出映射（dist/esm/lucide-react.js：每个导出名 → 图标模块），不是 kebab 猜名。
+{
+  const load = (() => {
+    let pkgPath;
+    try {
+      pkgPath = createRequire(join(ROOT, 'packages/ui/package.json')).resolve('lucide-react/package.json');
+    } catch (e) {
+      return { skip: 'lucide-react 未安装（' + (e && e.code) + '）' };
+    }
+    const esm = join(dirname(pkgPath), 'dist', 'esm', 'lucide-react.js');
+    if (!existsSync(esm)) return { skip: 'lucide-react 没有 ESM 导出映射' };
+    const map = new Map();
+    const RE_EXPORT = /export\s*\{([^}]*)\}\s*from\s*'\.\/icons\/([a-z0-9-]+)\.js'/g;
+    for (const m of readFileSync(esm, 'utf8').matchAll(RE_EXPORT)) {
+      for (const part of m[1].split(',')) {
+        const n = part.trim().split(/\s+as\s+/).pop().trim();
+        if (n) map.set(n, m[2]);
+      }
+    }
+    if (map.size < 100) return { skip: 'lucide 导出映射只解析出 ' + map.size + ' 个名字（格式变了？）' };
+    return { map };
+  })();
+
+  if (load.skip) {
+    info.push('图标词汇表自检跳过：' + load.skip);
+  } else {
+    const glyph = (n) => load.map.get(n);
+    // 两向对照：正例是**真**同字形，反例是**假**同字形（L29 那一对）—— 两个方向都得对，自检才可信
+    for (const [a, b, want] of [['AlertTriangle', 'TriangleAlert', true], ['CheckCircle2', 'CircleCheckBig', false]]) {
+      const got = !!glyph(a) && glyph(a) === glyph(b);
+      if (got !== want) {
+        problems.push('图标词汇表自检的对照失效：' + a + ' / ' + b + ' 判成 ' + got + '，期望 ' + want +
+          ' —— 自检本身坏了，它接下来会把对的判错、把错的放过');
+      }
+    }
+    for (const [concept, def] of Object.entries(CONCEPTS)) {
+      if (!glyph(def.canonical)) {
+        problems.push('图标词汇表 ' + concept + ' 的规范名「' + def.canonical + '」不是 lucide 0.509 的导出名');
+        continue;
+      }
+      for (const s of def.synonyms || []) {
+        if (!glyph(s)) {
+          problems.push('图标词汇表 ' + concept + ' 的同义词「' + s + '」不是 lucide 0.509 的导出名 —— 它永远写不出来，是死数据');
+          continue;
+        }
+        if (glyph(s) !== glyph(def.canonical)) {
+          problems.push('图标词汇表 ' + concept + ' 把「' + s + '」登记成「' + def.canonical + '」的同义词，但它们是**两个字形**（' +
+            glyph(s) + ' vs ' + glyph(def.canonical) + '）—— 照这张表改名会改成另一个字');
+        }
+      }
+    }
   }
 }
 

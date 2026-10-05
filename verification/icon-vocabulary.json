@@ -23,13 +23,13 @@
     "success": {
       "canonical": "CheckCircle2",
       "synonyms": [
-        "CircleCheckBig"
+        "CircleCheck"
       ]
     },
     "success-plain": {
       "canonical": "CheckCircle",
       "synonyms": [
-        "CircleCheck"
+        "CircleCheckBig"
       ]
     },
     "help": {
@@ -83,8 +83,7 @@
     "close": {
       "canonical": "X",
       "synonyms": [
-        "XIcon",
-        "CloseIcon"
+        "XIcon"
       ]
     }
   },
