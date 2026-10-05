@@ -38,7 +38,7 @@ const today = new Date().toISOString().slice(0, 10);
 
 const FREEZE = '*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; scroll-behavior: auto !important; }';
 
-async function capture(target, port) {
+async function capture(target) {
   const root = resolve(ROOT, target.root);
   if (!existsSync(root)) return { skipped: true, reason: '产物目录不存在：' + target.root };
   let chromium;
@@ -48,7 +48,13 @@ async function capture(target, port) {
   try { browser = await chromium.launch(); }
   catch (e) { return { skipped: true, reason: '无可用 chromium：' + String(e.message || e).slice(0, 90) }; }
 
-  const server = await serveStatic(root, port);
+  // 端口交给内核分配（listen(0) 再读回真实端口）：固定端口在两个 agent 同时跑闸门时会撞 ——
+
+  // 本会话实测过一次 EADDRINUSE，而那不是判据失败，是一条**假红**。
+
+  const server = await serveStatic(root, 0);
+
+  const boundPort = server.address().port;
   const context = await browser.newContext({
     viewport: CFG.viewport,
     deviceScaleFactor: CFG.deviceScaleFactor,
@@ -59,9 +65,9 @@ async function capture(target, port) {
   });
   const page = await context.newPage();
   const failures = [];
-  page.on('response', (r) => { if (r.status() >= 400) failures.push(r.status() + ' ' + r.url().replace('http://127.0.0.1:' + port, '')); });
+  page.on('response', (r) => { if (r.status() >= 400) failures.push(r.status() + ' ' + r.url().replace('http://127.0.0.1:' + boundPort, '')); });
   try {
-    await page.goto('http://127.0.0.1:' + port + target.path, { waitUntil: 'load', timeout: 45000 });
+    await page.goto('http://127.0.0.1:' + boundPort + target.path, { waitUntil: 'load', timeout: 45000 });
     await page.addStyleTag({ content: FREEZE });
     await page.evaluate(async () => {
       await document.fonts.ready;
@@ -114,10 +120,9 @@ if (ONLY_TARGETS.length && !TARGETS.length) {
 mkdirSync(BASE_DIR, { recursive: true });
 mkdirSync(DIFF_DIR, { recursive: true });
 
-let port = 18900;
 const results = [];
 for (const target of TARGETS) {
-  const cap = await capture(target, port++);
+  const cap = await capture(target);
   if (cap.skipped) { results.push({ name: target.name, action: 'skipped', reason: cap.reason }); continue; }
   const basePath = join(BASE_DIR, target.name + '.png');
   if (cmd === 'baseline') {

@@ -174,7 +174,6 @@ const lum = ([r, g, b]) => {
 const ratio = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
 
 const targets = CFG.targets || [];
-let port = 19060;
 let checked = 0;
 let iconChecked = 0;
 const iconlessTargets = [];
@@ -183,11 +182,14 @@ const worst = [];
 for (const t of targets) {
   const root = resolve(ROOT, t.root);
   if (!existsSync(root)) { warns.push('AA1 ' + t.name + '：产物目录不存在，跳过'); continue; }
-  const server = await serveStatic(root, port++);
+  // 端口交给内核分配（listen(0) 再读回真实端口）：固定端口在两个 agent 同时跑闸门时会撞 ——
+  // 本会话实测过一次 EADDRINUSE，而那不是判据失败，是一条**假红**。
+  const server = await serveStatic(root, 0);
+  const boundPort = server.address().port;
   const ctx = await browser.newContext({ viewport: CFG.viewport, deviceScaleFactor: 1, locale: CFG.locale, reducedMotion: 'reduce', colorScheme: 'light' });
   const page = await ctx.newPage();
   try {
-    await page.goto('http://127.0.0.1:' + (port - 1) + t.path, { waitUntil: 'load', timeout: 45000 });
+    await page.goto('http://127.0.0.1:' + boundPort + t.path, { waitUntil: 'load', timeout: 45000 });
     await page.addStyleTag({ content: '*, *::before, *::after { animation: none !important; transition: none !important; }' });
     await page.evaluate(async () => { await document.fonts.ready; });
     // ── 取样前必须等页面**渲染稳定**，不能等一个固定毫秒数 ──────────────────────

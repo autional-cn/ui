@@ -187,15 +187,18 @@ if (existsSync(targetsPath)) {
     const { serveStatic } = await import('./lib/static-server.mjs');
     const targets = JSON.parse(readFileSync(targetsPath, 'utf8')).targets || [];
     const firstChoice = (T.core.font.sans || []).map((s) => String(s).replace(/^['"]|['"]$/g, '').trim())[0];
-    let port = 18960;
+    
     for (const target of targets) {
       const root = resolve(ROOT, target.root);
       if (!existsSync(root)) continue;
-      const server = await serveStatic(root, port++);
+      // 端口交给内核分配（listen(0) 再读回真实端口）：固定端口在两个 agent 同时跑闸门时会撞 ——
+      // 本会话实测过一次 EADDRINUSE，而那不是判据失败，是一条**假红**。
+      const server = await serveStatic(root, 0);
+      const boundPort = server.address().port;
       const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
       const page = await ctx.newPage();
       try {
-        await page.goto('http://127.0.0.1:' + (port - 1) + target.path, { waitUntil: 'load', timeout: 45000 });
+        await page.goto('http://127.0.0.1:' + boundPort + target.path, { waitUntil: 'load', timeout: 45000 });
         await page.evaluate(() => document.fonts.ready);
         const probe = await page.evaluate(async (fam) => {
           // 必须先强制加载：canvas 在字体尚未加载时会直接用回退字体测量，
