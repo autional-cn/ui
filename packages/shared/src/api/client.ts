@@ -129,7 +129,13 @@ function setupInterceptors(instance: AxiosInstance) {
 				!originalRequest.url?.includes('/oauth/api/v1/oauth/refresh') &&
 				// P1-4: export-data 的业务性 401（step-up 拒绝）不是会话过期，
 				// 不走 refresh 重试/登出，由页面 catch 展示错误。
-				!originalRequest.url?.includes('/auth/me/export-data')
+				!originalRequest.url?.includes('/auth/me/export-data') &&
+				// AUTH-42: delete-account 的 401 是业务性失败（step-up 缺失/过期 40800251、
+				// 密码错误 40000502），不是会话过期；走 refresh 重试会掩盖真因（审计现场
+				// 即 401→refresh 200→重试 401 双跳后误报「请检查密码是否正确」）。
+				!originalRequest.url?.includes('/auth/me/delete-account') &&
+				// re-authenticate 同理：密码错误 401（40000502）须由页面按 code 分流文案。
+				!originalRequest.url?.includes('/auth/re-authenticate')
 			) {
 				originalRequest._retry = true;
 

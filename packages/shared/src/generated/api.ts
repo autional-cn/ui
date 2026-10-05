@@ -5290,8 +5290,8 @@ export async function authMeConsentHistory() {
  * 永久删除账户 (GDPR 被遗忘权/账户删除)
  * 依据GDPR第17条，永久删除用户账户数据，需密码验证，不可恢复
  */
-export async function authMeDeleteAccountPost() {
-  const res = await api.post(`/identity/api/v1/auth/me/delete-account`);
+export async function authMeDeleteAccountPost(data?: DeleteAccountRequest, options?: { headers?: Record<string, string> }) {
+  const res = await api.post(`/identity/api/v1/auth/me/delete-account`, data, options);
   return res.data;
 }
 

@@ -4856,6 +4856,12 @@ export interface DeactivateAccountResponse {
   message?: string;
 }
 
+/** 永久删除账户请求参数（GDPR 被遗忘权） */
+export interface DeleteAccountRequest {
+  password: string;  // 当前密码（后端 VerifyPassword 原样校验，须按租户传输模式预处理） | @example CurrentP@ssw0rd
+  reason?: string;  // 可选删除原因 | @example no longer needed
+}
+
 /** 删除账户结果 */
 export interface DeleteAccountResponse {
   deletedAt?: string;  // Deletion time | @example 2026-04-15T10:00:00Z
