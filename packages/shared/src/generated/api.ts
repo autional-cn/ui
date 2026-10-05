@@ -8338,6 +8338,20 @@ export async function adminPaymentsReceiptByPayments(paymentId: string) {
 }
 
 /**
+ * 查询退款列表（管理端）
+ * 租户级退款记录单源（pay_refund_records），与退款写链同源；供控制台退款页与支付详情页签读取。参考：PCI DSS v4.0 Req 3.3 (Mask PAN)、PCI DSS v4.0 Req 4 (Encrypt Transmission)。
+ * @generated-api-exempt W2-01（A-352）：生成器脚本不在工作区（部署日志 §3021/§3040）；按既有生成风格手工补齐，生成器回归后对账。
+ */
+export async function adminRefunds(params?: {
+  status?: string;  // 退款状态（pending/succeeded/failed）
+  page?: number;  // 页码
+  page_size?: number;  // 每页数量
+}) {
+  const res = await api.get(`/pay/api/v1/admin/refunds`, { params });
+  return res.data;
+}
+
+/**
  * 查询支付列表
  * 查询支付订单列表，支持按应用ID和状态筛选。参考：PCI DSS v4.0 Req 3.3 (Mask PAN)、PCI DSS v4.0 Req 4 (Encrypt Transmission)。
  */
