@@ -11,6 +11,8 @@ export { DateRangeFilter } from './DateRangeFilter';
 export type { DateRangeFilterProps, DateRangeValue } from './DateRangeFilter';
 export { Drawer } from './Drawer';
 export type { DrawerProps, DrawerSize } from './Drawer';
+export { Modal } from './Modal';
+export type { ModalProps } from './Modal';
 
 // 整页占位：控制台的加载 / 加载失败。与 DataTable 同一个入口，站点一次 import 拿全。
 export { PageLoading, PageError } from './PageStatus';
