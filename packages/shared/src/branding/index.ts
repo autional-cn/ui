@@ -11,5 +11,5 @@ export {
 	AUTH_CONFIG_PREFIX,
 	PAGE_INIT_AUTH_CONFIG_PREFIX,
 } from './branding-cache';
-export { deriveDarkColor, deriveDarkHover, pickOnColor, hexToOklch, oklchToHex } from './brand-color';
+export { deriveDarkColor, deriveDarkHover, pickOnColor, hexToTriplet, hexToOklch, oklchToHex } from './brand-color';
 export type { Branding } from './types';

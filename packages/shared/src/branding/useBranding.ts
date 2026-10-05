@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef } from 'react';
 import { useTenantSlugFromUrl } from '../auth/slug-from-url';
-import { deriveDarkColor, deriveDarkHover, pickOnColor } from './brand-color';
+import { deriveDarkColor, deriveDarkHover, hexToTriplet, pickOnColor } from './brand-color';
 import { readCachedBranding } from './branding-cache';
 import { useTenantBrandingStore } from './tenant-store';
 
@@ -17,19 +17,32 @@ const BRAND_VARS = [
 	'--color-on-brand-dark',
 ];
 
+/** 写一个色变量及其 `-rgb` 通道三元组——Tailwind alpha 修饰符（text-brand/60）走
+ *  `rgb(var(--color-X-rgb) / a)`，只写 hex 会让品牌租户的透明度色整条丢失。
+ *  非法非 hex 值：写原值但不写三元组（回落 tokens.css 缺省），避免残留上个租户的通道。 */
+function setColorVar(root: HTMLElement, name: string, value: string): void {
+	root.style.setProperty(name, value);
+	const triplet = hexToTriplet(value);
+	if (triplet) root.style.setProperty(`${name}-rgb`, triplet);
+	else root.style.removeProperty(`${name}-rgb`);
+}
+
 export function applyBrandColors(color: string, darkOverride?: string): void {
 	const root = document.documentElement;
 	if (!color) {
-		BRAND_VARS.forEach((v) => root.style.removeProperty(v));
+		BRAND_VARS.forEach((v) => {
+			root.style.removeProperty(v);
+			root.style.removeProperty(`${v}-rgb`);
+		});
 		return;
 	}
 	const dark = darkOverride || deriveDarkColor(color);
-	root.style.setProperty('--color-brand-base', color);
-	root.style.setProperty('--color-brand-hover-base', color);
-	root.style.setProperty('--color-brand-dark', dark);
-	root.style.setProperty('--color-brand-dark-hover', deriveDarkHover(color));
-	root.style.setProperty('--color-on-brand-base', pickOnColor(color));
-	root.style.setProperty('--color-on-brand-dark', pickOnColor(dark));
+	setColorVar(root, '--color-brand-base', color);
+	setColorVar(root, '--color-brand-hover-base', color);
+	setColorVar(root, '--color-brand-dark', dark);
+	setColorVar(root, '--color-brand-dark-hover', deriveDarkHover(color));
+	setColorVar(root, '--color-on-brand-base', pickOnColor(color));
+	setColorVar(root, '--color-on-brand-dark', pickOnColor(dark));
 }
 
 /**

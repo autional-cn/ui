@@ -36,11 +36,39 @@ const cssValue = (v) => {
   throw new Error(`Unsupported token value: ${JSON.stringify(v)}`);
 };
 
+/** `#rrggbb` → `r g b` 通道三元组（浏览器 space-separated rgb() 语法）。 */
+function rgbTriplet(hex) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) throw new Error(`Expected #rrggbb, got ${JSON.stringify(hex)}`);
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(' ');
+}
+
+/**
+ * `-rgb` 伴随值：同一颜色的通道三元组表达。每个颜色变量都配一份，让 Tailwind 的
+ * 透明度修饰符路径（parseColor loose → `rgb(<channels> / N)`）有可解析的通道。
+ * ref → 指向目标伴随变量；var()-fallback 链 → 每个 var 名补 `-rgb`；字面 hex → 现算。
+ * 其它形态在生成期直接报错（失败要响，不静默降级成死类）。
+ */
+function rgbCompanion(v) {
+  if (isRef(v)) {
+    const path = refPath(v);
+    if (path[0] !== 'color') throw new Error(`Color ref out of the color namespace: ${v}`);
+    return `var(${varName(path)}-rgb)`;
+  }
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return rgbTriplet(v);
+  if (v.includes('var(')) return v.replace(/(--[a-zA-Z0-9-]+)/g, '$1-rgb');
+  throw new Error(`Unsupported color value for -rgb companion: ${JSON.stringify(v)}`);
+}
+
 const GENERIC_FAMILIES = new Set(['sans-serif', 'serif', 'monospace', 'system-ui', 'ui-sans-serif', 'cursive', 'fantasy']);
 const cssFontStack = (stack) =>
   stack.map((f) => (GENERIC_FAMILIES.has(f) || !/[\s\d]/.test(f) ? f : `'${f}'`)).join(', ');
 
-/** Emit CSS custom properties for one namespace-keyed object (`$` keys skipped). */
+/**
+ * Emit CSS custom properties for one namespace-keyed object (`$` keys skipped).
+ * 色树（ns === 'color'）的每个变量额外发一份 `-rgb` 通道三元组伴随变量
+ * （见 rgbCompanion）——preset 的 `rgb(var(--color-X-rgb))` 形态依赖它。
+ * 伴随变量有变体/profile 的分区时跟随 base 变量走同一代码路径，天然同构。
+ */
 function emitVars(tree, indent = '  ') {
   const lines = [];
   const space = ' '.repeat(indent);
@@ -67,9 +95,11 @@ function emitVars(tree, indent = '  ') {
           for (const [k2, v2] of Object.entries(v)) {
             if (k2.startsWith('$')) continue;
             lines.push(`${space}${varName([ns, k, k2])}: ${cssValue(v2)};`);
+            if (ns === 'color') lines.push(`${space}${varName([ns, k, k2])}-rgb: ${rgbCompanion(v2)};`);
           }
         } else {
           lines.push(`${space}${varName([ns, k])}: ${cssValue(v)};`);
+          if (ns === 'color') lines.push(`${space}${varName([ns, k])}-rgb: ${rgbCompanion(v)};`);
         }
       }
     }
@@ -534,29 +564,61 @@ const FLAT_COLORS = [
   ['border-subtle', 'border-subtle'],
   ['border-strong', 'border-strong'],
 ];
+// ── 色值形态：rgb(var(--color-X-rgb)) 通道三元组 ────────────────────────────
+// 颜色统一发成 `rgb(var(--color-X-rgb))`，让透明度修饰符在任何颜色上可用：
+//   bg-primary-500        → background-color: rgb(var(--color-primary-500-rgb))
+//   bg-primary-500/10     → background-color: rgb(var(--color-primary-500-rgb) / 0.1)
+//   text-success-text/60  → color: rgb(var(--color-success-text-rgb) / 0.6)
+// 背景（U394/U379，2026-10-05 全舰队实测）：旧形态是裸 `var(--color-X)`，
+// Tailwind 3.4 对带 `/NN` 的候选走宽松 parseColor——它只认 #hex / rgb() / 颜色名词，
+// 裸 var() 解析为 null ⇒ withAlphaValue 返回 undefined ⇒ **整条规则静默丢弃**：
+// 类写了、构建成功、页面上没有效果（渲染面 112 处：authenticator 57 / status 31 /
+// user 18 / brand 5 / web 1；另有 65 处 `[var(--color-x)]/NN` 任意值形态同因死掉）。
+// `-rgb` 通道三元组变量由 tokens.css 机械同构生成（含 dark / 变体 / profile 各作用域，
+// 见 emitVars + rgbCompanion），任何主题下 alpha 都可用。新形态在三类路径均可解析：
+//   ① 无修饰符 → 原样输出（合法 CSS，space-separated rgb() 语法）；
+//   ② 修饰符 `/NN` 与 ③ 任意 `[.NN]` → 宽松 parseColor 取到通道 → `rgb(<channels> / N)`。
+//
 // 注意这里**不能**用补 DEFAULT 的方式去解决 bg-primary / text-primary：
 // 设计系统的令牌名自带语义前缀（--color-bg-primary / --color-text-primary），
 // Tailwind 的 utility 也加前缀（bg- / text- / border-），两者叠加就撞车。
-// 而 colors.primary 是**色阶**（50..900、无 DEFAULT），于是
-//   bg-primary / text-primary / border-primary 一个类都生成不出来。
-// 更麻烦的是设计系统里 bg-primary 与 text-primary 是**两个不同令牌**
-// （页面底色 vs 正文色），Tailwind 的一个 colors.X 只能有一个 DEFAULT ——
-// 让 text-primary 生效就会让 bg-primary 拿到正文色。
-// 实测（2026-09-29）全舰队因此有 133 处类名写了、构建成功、页面上什么都没发生：
-//   text-primary 74 / text-muted 29 / bg-primary 17 / border-primary 11 / bg-elevated 2。
-// 命名口径的收敛方案见 docs/PORTAL-UI-UNIFICATION-PLAN-V2.md §P6，定下来之前不盲改。
+// 而 colors.primary 是**色阶**（50..900、无 DEFAULT），于是 bg-primary / border-primary
+// 一个类都生成不出来——K1 闸门（check-classnames.mjs）把这种死类变响，教写
+// bg-[var(--color-bg-primary)] 或 bg-primary-700。唯一开给的语义例外是**文本色**
+// （text-primary 等），由下方 semanticTextUtilities 插件组提供——那是 K1 的历史实况
+// （2026-09-29 实测 133 处写了不生成、text-primary 居首）倒逼出来的收敛（U389）。
+// 取舍记录见 docs/PORTAL-UI-UNIFICATION-PLAN-V2.md §P6 与 DESIGN.md
+//「Ramp families have no DEFAULT」——不补 DEFAULT 的决定不变。
 
 const presetColors = {};
 for (const name of PALETTES) {
   presetColors[name] = Object.fromEntries(
     Object.entries(TOKENS.core.color[name])
       .filter(([k]) => !k.startsWith('$'))
-      .map(([k]) => [k, `var(${varName(['color', name, k])})`]),
+      .map(([k]) => [k, `rgb(var(${varName(['color', name, k])}-rgb))`]),
   );
 }
+const colorKeys = new Set(Object.keys(TOKENS.core.color).filter((k) => !k.startsWith('$')));
 for (const [className, varSuffix] of FLAT_COLORS) {
-  presetColors[className] = `var(--color-${varSuffix})`;
+  if (!colorKeys.has(varSuffix)) {
+    throw new Error(`FLAT_COLORS「${className}」指向不存在的令牌 color.${varSuffix}`);
+  }
+  presetColors[className] = `rgb(var(--color-${varSuffix}-rgb))`;
 }
+
+// ── U389 语义文本色类组 ─────────────────────────────────────────────────────
+// 色阶无 DEFAULT 是刻意的（上），但 `text-primary`（正文色）是全舰队作者最自然的
+// 直觉写法，K1 只能报死 + 教任意值形态。U389 给语义文本色一条正路：令牌名即类名——
+// 所有 `text-*` 令牌 → 同名工具类（`.text-primary { color: var(--color-text-primary) }`）。
+// 走插件 addUtilities：每个名字独立、与色阶零 slot 冲突；深色主题天然继承——语义
+// 变量在各作用域自动换值，无需 dark: 变体。text-inverse 刻意排除：flat「inverse」
+// 已提供同名类且绑同一变量，不重复生成。注意静态类**不带** `/NN` 通道：需要透明度
+// 的语义文本用任意值通道形态 `text-[rgb(var(--color-text-primary-rgb))]/50`。
+const semanticTextUtilities = Object.fromEntries(
+  Object.keys(TOKENS.core.color)
+    .filter((k) => /^text-[a-z0-9-]+$/.test(k) && k !== 'text-inverse')
+    .map((k) => ['.' + k, { color: `var(${varName(['color', k])})` }]),
+);
 
 const presetFontSize = Object.fromEntries(
   Object.entries(TOKENS.core['font-size'])
@@ -591,12 +653,16 @@ const preset = {
       ),
     },
   },
-  plugins: [],
 };
 
 outputs.set(
   'packages/tailwind-preset/index.js',
-  `/** @type {import('tailwindcss').Config} */\n// ${GENERATED('tokens/tokens.json')}\nmodule.exports = ${js(preset)};\n`,
+  `/** @type {import('tailwindcss').Config} */\n// ${GENERATED('tokens/tokens.json')}\n` +
+    `const semanticTextPlugin = ({ addUtilities }) => {\n` +
+    `  addUtilities(${js(semanticTextUtilities, 1)});\n` +
+    `};\n` +
+    `module.exports = ${js(preset)};\n` +
+    `module.exports.plugins = [semanticTextPlugin];\n`,
 );
 
 outputs.set(

@@ -1,101 +1,117 @@
 /** @type {import('tailwindcss').Config} */
 // GENERATED FILE — DO NOT EDIT. Source: tokens/tokens.json · Regenerate: pnpm gen · v0.1.0-rc
+const semanticTextPlugin = ({ addUtilities }) => {
+  addUtilities({
+    '.text-disabled': {
+      color: 'var(--color-text-disabled)'
+    },
+    '.text-primary': {
+      color: 'var(--color-text-primary)'
+    },
+    '.text-secondary': {
+      color: 'var(--color-text-secondary)'
+    },
+    '.text-muted': {
+      color: 'var(--color-text-muted)'
+    }
+  });
+};
 module.exports = {
   theme: {
     extend: {
       colors: {
         primary: {
-          '50': 'var(--color-primary-50)',
-          '100': 'var(--color-primary-100)',
-          '200': 'var(--color-primary-200)',
-          '300': 'var(--color-primary-300)',
-          '400': 'var(--color-primary-400)',
-          '500': 'var(--color-primary-500)',
-          '600': 'var(--color-primary-600)',
-          '700': 'var(--color-primary-700)',
-          '800': 'var(--color-primary-800)',
-          '900': 'var(--color-primary-900)'
+          '50': 'rgb(var(--color-primary-50-rgb))',
+          '100': 'rgb(var(--color-primary-100-rgb))',
+          '200': 'rgb(var(--color-primary-200-rgb))',
+          '300': 'rgb(var(--color-primary-300-rgb))',
+          '400': 'rgb(var(--color-primary-400-rgb))',
+          '500': 'rgb(var(--color-primary-500-rgb))',
+          '600': 'rgb(var(--color-primary-600-rgb))',
+          '700': 'rgb(var(--color-primary-700-rgb))',
+          '800': 'rgb(var(--color-primary-800-rgb))',
+          '900': 'rgb(var(--color-primary-900-rgb))'
         },
         sky: {
-          '50': 'var(--color-sky-50)',
-          '100': 'var(--color-sky-100)',
-          '200': 'var(--color-sky-200)',
-          '300': 'var(--color-sky-300)',
-          '400': 'var(--color-sky-400)',
-          '500': 'var(--color-sky-500)',
-          '600': 'var(--color-sky-600)',
-          '700': 'var(--color-sky-700)',
-          '800': 'var(--color-sky-800)',
-          '900': 'var(--color-sky-900)'
+          '50': 'rgb(var(--color-sky-50-rgb))',
+          '100': 'rgb(var(--color-sky-100-rgb))',
+          '200': 'rgb(var(--color-sky-200-rgb))',
+          '300': 'rgb(var(--color-sky-300-rgb))',
+          '400': 'rgb(var(--color-sky-400-rgb))',
+          '500': 'rgb(var(--color-sky-500-rgb))',
+          '600': 'rgb(var(--color-sky-600-rgb))',
+          '700': 'rgb(var(--color-sky-700-rgb))',
+          '800': 'rgb(var(--color-sky-800-rgb))',
+          '900': 'rgb(var(--color-sky-900-rgb))'
         },
         amber: {
-          '50': 'var(--color-amber-50)',
-          '100': 'var(--color-amber-100)',
-          '200': 'var(--color-amber-200)',
-          '300': 'var(--color-amber-300)',
-          '400': 'var(--color-amber-400)',
-          '500': 'var(--color-amber-500)',
-          '600': 'var(--color-amber-600)',
-          '700': 'var(--color-amber-700)',
-          '800': 'var(--color-amber-800)',
-          '900': 'var(--color-amber-900)'
+          '50': 'rgb(var(--color-amber-50-rgb))',
+          '100': 'rgb(var(--color-amber-100-rgb))',
+          '200': 'rgb(var(--color-amber-200-rgb))',
+          '300': 'rgb(var(--color-amber-300-rgb))',
+          '400': 'rgb(var(--color-amber-400-rgb))',
+          '500': 'rgb(var(--color-amber-500-rgb))',
+          '600': 'rgb(var(--color-amber-600-rgb))',
+          '700': 'rgb(var(--color-amber-700-rgb))',
+          '800': 'rgb(var(--color-amber-800-rgb))',
+          '900': 'rgb(var(--color-amber-900-rgb))'
         },
         neutral: {
-          '0': 'var(--color-neutral-0)',
-          '50': 'var(--color-neutral-50)',
-          '100': 'var(--color-neutral-100)',
-          '200': 'var(--color-neutral-200)',
-          '300': 'var(--color-neutral-300)',
-          '400': 'var(--color-neutral-400)',
-          '500': 'var(--color-neutral-500)',
-          '600': 'var(--color-neutral-600)',
-          '700': 'var(--color-neutral-700)',
-          '800': 'var(--color-neutral-800)',
-          '900': 'var(--color-neutral-900)'
+          '0': 'rgb(var(--color-neutral-0-rgb))',
+          '50': 'rgb(var(--color-neutral-50-rgb))',
+          '100': 'rgb(var(--color-neutral-100-rgb))',
+          '200': 'rgb(var(--color-neutral-200-rgb))',
+          '300': 'rgb(var(--color-neutral-300-rgb))',
+          '400': 'rgb(var(--color-neutral-400-rgb))',
+          '500': 'rgb(var(--color-neutral-500-rgb))',
+          '600': 'rgb(var(--color-neutral-600-rgb))',
+          '700': 'rgb(var(--color-neutral-700-rgb))',
+          '800': 'rgb(var(--color-neutral-800-rgb))',
+          '900': 'rgb(var(--color-neutral-900-rgb))'
         },
         chart: {
-          '1': 'var(--color-chart-1)',
-          '2': 'var(--color-chart-2)',
-          '3': 'var(--color-chart-3)',
-          '4': 'var(--color-chart-4)',
-          '5': 'var(--color-chart-5)',
-          '6': 'var(--color-chart-6)',
-          '7': 'var(--color-chart-7)',
-          '8': 'var(--color-chart-8)'
+          '1': 'rgb(var(--color-chart-1-rgb))',
+          '2': 'rgb(var(--color-chart-2-rgb))',
+          '3': 'rgb(var(--color-chart-3-rgb))',
+          '4': 'rgb(var(--color-chart-4-rgb))',
+          '5': 'rgb(var(--color-chart-5-rgb))',
+          '6': 'rgb(var(--color-chart-6-rgb))',
+          '7': 'rgb(var(--color-chart-7-rgb))',
+          '8': 'rgb(var(--color-chart-8-rgb))'
         },
         method: {
-          get: 'var(--color-method-get)',
-          post: 'var(--color-method-post)',
-          put: 'var(--color-method-put)',
-          patch: 'var(--color-method-patch)',
-          delete: 'var(--color-method-delete)',
-          head: 'var(--color-method-head)'
+          get: 'rgb(var(--color-method-get-rgb))',
+          post: 'rgb(var(--color-method-post-rgb))',
+          put: 'rgb(var(--color-method-put-rgb))',
+          patch: 'rgb(var(--color-method-patch-rgb))',
+          delete: 'rgb(var(--color-method-delete-rgb))',
+          head: 'rgb(var(--color-method-head-rgb))'
         },
-        success: 'var(--color-success)',
-        warning: 'var(--color-warning)',
-        danger: 'var(--color-danger)',
-        'success-soft': 'var(--color-success-soft)',
-        'warning-soft': 'var(--color-warning-soft)',
-        'danger-soft': 'var(--color-danger-soft)',
-        'success-text': 'var(--color-success-text)',
-        'warning-text': 'var(--color-warning-text)',
-        'danger-text': 'var(--color-danger-text)',
-        error: 'var(--color-danger)',
-        info: 'var(--color-info)',
-        'info-text': 'var(--color-info-text)',
-        'info-soft': 'var(--color-info-soft)',
-        brand: 'var(--color-brand)',
-        'brand-hover': 'var(--color-brand-hover)',
-        'brand-soft': 'var(--color-brand-soft)',
-        'brand-active': 'var(--color-brand-active)',
-        accent: 'var(--color-accent)',
-        inverse: 'var(--color-text-inverse)',
-        surface: 'var(--color-bg-surface)',
-        muted: 'var(--color-bg-muted)',
-        elevated: 'var(--color-bg-elevated)',
-        developer: 'var(--color-bg-developer)',
-        'border-subtle': 'var(--color-border-subtle)',
-        'border-strong': 'var(--color-border-strong)'
+        success: 'rgb(var(--color-success-rgb))',
+        warning: 'rgb(var(--color-warning-rgb))',
+        danger: 'rgb(var(--color-danger-rgb))',
+        'success-soft': 'rgb(var(--color-success-soft-rgb))',
+        'warning-soft': 'rgb(var(--color-warning-soft-rgb))',
+        'danger-soft': 'rgb(var(--color-danger-soft-rgb))',
+        'success-text': 'rgb(var(--color-success-text-rgb))',
+        'warning-text': 'rgb(var(--color-warning-text-rgb))',
+        'danger-text': 'rgb(var(--color-danger-text-rgb))',
+        error: 'rgb(var(--color-danger-rgb))',
+        info: 'rgb(var(--color-info-rgb))',
+        'info-text': 'rgb(var(--color-info-text-rgb))',
+        'info-soft': 'rgb(var(--color-info-soft-rgb))',
+        brand: 'rgb(var(--color-brand-rgb))',
+        'brand-hover': 'rgb(var(--color-brand-hover-rgb))',
+        'brand-soft': 'rgb(var(--color-brand-soft-rgb))',
+        'brand-active': 'rgb(var(--color-brand-active-rgb))',
+        accent: 'rgb(var(--color-accent-rgb))',
+        inverse: 'rgb(var(--color-text-inverse-rgb))',
+        surface: 'rgb(var(--color-bg-surface-rgb))',
+        muted: 'rgb(var(--color-bg-muted-rgb))',
+        elevated: 'rgb(var(--color-bg-elevated-rgb))',
+        developer: 'rgb(var(--color-bg-developer-rgb))',
+        'border-subtle': 'rgb(var(--color-border-subtle-rgb))',
+        'border-strong': 'rgb(var(--color-border-strong-rgb))'
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', 'sans-serif'],
@@ -226,6 +242,6 @@ module.exports = {
         'page-dark': 'var(--image-page-dark)'
       }
     }
-  },
-  plugins: []
+  }
 };
+module.exports.plugins = [semanticTextPlugin];

@@ -14,6 +14,10 @@
 // 这道闸门没有假阳性：命中即错——裸的 {utility}-{palette} 在任何情况下都不可能有规则。
 // 它读的是 SSOT 的实际构造而非写死的名单，所以将来谁给某个色阶补了 DEFAULT，会自动放行。
 //
+// 例外（U389，2026-10-05）：`text-primary/secondary/muted/disabled` 由预设插件按令牌名
+// 生成为**真实规则**（semanticTextUtilities），K1 按 SSOT 派生豁免（见下方 SEMANTIC_TEXT）；
+// `bg-primary` / `border-primary` 等其余裸色阶仍判死——没有 DEFAULT 的决定不变。
+//
 // 「不补 DEFAULT」是**刻意的决定**（2026-09-29 拍板，理由写在 DESIGN.md
 // § Tailwind overrides →「Ramp families have no DEFAULT」）。关键的反直觉点：
 //   --color-bg-primary 是**页面底色**（--color-neutral-50），不是品牌蓝；
@@ -36,6 +40,12 @@ const color = stripMeta(loadTokens().core.color);
 const PALLETES = Object.keys(color).filter((k) => color[k] && typeof color[k] === 'object'
   && !Array.isArray(color[k]) && !Object.keys(color[k]).includes('DEFAULT'));
 const PREFIXES = ['bg','text','border','ring','fill','stroke','from','to','via','divide','outline','decoration','placeholder','caret','shadow','accent'];
+
+// U389（2026-10-05）：语义文本色类组。令牌键 `text-primary/secondary/muted/disabled`
+// 由预设插件按令牌名生成真实规则（generate.mjs semanticTextUtilities）⇒ 对 `text-<键>`
+// 这一精确形态豁免 K1。豁免集从 SSOT 派生（与 `text-inverse` 排除一致：flat inverse
+// 色已提供同 var 的 text-inverse 类）；`bg-primary` 等其它裸色阶不受影响，仍判死。
+const SEMANTIC_TEXT = new Set(Object.keys(color).filter((k) => /^text-[a-z0-9-]+$/.test(k) && k !== 'text-inverse'));
 
 // 名字都是 [a-z-]，不含正则元字符，直接拼接即可。
 // 左边界必须有：没有它，text-primary 会匹配到 --color-text-primary 里面去，
@@ -84,13 +94,18 @@ const FG_PREFIXES = ['text', 'fill', 'stroke', 'decoration', 'caret'];
 const FILL_RE = new RegExp('(?<!dark:)' + NEG + '(?:' + FG_PREFIXES.join('|') + ')-(' + [...FILL_ONLY.keys()].join('|') + ')' + NEG2, 'g');
 
 const SKIPDIR = new Set(['node_modules','.git','dist','.astro','.next','public','build','coverage','generated']);
+// 测试面不在管辖内（U394，2026-10-05）：能力回归锁**刻意**以死类字面量作负例探针
+// （如 trust theme-class-guard 的 'bg-primary/10' 编译探针），且测试产物不上线。
+// 不排除会产生已知假阳性——本闸门「命中即错」的前提是对**上线内容**而言的。
+function isTestFile(name) { return /\.(test|spec)\.[jt]sx?$/.test(name); }
+// theme-class-guard 自己的 collectSourceFiles 同样跳过 __tests__/test——两处口径一致。
 function walk(d, out) {
   let es; try { es = readdirSync(d, { withFileTypes: true }); } catch (e) { return out; }
   for (const e of es) {
-    if (SKIPDIR.has(e.name)) continue;
+    if (SKIPDIR.has(e.name) || e.name === '__tests__' || e.name === 'test') continue;
     const p = join(d, e.name);
     if (e.isDirectory()) walk(p, out);
-    else if (['.tsx','.jsx','.ts','.astro','.html','.mdx'].includes(extname(e.name))) out.push(p);
+    else if (!isTestFile(e.name) && ['.tsx','.jsx','.ts','.astro','.html','.mdx'].includes(extname(e.name))) out.push(p);
   }
   return out;
 }
@@ -116,7 +131,10 @@ for (const site of readdirSync(SITES)) {
     lines.forEach((ln, i) => {
       const code = ln.replace(/\/\/.*$/, '');
       const m = code.match(RE);
-      if (m) for (const cls of new Set(m)) hits.push({ cls, file: relative(SITES, f).replace(/\\/g, '/'), line: i + 1 });
+      if (m) for (const cls of new Set(m)) {
+        if (SEMANTIC_TEXT.has(cls)) continue;   // U389 语义文本类：有真实插件规则
+        hits.push({ cls, file: relative(SITES, f).replace(/\\/g, '/'), line: i + 1 });
+      }
       const m2 = code.match(FILL_RE);
       if (m2) for (const cls of new Set(m2)) {
         const key = cls.replace(/^(text|fill|stroke|decoration|caret)-/, '');
@@ -145,7 +163,8 @@ for (const site of readdirSync(SITES)) {
     problems.push('K1 ' + site + '：' + cls + ' × ' + v.length + '（首处 ' + v[0].file + ':' + v[0].line +
       '）—— 色阶没有 DEFAULT 键（刻意如此，见 DESIGN.md「Ramp families have no DEFAULT」），这个类生成不出来。' +
       '品牌蓝写 <utility>-primary-700（#003153）；页面底色写 bg-[var(--color-bg-primary)]；' +
-      '正文色写 text-[var(--color-text-primary)]——注意 --color-bg-primary 是页面底色，不是品牌蓝');
+      '标题/正文色写 text-primary / text-secondary / text-muted / text-disabled（U389 语义类组）' +
+      '或 text-[var(--color-text-primary)]——注意 --color-bg-primary 是页面底色，不是品牌蓝');
   }
 }
 

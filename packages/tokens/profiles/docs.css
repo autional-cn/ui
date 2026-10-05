@@ -6,35 +6,65 @@
 :root {
 /* ── color ── */
 --color-primary-50: #e9f3f9;
+--color-primary-50-rgb: 233 243 249;
 --color-primary-100: #d1e5f2;
+--color-primary-100-rgb: 209 229 242;
 --color-primary-200: #9ec2db;
+--color-primary-200-rgb: 158 194 219;
 --color-primary-300: #6a9fbe;
+--color-primary-300-rgb: 106 159 190;
 --color-primary-400: #3c779a;
+--color-primary-400-rgb: 60 119 154;
 --color-primary-500: #235f84;
+--color-primary-500-rgb: 35 95 132;
 --color-primary-600: #124b70;
+--color-primary-600-rgb: 18 75 112;
 --color-primary-700: #003153;
+--color-primary-700-rgb: 0 49 83;
 --color-primary-800: #032845;
+--color-primary-800-rgb: 3 40 69;
 --color-primary-900: #021c31;
+--color-primary-900-rgb: 2 28 49;
 --color-sky-50: #eef9fd;
+--color-sky-50-rgb: 238 249 253;
 --color-sky-100: #d6f0fa;
+--color-sky-100-rgb: 214 240 250;
 --color-sky-200: #b4e3f6;
+--color-sky-200-rgb: 180 227 246;
 --color-sky-300: #87ceeb;
+--color-sky-300-rgb: 135 206 235;
 --color-sky-400: #59bcde;
+--color-sky-400-rgb: 89 188 222;
 --color-sky-500: #3094b8;
+--color-sky-500-rgb: 48 148 184;
 --color-sky-600: #24778f;
+--color-sky-600-rgb: 36 119 143;
 --color-sky-700: #1f6173;
+--color-sky-700-rgb: 31 97 115;
 --color-sky-800: #1d505f;
+--color-sky-800-rgb: 29 80 95;
 --color-sky-900: #1d434f;
+--color-sky-900-rgb: 29 67 79;
 --color-amber-50: #fff8e6;
+--color-amber-50-rgb: 255 248 230;
 --color-amber-100: #ffefbf;
+--color-amber-100-rgb: 255 239 191;
 --color-amber-200: #ffdf80;
+--color-amber-200-rgb: 255 223 128;
 --color-amber-300: #ffcf40;
+--color-amber-300-rgb: 255 207 64;
 --color-amber-400: #ffc71a;
+--color-amber-400-rgb: 255 199 26;
 --color-amber-500: #ffbf00;
+--color-amber-500-rgb: 255 191 0;
 --color-amber-600: #d69f00;
+--color-amber-600-rgb: 214 159 0;
 --color-amber-700: #a67800;
+--color-amber-700-rgb: 166 120 0;
 --color-amber-800: #755400;
+--color-amber-800-rgb: 117 84 0;
 --color-amber-900: #4a3500;
+--color-amber-900-rgb: 74 53 0;
 
 /* ── shadow ── */
 --shadow-soft: 0 16px 40px rgba(0, 49, 83, 0.10);
@@ -45,4 +75,5 @@
 :root:not(.dark):not([data-theme="dark"]):not([data-theme="authenticator"]) {
 /* ── color ── */
 --color-border-subtle: var(--color-primary-100);
+--color-border-subtle-rgb: var(--color-primary-100-rgb);
 }

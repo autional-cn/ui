@@ -15,7 +15,7 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
-import { ROOT } from './lib/tokens.mjs';
+import { ROOT, loadTokens, stripMeta } from './lib/tokens.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -33,7 +33,69 @@ const NEEDS_PLUGIN = [
   { probe: /(^|[\s"'`])prose(-[a-z0-9]+)?([\s"'`]|$)/, pkg: '@tailwindcss/typography', label: 'prose' },
 ];
 
-if (!existsSync(SITES)) { console.log('check-preset-capabilities：本次工作区没有 sites/，跳过'); process.exit(0); }
+// ── 预设产物能力（ui 侧，U394/U389，2026-10-05）──────────────────────────────
+// 上文管站点「模板用了插件类、插件没装」；这一段管预设**产物自身**的能力面：
+//  ① 色值全走通道三元组 `rgb(var(--color-*-rgb))` —— U394 根修后的唯一合法形态。
+//     回归为裸 `var(--color-*)`/hex 时，带 `/NN` 的类被 Tailwind 3.4 静默丢弃
+//     （parseColor 宽松路径拿不到通道 → undefined → 整条规则不生成）；全舰队实测
+//     112 处死类 + 65 处 arbitrary-var 死类即此根因。
+//  ② 每个被引用的伴随变量 `--color-*-rgb` 在 tokens.css 有声明（没了通道 = 死类回归）。
+//  ③ 语义文本色类组（U389）：tokens 每个 /^text-/ 键（除 text-inverse——flat inverse
+//     色已提供 text-inverse 类）都有一一对应的插件工具类，且绑同名令牌变量。
+const presetProblems = [];
+const presetStats = { colors: 0, companions: 0, semantic: 0 };
+const SITES_ABSENT = !existsSync(SITES);
+try {
+  const { createRequire } = await import('node:module');
+  const preset = createRequire(import.meta.url)(join(ROOT, 'packages', 'tailwind-preset', 'index.js'));
+  const tokensCss = readFileSync(join(ROOT, 'packages', 'tokens', 'tokens.css'), 'utf8');
+
+  const VALUE_OK = /^rgb\(var\(--color-[a-z0-9-]+-rgb\)\)$/;
+  const referenced = new Set();
+  const walkColors = (node, path) => {
+    for (const [k, v] of Object.entries(node)) {
+      if (typeof v === 'string') {
+        presetStats.colors++;
+        if (!VALUE_OK.test(v)) {
+          presetProblems.push('P1 色值未走通道三元组：theme.extend.colors.' + path + k + ' = ' + JSON.stringify(v) +
+            '—— 回归为裸 var()/hex 时带 /NN 的类被 Tailwind 静默丢弃（U394 根因）；应为 rgb(var(--color-<名>-rgb))');
+        } else {
+          referenced.add(v.match(/--color-[a-z0-9-]+-rgb/)[0]);
+        }
+      } else if (v && typeof v === 'object') walkColors(v, path + k + '.');
+    }
+  };
+  walkColors(preset.theme?.extend?.colors ?? {}, '');
+  for (const name of referenced) {
+    presetStats.companions++;
+    if (!tokensCss.includes(name + ':')) {
+      presetProblems.push('P1 tokens.css 缺伴随变量声明 ' + name + '（preset 引用了它 ⇒ /NN 路径解析不到通道，整类死亡）');
+    }
+  }
+
+  const utilities = {};
+  for (const p of preset.plugins ?? []) {
+    const fn = typeof p === 'function' ? p : p && typeof p.handler === 'function' ? p.handler : null;
+    if (!fn) continue;
+    try { fn({ addUtilities: (u) => Object.assign(utilities, u) }); }
+    catch (e) { presetProblems.push('P1 预设插件执行失败（语义类组无法生成）：' + e.message); }
+  }
+  const expectedSemantic = Object.keys(stripMeta(loadTokens().core.color))
+    .filter((k) => /^text-[a-z0-9-]+$/.test(k) && k !== 'text-inverse');
+  presetStats.semantic = expectedSemantic.length;
+  for (const name of expectedSemantic) {
+    const u = utilities['.' + name];
+    if (!u || u.color !== 'var(--color-' + name + ')') {
+      presetProblems.push('P1 语义文本类缺失/错绑：.' + name + ' 应为 { color: \'var(--color-' + name + ')\' }（U389 类组应与 tokens /^text-/ 键一一对应）');
+    }
+  }
+  const extra = Object.keys(utilities).filter((k) => !expectedSemantic.includes(k.slice(1)));
+  if (extra.length) {
+    presetProblems.push('P1 插件工具类超出令牌派生集：' + extra.join('、') + '——语义类组由 tokens /^text-/ 键单源派生，勿手工加类');
+  }
+} catch (e) {
+  presetProblems.push('P1 预设产物加载失败：' + e.message);
+}
 
 const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage']);
 function walk(d, out, test) {
@@ -48,7 +110,8 @@ function walk(d, out, test) {
 
 const problems = [];
 const rows = [];
-for (const site of readdirSync(SITES)) {
+if (SITES_ABSENT) console.log('check-preset-capabilities：本次工作区没有 sites/，跳过站点面');
+for (const site of SITES_ABSENT ? [] : readdirSync(SITES)) {
   const dir = join(SITES, site);
   if (!statSync(dir).isDirectory()) continue;
 
@@ -99,13 +162,18 @@ for (const site of readdirSync(SITES)) {
   }
 }
 
-if (AS_JSON) console.log(JSON.stringify({ rows, problems }, null, 2));
+const total = presetProblems.length + problems.length;
+if (AS_JSON) console.log(JSON.stringify({ preset: { stats: presetStats, problems: presetProblems }, rows, problems }, null, 2));
 else {
+  console.log('预设产物能力（通道三元组 + 语义类组）：色值 ' + presetStats.colors + ' 项，引用伴随变量 ' +
+    presetStats.companions + ' 个，语义文本类 ' + presetStats.semantic + ' 项 —— ' +
+    (presetProblems.length ? '有 ' + presetProblems.length + ' 项失败' : '通过'));
+  for (const p of presetProblems) console.log('  [ERROR] ' + p);
   if (rows.length) {
     console.log('预设能力契约：检查 ' + rows.length + ' 处「模板用了需要插件的类」');
     for (const r of rows) console.log('  ' + (r.configured && r.installed ? '[OK]   ' : '[ERROR] ') + r.site.padEnd(13) + r.pkg.padEnd(28) + r.used);
-  } else console.log('预设能力契约：没有站点使用需要额外插件的类');
+  } else if (!SITES_ABSENT) console.log('预设能力契约：没有站点使用需要额外插件的类');
   for (const p of problems) console.log('  [ERROR] ' + p);
-  console.log(problems.length ? '结论：有 ' + problems.length + ' 处「构建成功但能力不存在」' : '结论：预设能力契约通过');
+  console.log(total ? '结论：有 ' + total + ' 处「构建成功但能力不存在」' : '结论：预设能力契约通过');
 }
-process.exit(problems.length ? 1 : 0);
+process.exit(total ? 1 : 0);

@@ -83,6 +83,15 @@ function rgbToHex(rgb: Rgb): string {
 	);
 }
 
+/** hex → `r g b` 通道三元组（供 `--color-*-rgb` 伴随变量，Tailwind alpha 路径消费）。
+ *  防御 (N3): 非法输入返回 null（调用方回退，不抛错）。 */
+export function hexToTriplet(hex: string): string | null {
+	const norm = normalizeHex(hex);
+	if (!norm) return null;
+	const d = norm.slice(1);
+	return [0, 2, 4].map((i) => parseInt(d.slice(i, i + 2), 16)).join(' ');
+}
+
 /** hex → OKLCH [L, C, H]（防御: 非法输入返回 [0, 0, 0]，不抛错） */
 export function hexToOklch(hex: string): [number, number, number] {
 	if (normalizeHex(hex) === null) return [0, 0, 0];
