@@ -34,11 +34,11 @@
       "themeConverged": true,
       "specifiers": {
         "Table": 0,
-        "DatePicker": 6,
+        "DatePicker": 5,
         "RangePicker": 0,
         "Drawer": 0,
         "icons": 0,
-        "other": 907,
+        "other": 904,
         "subpath": 4
       },
       "filesAntd": 106,
