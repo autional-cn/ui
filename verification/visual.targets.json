@@ -58,6 +58,18 @@
       "root": "../.artifacts/authenticator-contrast",
       "path": "/?theme=light",
       "note": "同上浅色态（O-N1/N2 的失效面 = light）。同一产物目录，两个 target 各量一主题。"
+    },
+    {
+      "name": "admin-shell",
+      "root": "../.artifacts/admin-console-harness",
+      "path": "/",
+      "note": "**admin 控制台外壳的目标页**（第 53 轮）—— 与 `platform-shell` 同构、同因：admin 的 `/404` 只有设计系统的 `Result`（站点自己的图标 0 个），真实 dist 又因无后端会被自身的 `onUnauthorized` 弹走。这一页挂**真实外壳组件**（`AppShell` + admin 自己的 `NavMenu`，实测渲染出 **18 个顶级项**），只换**数据**：真实 `useAuthStore` 塞一条 `role=super_admin` 的本租户行（`useCurrentRole` 取的就是它；`usePermission` 对 super_admin 放行全部 `tenant:*`/`platform:*`）+ **feature gate 打开 `nhi`**（admin 菜单是「权限 AND featureGateKey」双过滤，`useFeatureGates()` 无数据时返回空集会让带 `nhi` 键的 5 项消失 —— 桩对 `/billing/api/v1/admin/billing/feature-gates` 返回 `nhi: enabled`）+ 其余 API 前缀短路 200（否则 401 → 跳登录页）。**已知边界**：不挂顶栏右侧控件（通知流是 L24 记过的雷），覆盖**侧栏导航**。产物：`cd sites/admin/apps/admin-console && pnpm build:harness`。"
+    },
+    {
+      "name": "platform-shell",
+      "root": "../.artifacts/platform-console-harness",
+      "path": "/",
+      "note": "**控制台外壳的目标页**（第 53 轮）—— 在此之前 platform / admin 没有任何能渲染出迁移后图标的取景框：两站的 `/404`、`/403` 页只有设计系统的 `Result`，**一个站点自己的图标都没有**（实测），而真实 dist 又进不去（见下）。这一页挂的是**真实外壳组件**：`AppShell`（实测零网络调用）+ 站点自己的 `NavMenu`（platform 侧 12 个迁移后的图标），只换**数据**：真实 `useAuthStore` 塞一条平台租户行（`usePlatformMember` 的 store 腿，否则 `NavMenu` 第 162 行 `return null`，量到的就是一张空壳）+ API 前缀 fetch 短路成 200（否则 `useTenantsQuery` 401 → `onUnauthorized` → 整页跳登录页）。**实测过真实 dist 走不通**：把会话播种进 localStorage 后直接加载 `sites/platform/apps/platform-console/dist`，控制台因无后端自我弹跳到 `auth.localhost/?from_requireauth=1&rt=localhost.session-expired…`。**已知边界**：不挂 `HeaderActions`（它会挂通知流，是 L24 记过的雷：假 token → 判会话过期 → `window.location` 跳走），所以这一页覆盖**侧栏导航**，不含顶栏右侧控件。产物：`cd sites/platform/apps/platform-console && pnpm build:harness`（目录不存在时本闸门跳过，与其它目标同一约定）。"
     }
   ]
 }
