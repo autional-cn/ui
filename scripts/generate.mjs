@@ -555,6 +555,10 @@ const FLAT_COLORS = [
   ['brand-hover', 'brand-hover'],
   ['brand-soft', 'brand-soft'],
   ['brand-active', 'brand-active'],
+  // 品牌文本角色（fill vs text 分离，AUTH-05）：品牌填充色被当文本用时对白底可能低至
+  // 3.24:1（#1890ff 实测）；text-brand-text 走 --color-brand-text（缺省=brand-base，
+  // dark 钉 brand-dark，运行期注入派生值——见 tokens.json $brand-text-note）。
+  ['brand-text', 'brand-text'],
   ['accent', 'accent'],
   ['inverse', 'text-inverse'],
   ['surface', 'bg-surface'],

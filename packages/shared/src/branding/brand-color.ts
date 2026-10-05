@@ -118,15 +118,29 @@ function mixWhite(hex: string, t: number): string {
 	return oklchToHex([L + (1 - L) * t, C * (1 - t), H]);
 }
 
-/** 内部函数（不导出）: 二分 24 迭代求最小 t∈[0,cap]，使 mixWhite(hex,t) 对 refBg 对比度 ≥ target。
- *  供 deriveDarkColor / deriveDarkHover 复用，避免二次二分（ADR-003）。 */
-function deriveT(hex: string, refBg: string, target: number, cap: number): number {
+/** 向黑色混入比例 t: OKLCH[L·(1-t), C·(1-t), H]（与 mixWhite 镜像：压低 L 与 C，保持色相）。
+ *  供 deriveTextColor——浅底上的品牌文本色需压暗而非抬亮。 */
+function mixBlack(hex: string, t: number): string {
+	const [L, C, H] = hexToOklch(hex);
+	return oklchToHex([L * (1 - t), C * (1 - t), H]);
+}
+
+/** 内部函数（不导出）: 二分 24 迭代求最小 t∈[0,cap]，使 mix(hex,t) 对 refBg 对比度 ≥ target。
+ *  mix 默认 mixWhite（暗底抬亮）；deriveTextColor 传 mixBlack（浅底压暗）。
+ *  供 deriveDarkColor / deriveDarkHover / deriveTextColor 复用，避免二次二分（ADR-003）。 */
+function deriveT(
+	hex: string,
+	refBg: string,
+	target: number,
+	cap: number,
+	mix: (hex: string, t: number) => string = mixWhite,
+): number {
 	let lo = 0;
 	let hi = cap;
 	const bgRgb = hexToRgb(refBg);
 	for (let i = 0; i < 24; i++) {
 		const mid = (lo + hi) / 2;
-		if (contrast(hexToRgb(mixWhite(hex, mid)), bgRgb) >= target) hi = mid;
+		if (contrast(hexToRgb(mix(hex, mid)), bgRgb) >= target) hi = mid;
 		else lo = mid;
 	}
 	return (lo + hi) / 2;
@@ -141,6 +155,21 @@ export function deriveDarkColor(hex: string, refBg = '#0a2940', target = 4.55, c
 	const tgt = typeof target === 'number' && !Number.isNaN(target) ? target : 4.55;
 	const c = typeof cap === 'number' && !Number.isNaN(cap) ? Math.max(0, Math.min(cap, 1)) : 0.85;
 	return mixWhite(hex, deriveT(hex, bg, tgt, c));
+}
+
+/** 推导浅底（默认白）上的品牌文本色：已达标返回原值，否则沿 mixBlack 压暗至对比度 ≥ target。
+ *  与 deriveDarkColor 方向相反（后者往白里混供暗底）——AUTH-05：品牌填充色直接作文本
+ *  （text-[var(--color-brand)]）对白底对比度随租户色浮动（#003153→13.4:1，#1890ff→3.24:1），
+ *  本函数给出「填充不变、文本另派生」的安全值，运行期写 --color-brand-text-base。
+ *  默认参数: refBg='#ffffff', target=4.55, cap=0.85。
+ *  防御 (N3): 非法 hex → 返回原值不抛错（不产生 invalid CSS 变量值）。 */
+export function deriveTextColor(hex: string, refBg = '#ffffff', target = 4.55, cap = 0.85): string {
+	if (normalizeHex(hex) === null) return hex;
+	const bg = normalizeHex(refBg) ?? '#ffffff';
+	const tgt = typeof target === 'number' && !Number.isNaN(target) ? target : 4.55;
+	const c = typeof cap === 'number' && !Number.isNaN(cap) ? Math.max(0, Math.min(cap, 1)) : 0.85;
+	if (contrast(hexToRgb(hex), hexToRgb(bg)) >= tgt) return hex;
+	return mixBlack(hex, deriveT(hex, bg, tgt, c, mixBlack));
 }
 
 /** on-brand 文本色: 选 '#ffffff' 与 '#0a0f1a' 中对比度更高者（保证 ≥4.5）。

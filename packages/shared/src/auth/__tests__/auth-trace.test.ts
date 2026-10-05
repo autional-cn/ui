@@ -154,6 +154,49 @@ describe('层 ① interstitial 提示与停留', () => {
 		expect(replaceSpy).toHaveBeenCalledTimes(1);
 	});
 
+	it('AUTH-03 点「停留」：onStay 回调触发（调用方据此恢复 UI）', async () => {
+		mockWindowLocation('/demo/dashboard');
+		const { traceRedirect } = await freshTrace();
+		vi.useFakeTimers();
+		const onStay = vi.fn();
+
+		traceRedirect('https://auth.autional.local/demo/login?redirect=x', {
+			reason: 'unauthenticated',
+			kind: 'interstitial',
+			onStay,
+		});
+		const stayBtn = Array.from(notice()!.querySelectorAll('button')).find((b) =>
+			b.textContent!.includes('停留'),
+		)!;
+		stayBtn.click();
+
+		expect(onStay).toHaveBeenCalledTimes(1);
+	});
+
+	it('AUTH-03 onStay 回调抛错：不冒泡打断停留处理（pending 仍复位）', async () => {
+		mockWindowLocation('/demo/dashboard');
+		const { traceRedirect } = await freshTrace();
+		vi.useFakeTimers();
+
+		traceRedirect('https://auth.autional.local/demo/login?redirect=x', {
+			reason: 'unauthenticated',
+			kind: 'interstitial',
+			onStay: () => {
+				throw new Error('boom');
+			},
+		});
+		const stayBtn = Array.from(notice()!.querySelectorAll('button')).find((b) =>
+			b.textContent!.includes('停留'),
+		)!;
+		expect(() => stayBtn.click()).not.toThrow();
+
+		vi.advanceTimersByTime(5000);
+		expect(replaceSpy).not.toHaveBeenCalled();
+		// pending 已复位：funnel 直跳不受阻
+		traceRedirect('https://brand.autional.local/?redirect=x', { reason: 'funnel-slug', kind: 'funnel' });
+		expect(replaceSpy).toHaveBeenCalledTimes(1);
+	});
+
 	it('pending 抑制：提示条未决时再来一次 interstitial 被记为 suppressed', async () => {
 		mockWindowLocation('/demo/dashboard');
 		const { traceRedirect } = await freshTrace();
@@ -199,10 +242,15 @@ describe('层 ② debug 确认页', () => {
 		expect(String(replaceSpy.mock.calls[0][0])).toContain('debug=auth');
 	});
 
-	it('确认页点「留在本页」：不跳 + pending 复位', async () => {
+	it('确认页点「留在本页」：不跳 + pending 复位 + onStay 回调触发', async () => {
 		mockWindowLocation('/demo/dashboard', '?debug=auth');
 		const { traceRedirect } = await freshTrace();
-		traceRedirect('https://auth.autional.local/demo/login', { reason: 'unauthenticated', kind: 'funnel' });
+		const onStay = vi.fn();
+		traceRedirect('https://auth.autional.local/demo/login', {
+			reason: 'unauthenticated',
+			kind: 'funnel',
+			onStay,
+		});
 
 		const stayBtn = Array.from(confirm()!.querySelectorAll('button')).find((b) =>
 			b.textContent!.includes('留在本页'),
@@ -210,6 +258,7 @@ describe('层 ② debug 确认页', () => {
 		stayBtn.click();
 		expect(confirm()).toBeNull();
 		expect(replaceSpy).not.toHaveBeenCalled();
+		expect(onStay).toHaveBeenCalledTimes(1);
 	});
 
 	it('debug 标志经 sessionStorage 保持并随跳转透传（无需每次带 ?debug=auth）', async () => {

@@ -155,7 +155,12 @@ describe('RequireAuth 未登录出口', () => {
 		);
 
 		await waitFor(() => {
-			expect(mockState.initiate).toHaveBeenCalledWith('cid-from-slug');
+			// AUTH-03：第三参携「停留」恢复回调；effect 路径 force=false
+			expect(mockState.initiate).toHaveBeenCalledWith(
+				'cid-from-slug',
+				undefined,
+				expect.objectContaining({ force: false, onStay: expect.any(Function) }),
+			);
 		});
 		expect(mockState.replace).not.toHaveBeenCalled();
 	});
@@ -170,7 +175,11 @@ describe('RequireAuth 未登录出口', () => {
 		);
 
 		await waitFor(() => {
-			expect(mockState.initiate).toHaveBeenCalledWith('cid-from-env');
+			expect(mockState.initiate).toHaveBeenCalledWith(
+				'cid-from-env',
+				undefined,
+				expect.objectContaining({ force: false, onStay: expect.any(Function) }),
+			);
 		});
 		expect(mockState.replace).not.toHaveBeenCalled();
 	});
@@ -256,7 +265,13 @@ describe('RequireAuth F-W6 确定性 404 闸门', () => {
 			</RequireAuth>,
 		);
 
-		await waitFor(() => expect(mockState.initiate).toHaveBeenCalledWith('cid-from-env'));
+		await waitFor(() =>
+			expect(mockState.initiate).toHaveBeenCalledWith(
+				'cid-from-env',
+				undefined,
+				expect.objectContaining({ force: false, onStay: expect.any(Function) }),
+			),
+		);
 		expect(screen.queryByTestId('tenant-404')).toBeNull();
 		expect(mockState.replace).not.toHaveBeenCalled();
 	});

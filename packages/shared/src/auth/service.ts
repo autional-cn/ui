@@ -24,7 +24,7 @@ import {
 } from './store';
 import { loginWithTokens } from './store';
 import { buildLoginUrl, isAuthLoginSurface } from './roles';
-import { traceRedirect } from './auth-trace';
+import { traceClear, traceEvent, traceRedirect } from './auth-trace';
 import { resolveClientIdForSession } from './oauth-client-id-store';
 import { extractItem } from '../utils/response';
 import type { User } from '../types';
@@ -206,37 +206,72 @@ export const AuthService = {
 			localStorage.removeItem('__oauth_bridge_token');
 		}
 
-		// 3. 服务端 token 吊销（best-effort，不阻塞登出流程）
+		// 2b. AUTH-08 会话卫生：清本 tab 的 OAuth 发起预置物（含明文 verifier）与
+		// trace 缓冲——sessionStorage 跨整页导航天然保留，不清则跨登出残留。
+		try {
+			const { discardPendingOAuthLogin } = await import('./oauth-login');
+			discardPendingOAuthLogin();
+		} catch {
+			/* best-effort */
+		}
+		traceClear();
+
+		// 3. 服务端 token 吊销（best-effort，不阻塞登出流程）。按与 refreshToken
+		//    相同的链判据分流（JWT 三段式 rt = identity 链）：
+		//    - OAuth（PKCE）链（不透明 rt + 已解析 client_id）：oauth revoke 端点
+		//      要求客户端认证（S9-A），公开客户端凭注册 client_id；access/refresh
+		//      各自成行、须逐条撤销；
+		//    - identity 链（rt 为 JWT / 无 client_id）：identity /auth/logout 携 AT
+		//      是权威撤销——单 token 黑名单（jwt:bl:）+ 会话级撤销（jwt:bls:，覆盖
+		//      该会话全部已签发 token）。修复前固定打 oauth revoke 且（会话无
+		//      client_id 时）不带凭据 → 必 401 静默（AUTH-15），identity 会话从未
+		//      被服务端终结。
 		try {
 			if (at || rt) {
 				const { default: axios } = await import('axios');
 				const { getApiBaseUrl } = await import('../config');
 				const baseUrl = getApiBaseUrl();
-				// S9-A：撤销端点要求客户端认证；PKCE 公开客户端凭注册 client_id（对应 none）
-				// 来源：会话内已解析值（持久化）→ env（TASK-09 / D8）
 				const clientId = resolveClientIdForSession();
-				const revokeParams = (token: string, hint: string) => {
-					const params = new URLSearchParams({ token, token_type_hint: hint });
-					if (clientId) params.set('client_id', clientId);
-					return params.toString();
+				const rtIsJwt = !!rt && rt.split('.').length === 3;
+
+				const record = (ev: string, chain: string, err?: unknown) => {
+					traceEvent(ev, {
+						reason: chain,
+						to: err ? String((err as any)?.response?.status ?? 'network-error') : 'ok',
+					});
 				};
-				if (at) {
+
+				if (rt && !rtIsJwt && clientId) {
+					const revokeParams = (token: string, hint: string) => {
+						const params = new URLSearchParams({ token, token_type_hint: hint });
+						params.set('client_id', clientId);
+						return params.toString();
+					};
+					if (at) {
+						await axios
+							.post(`${baseUrl}/oauth/api/v1/oauth/revoke`, revokeParams(at, 'access_token'), {
+								headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+							})
+							.then(() => record('logout-revoke', 'oauth-access_token'))
+							.catch((e) => record('logout-revoke-failed', 'oauth-access_token', e));
+					}
 					await axios
-						.post(
-							`${baseUrl}/oauth/api/v1/oauth/revoke`,
-							revokeParams(at, 'access_token'),
-							{ headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
-						)
-						.catch(() => {});
-				}
-				if (rt) {
+						.post(`${baseUrl}/oauth/api/v1/oauth/revoke`, revokeParams(rt, 'refresh_token'), {
+							headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+						})
+						.then(() => record('logout-revoke', 'oauth-refresh_token'))
+						.catch((e) => record('logout-revoke-failed', 'oauth-refresh_token', e));
+				} else if (at) {
 					await axios
-						.post(
-							`${baseUrl}/oauth/api/v1/oauth/revoke`,
-							revokeParams(rt, 'refresh_token'),
-							{ headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
-						)
-						.catch(() => {});
+						.post(`${baseUrl}/identity/api/v1/auth/logout`, null, {
+							headers: { Authorization: `Bearer ${at}` },
+						})
+						.then(() => record('logout-revoke', 'identity'))
+						.catch((e) => record('logout-revoke-failed', 'identity', e));
+				} else {
+					// 仅剩无法凭 client_id 走 oauth 的 rt（identity 签发的 JWT rt）：
+					// identity logout 需携 AT → 无凭据可吊销，记 trace 明示跳过
+					record('logout-revoke-skipped', 'no-credential');
 				}
 			}
 		} catch {

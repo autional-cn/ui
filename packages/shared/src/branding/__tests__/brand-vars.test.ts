@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { applyBrandColors } from '../useBranding';
-import { hexToTriplet, deriveDarkColor } from '../brand-color';
+import { hexToTriplet, deriveDarkColor, deriveTextColor } from '../brand-color';
 
 // U394 回归锁：品牌运行时注入必须同时写 `-rgb` 通道三元组。
 // 反证：删掉 useBranding 的 setColorVar 伴随行（只写 hex），本文件断言必须 FAIL——
@@ -13,6 +13,7 @@ const ALL_VARS = [
 	'--color-brand-hover-base',
 	'--color-brand-dark',
 	'--color-brand-dark-hover',
+	'--color-brand-text-base',
 	'--color-on-brand-base',
 	'--color-on-brand',
 	'--color-on-brand-dark',
@@ -41,11 +42,14 @@ describe('hexToTriplet', () => {
 });
 
 describe('applyBrandColors — -rgb 伴随写入', () => {
-	it('合法品牌色：6 个色变量各写 hex + 三元组', () => {
+	it('合法品牌色：7 个色变量各写 hex + 三元组', () => {
 		applyBrandColors('#003153');
 		const s = document.documentElement.style;
 		expect(s.getPropertyValue('--color-brand-base')).toBe('#003153');
 		expect(s.getPropertyValue('--color-brand-base-rgb')).toBe('0 49 83');
+		// AUTH-05：brand-base 白底 13.4:1 已达标 → 文本色原样；不达标色见 deriveTextColor 用例
+		expect(s.getPropertyValue('--color-brand-text-base')).toBe('#003153');
+		expect(s.getPropertyValue('--color-brand-text-base-rgb')).toBe('0 49 83');
 		expect(s.getPropertyValue('--color-brand-hover-base-rgb')).toBe('0 49 83');
 		expect(s.getPropertyValue('--color-brand-dark-rgb')).toBe(hexToTriplet(deriveDarkColor('#003153')));
 		expect(s.getPropertyValue('--color-brand-dark-hover-rgb')).not.toBe('');
@@ -76,5 +80,47 @@ describe('applyBrandColors — -rgb 伴随写入', () => {
 		const s = document.documentElement.style;
 		expect(s.getPropertyValue('--color-brand-base')).toBe('red');
 		expect(s.getPropertyValue('--color-brand-base-rgb')).toBe('');
+	});
+});
+
+/** WCAG 2.x 对比度（测试内独立复算，锁 AUTH-05 派生结果对白底达标） */
+function contrastOnWhite(hex: string): number {
+	const d = hex.replace('#', '');
+	const [r, g, b] = [0, 2, 4].map((i) => parseInt(d.slice(i, i + 2), 16) / 255);
+	const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+	return 1.05 / (0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) + 0.05);
+}
+
+describe('deriveTextColor — 浅底品牌文本色（AUTH-05）', () => {
+	it('#1890ff（白底 3.24:1 不达标）→ 压暗至 ≥4.5:1，且不等于原值', () => {
+		const out = deriveTextColor('#1890ff');
+		expect(out).not.toBe('#1890ff');
+		expect(contrastOnWhite(out)).toBeGreaterThanOrEqual(4.5);
+	});
+
+	it('达标输入原样返回（#003153 白底 ≈13.4:1）', () => {
+		expect(deriveTextColor('#003153')).toBe('#003153');
+	});
+
+	it('#ffffff → 必然压暗且达标', () => {
+		const out = deriveTextColor('#ffffff');
+		expect(out).not.toBe('#ffffff');
+		expect(contrastOnWhite(out)).toBeGreaterThanOrEqual(4.5);
+	});
+
+	it('非法输入 → 返回原值不抛错（N3 防御）', () => {
+		expect(deriveTextColor('red')).toBe('red');
+		expect(deriveTextColor('#xyz')).toBe('#xyz');
+		expect(deriveTextColor('')).toBe('');
+	});
+
+	it('applyBrandColors(#1890ff)：填充不变、文本另派生（AUTH-05 核心断言）', () => {
+		applyBrandColors('#1890ff');
+		const s = document.documentElement.style;
+		expect(s.getPropertyValue('--color-brand-base')).toBe('#1890ff');
+		const textBase = s.getPropertyValue('--color-brand-text-base');
+		expect(textBase).not.toBe('');
+		expect(textBase).not.toBe('#1890ff');
+		expect(contrastOnWhite(textBase)).toBeGreaterThanOrEqual(4.5);
 	});
 });

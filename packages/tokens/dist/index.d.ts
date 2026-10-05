@@ -121,8 +121,11 @@ declare const tokens: {
       "brand-hover": string;
       "brand-soft": string;
       "brand-active": string;
+      "brand-text-base": string;
+      "brand-text": string;
       accent: string;
     };
+    "$brand-text-note": string;
     font: {
       sans: (string)[];
       serif: (string)[];
@@ -346,6 +349,7 @@ declare const tokens: {
         "brand-hover": string;
         "on-brand": string;
         "brand-soft": string;
+        "brand-text": string;
         chart: {
           "1": string;
           "2": string;

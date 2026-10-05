@@ -2,16 +2,17 @@
 
 import { useLayoutEffect, useRef } from 'react';
 import { useTenantSlugFromUrl } from '../auth/slug-from-url';
-import { deriveDarkColor, deriveDarkHover, hexToTriplet, pickOnColor } from './brand-color';
+import { deriveDarkColor, deriveDarkHover, deriveTextColor, hexToTriplet, pickOnColor } from './brand-color';
 import { readCachedBranding } from './branding-cache';
 import { useTenantBrandingStore } from './tenant-store';
 
-/** 品牌注入的 7 个 CSS 变量（与 auth 站同口径，tokens.css 提供缺省值）。 */
+/** 品牌注入的 8 个 CSS 变量（与 auth 站同口径，tokens.css 提供缺省值）。 */
 const BRAND_VARS = [
 	'--color-brand-base',
 	'--color-brand-hover-base',
 	'--color-brand-dark',
 	'--color-brand-dark-hover',
+	'--color-brand-text-base',
 	'--color-on-brand-base',
 	'--color-on-brand',
 	'--color-on-brand-dark',
@@ -41,6 +42,8 @@ export function applyBrandColors(color: string, darkOverride?: string): void {
 	setColorVar(root, '--color-brand-hover-base', color);
 	setColorVar(root, '--color-brand-dark', dark);
 	setColorVar(root, '--color-brand-dark-hover', deriveDarkHover(color));
+	// 品牌色作文本的安全派生值（AUTH-05）：text-brand-text 消费——浅底不达标即压暗
+	setColorVar(root, '--color-brand-text-base', deriveTextColor(color));
 	setColorVar(root, '--color-on-brand-base', pickOnColor(color));
 	setColorVar(root, '--color-on-brand-dark', pickOnColor(dark));
 }

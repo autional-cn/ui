@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AuthService, setBootstrapLock } from '../auth/service';
 import { buildLoginUrl } from '../auth/roles';
 import { traceRedirect } from '../auth/auth-trace';
@@ -48,6 +48,54 @@ function DefaultTenantNotFound() {
 	);
 }
 
+/**
+ * AUTH-03：未认证态下用户选择「停留」（取消被动登录跳转）后的可恢复 UI——
+ * 原实现停留后仍渲染 null（正文空白无任何出口），现替换为提示 + 「前往登录」出口。
+ * 零依赖、CSS 变量主题（同 DefaultTenantNotFound）；按钮用固定 #2563eb（白字
+ * 5.17:1 过 AA），不引品牌色（品牌色可能对比度不足，见 AUTH-05）。
+ */
+function DefaultSignInRequired({ onSignIn }: { onSignIn: () => void }) {
+	const zh =
+		typeof document !== 'undefined' &&
+		(document.documentElement.lang || '').toLowerCase().startsWith('zh');
+	return (
+		<div
+			role="alert"
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				justifyContent: 'center',
+				minHeight: '40vh',
+				gap: '0.75rem',
+				width: '100%',
+			}}
+		>
+			<h1 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+				{zh ? '需要登录' : 'Sign-in required'}
+			</h1>
+			<p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+				{zh ? '此页面需登录后访问' : 'This page requires sign-in'}
+			</p>
+			<button
+				type="button"
+				onClick={onSignIn}
+				style={{
+					border: 0,
+					borderRadius: 6,
+					padding: '8px 18px',
+					fontSize: '0.875rem',
+					cursor: 'pointer',
+					background: '#2563eb',
+					color: '#fff',
+				}}
+			>
+				{zh ? '前往登录' : 'Go to sign-in'}
+			</button>
+		</div>
+	);
+}
+
 export function RequireAuth({
 	children,
 	allowedRoles,
@@ -57,6 +105,40 @@ export function RequireAuth({
 }: RequireAuthProps) {
 	const machine = useAuthMachine();
 	const tenantRoute = useTenantRoute();
+	// 「停留」已选（被动登录跳转被用户取消）——渲染恢复态而非空白（AUTH-03）
+	const [stayed, setStayed] = useState(false);
+
+	// 登录跳转的单一出口：effect（进入未认证态）与恢复态「前往登录」按钮共用。
+	// force=true 跳过 OAuth 10s 防重入窗口（用户显式重试）。
+	const triggerLogin = useCallback(
+		(force = false) => {
+			if (typeof window === 'undefined') return;
+			const cfg = (window as any).__APP_CONFIG__;
+			const envClientId = cfg?.VITE_OAUTH_CLIENT_ID || '';
+			const effectiveClientId = resolveEffectiveClientId(tenantRoute, envClientId);
+
+			if (effectiveClientId && (isSameDomainOAuth(tenantRoute) || envClientId)) {
+				void initiateOAuthLogin(effectiveClientId, undefined, {
+					onStay: () => setStayed(true),
+					force,
+				});
+				return;
+			}
+
+			// Cross-domain or no client: redirect to auth-pages login
+			// from_requireauth=1 与 service.ts 的 onUnauthorized 同口径：auth 侧据此先做会话复检
+			// （有会话直接回跳，避免「已登录还被要求再登一次」）
+			// interstitial：未认证深链被动弹登录 → authTrace 提示（可停留）；重入抑制在其内。
+			setTimeout(() => {
+				traceRedirect(buildLoginUrl(window.location.href, true), {
+					reason: 'unauthenticated',
+					kind: 'interstitial',
+					onStay: () => setStayed(true),
+				});
+			}, 0);
+		},
+		[tenantRoute],
+	);
 
 	// F-W6 闸门：URL slug 确定性不存在（by-slug HTTP 404）且本站未配 env 固定
 	// client（admin-console 等单租户旁路不适用）→ 本地 404，不发弹跳。
@@ -94,24 +176,8 @@ export function RequireAuth({
 		// F-W6 闸门：确定性未知 slug → 不发起任何弹跳，由渲染分支给本地 404
 		if (tenantRoute.unknownSlug && !envClientId) return;
 
-		const effectiveClientId = resolveEffectiveClientId(tenantRoute, envClientId);
-
-		if (effectiveClientId && (isSameDomainOAuth(tenantRoute) || envClientId)) {
-			initiateOAuthLogin(effectiveClientId);
-			return;
-		}
-
-		// Cross-domain or no client: redirect to auth-pages login
-		// from_requireauth=1 与 service.ts 的 onUnauthorized 同口径：auth 侧据此先做会话复检
-		// （有会话直接回跳，避免「已登录还被要求再登一次」）
-		// interstitial：未认证深链被动弹登录 → authTrace 提示（可停留）；重入抑制在其内。
-		setTimeout(() => {
-			traceRedirect(buildLoginUrl(window.location.href, true), {
-				reason: 'unauthenticated',
-				kind: 'interstitial',
-			});
-		}, 0);
-	}, [machine.status, tenantRoute]);
+		triggerLogin(false);
+	}, [machine.status, tenantRoute, triggerLogin]);
 
 	if (machine.status === 'checking' || machine.status === 'bootstrap') {
 		return loadingFallback ? <>{loadingFallback}</> : null;
@@ -122,6 +188,8 @@ export function RequireAuth({
 	}
 
 	if (machine.status === 'unauthenticated' || machine.status === 'redirecting') {
+		// AUTH-03：「停留」后原实现恒 null（空白死路）→ 给恢复态与再发起出口
+		if (stayed) return <DefaultSignInRequired onSignIn={() => triggerLogin(true)} />;
 		return null;
 	}
 

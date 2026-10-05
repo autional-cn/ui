@@ -28,10 +28,17 @@ function getAppConfig(): Record<string, string> | undefined {
 const SK = {
 	PKCE: 'oauth_pkce_verifier',
 	STATE: 'oauth_state',
-	INIT: 'oauth_init',
 	INIT_TS: 'oauth_init_ts',
 	CID: 'oauth_client_id',
 };
+
+export interface OAuthInitiateOptions {
+	/** 「停留」取消本次跳转时回调（AUTH-03，调用方据此恢复 UI）；内部已先清预置物 |
+	 *  与待重试定时器（AUTH-08），再次交互可全新发起。 */
+	onStay?: () => void;
+	/** 跳过 10s 防重入窗口（用户显式点「前往登录」重试时用，AUTH-03）。 */
+	force?: boolean;
+}
 
 /**
  * AUTH-46②：OAuth 回调失败错误——携稳定 code，消费方（OAuthCallbackPage 等）按 code
@@ -49,6 +56,25 @@ export class OAuthCallbackError extends Error {
 
 // 防重入拦截后的一次性重试 timer（避免 10 秒窗口内快速刷新导致 OAuth 跳转被吞、页面卡住）
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 丢弃未完成的 OAuth 发起留下的全部预置物（AUTH-08 会话卫生）：
+ * 取消待重试定时器 + 清 sessionStorage 四键（state/verifier/client_id/init_ts）。
+ * 「停留」（handleStay）与登出（AuthService.logout）共用——两者都意味着
+ * 「本次发起已作废」：不清则 ① 窗口过期后自动重试仍会把用户弹走；
+ * ② 明文 verifier 与 state 跨登出残留在 tab 里。
+ */
+export function discardPendingOAuthLogin(): void {
+	if (typeof window === 'undefined') return;
+	if (retryTimer) {
+		clearTimeout(retryTimer);
+		retryTimer = null;
+	}
+	sessionStorage.removeItem(SK.STATE);
+	sessionStorage.removeItem(SK.PKCE);
+	sessionStorage.removeItem(SK.CID);
+	sessionStorage.removeItem(SK.INIT_TS);
+}
 
 function parseUserFromToken(token?: string, apiUser?: unknown): User {
 	if (token) {
@@ -116,9 +142,10 @@ function randomState(): string {
 export async function initiateOAuthLogin(
 	clientId?: string,
 	redirectTarget?: string,
+	opts?: OAuthInitiateOptions,
 ): Promise<void> {
 	const ts = sessionStorage.getItem(SK.INIT_TS);
-	if (ts && Date.now() - parseInt(ts, 10) < 10000) {
+	if (!opts?.force && ts && Date.now() - parseInt(ts, 10) < 10000) {
 		// 防重入：10 秒内已有一次 OAuth 初始化（如快速刷新/重复导航）。
 		// 直接 return 会吞掉跳转导致 RequireAuth 卡在空白页（无 re-render 不会重试），
 		// 因此在窗口过期后安排一次自动重试，保证最终完成跳转。
@@ -131,8 +158,12 @@ export async function initiateOAuthLogin(
 		}
 		return;
 	}
+	// 本次发起取代任何待重试定时器（含 force 绕过窗口时的遗留）
+	if (retryTimer) {
+		clearTimeout(retryTimer);
+		retryTimer = null;
+	}
 	sessionStorage.setItem(SK.INIT_TS, String(Date.now()));
-	sessionStorage.setItem(SK.INIT, '1');
 
 	// Determine the URL to redirect to after successful OAuth
 	const target = redirectTarget || window.location.href;
@@ -151,6 +182,13 @@ export async function initiateOAuthLogin(
 	// 交棒时落持久层：刷新/登出在 React 上下文外，拿不到 slug 解析结果（TASK-09 / D8）
 	persistOAuthClientId(cid);
 
+	// 「停留」= 放弃本次发起：清预置物 + 取消待重试定时器，防止窗口过期后
+	// 自动重试再把用户弹走；随后通知调用方恢复 UI（AUTH-03/08）。
+	const handleStay = () => {
+		discardPendingOAuthLogin();
+		opts?.onStay?.();
+	};
+
 	try {
 		const pkce = await generatePKCE();
 		sessionStorage.setItem(SK.PKCE, pkce.verifier);
@@ -163,12 +201,12 @@ export async function initiateOAuthLogin(
 			code_challenge_method: 'S256',
 			state,
 		});
-		// interstitial：未认证深链被动弹去登录 → authTrace 提示（可停留）；
-		// 「停留」取消后 10s 防重入窗口过期即失效，用户刷新/再次交互可重新发起。
+		// interstitial：未认证深链被动弹去登录 → authTrace 提示（可停留）。
 		traceRedirect(`${cfg.authorizeUrl}?${params}`, {
 			reason: 'oauth-initiate',
 			kind: 'interstitial',
 			assign: true,
+			onStay: handleStay,
 		});
 	} catch {
 		const params = new URLSearchParams({
@@ -182,6 +220,7 @@ export async function initiateOAuthLogin(
 			reason: 'oauth-initiate',
 			kind: 'interstitial',
 			assign: true,
+			onStay: handleStay,
 		});
 	}
 }
@@ -254,6 +293,12 @@ export async function handleOAuthCallback(): Promise<void> {
 		{ headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
 	);
 
+	// 用毕即焚（AUTH-08）：兑换请求已消费 code_verifier/state/client_id，立即清除；
+	// 原清理点在 userinfo、/auth/me 多次 await 之后，明文 verifier 驻留窗口被无谓拉长。
+	sessionStorage.removeItem(SK.PKCE);
+	sessionStorage.removeItem(SK.STATE);
+	sessionStorage.removeItem(SK.CID);
+
 	const t = res.data as any;
 	const accessToken = t.access_token;
 	const refreshToken = t.refresh_token || null;
@@ -312,11 +357,6 @@ export async function handleOAuthCallback(): Promise<void> {
 
 	// 兑换成功后落持久层（同 TASK-09 / D8；兑换前的持久值可能来自旧租户）
 	persistOAuthClientId(cid);
-
-	// Clean up temporary OAuth flow storage
-	sessionStorage.removeItem(SK.STATE);
-	sessionStorage.removeItem(SK.PKCE);
-	sessionStorage.removeItem(SK.CID);
 
 	// Persist to Zustand store (in-memory).
 	// Zustand persist subscriber will automatically write to localStorage

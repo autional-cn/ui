@@ -104,6 +104,7 @@ module.exports = {
         'brand-hover': 'rgb(var(--color-brand-hover-rgb))',
         'brand-soft': 'rgb(var(--color-brand-soft-rgb))',
         'brand-active': 'rgb(var(--color-brand-active-rgb))',
+        'brand-text': 'rgb(var(--color-brand-text-rgb))',
         accent: 'rgb(var(--color-accent-rgb))',
         inverse: 'rgb(var(--color-text-inverse-rgb))',
         surface: 'rgb(var(--color-bg-surface-rgb))',

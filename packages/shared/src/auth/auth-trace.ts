@@ -51,6 +51,12 @@ export interface AuthTraceRedirectOptions {
 	assign?: boolean;
 	/** 覆盖缺省延迟（ms），仅 interstitial 生效 */
 	delayMs?: number;
+	/**
+	 * 「停留」被选择（提示条「停留」/ 确认页「留在本页」）时回调（AUTH-03）。
+	 * 被动跳转（interstitial）取消后原页可能已无内容可渲染（如 RequireAuth 的
+	 * 未认证空白态），调用方借此恢复可交互 UI。
+	 */
+	onStay?: () => void;
 }
 
 function isBrowser(): boolean {
@@ -441,6 +447,14 @@ export function traceRedirect(target: string, opts: AuthTraceRedirectOptions): v
 	const onStay = () => {
 		pending = false;
 		push('stay', { reason: opts.reason, from, to: sanitizeUrl(decorated) });
+		if (opts.onStay) {
+			try {
+				opts.onStay();
+			} catch (e) {
+				// 回调异常不得冒泡打断停留处理（trace 已记、pending 已复位）
+				if (typeof console !== 'undefined') console.warn('[auth-trace] onStay rejected:', String(e));
+			}
+		}
 	};
 
 	if (inDebug()) {
@@ -456,6 +470,22 @@ export function traceRedirect(target: string, opts: AuthTraceRedirectOptions): v
 	}
 
 	go(decorated, !!opts.assign);
+}
+
+/**
+ * 清空 trace 缓冲与持久副本（AUTH-08 登出卫生）。
+ * sessionStorage 跨整页导航天然保留——不清则上一会话的 trace 会驻留到下一
+ * 会话（同一 tab 换人登录的场景）。
+ */
+export function traceClear(): void {
+	if (!isBrowser()) return;
+	buffer = [];
+	bufferLoaded = true;
+	try {
+		sessionStorage.removeItem(BUFFER_KEY);
+	} catch {
+		/* noop */
+	}
 }
 
 /** 记一条非跳转 trace 事件（如 error 页出口、OAuth 链路里程碑）。 */

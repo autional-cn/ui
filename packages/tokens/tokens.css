@@ -194,6 +194,10 @@
 --color-brand-soft-rgb: var(--color-sky-300-rgb);
 --color-brand-active: var(--color-primary-800);
 --color-brand-active-rgb: var(--color-primary-800-rgb);
+--color-brand-text-base: var(--color-brand-base);
+--color-brand-text-base-rgb: var(--color-brand-base-rgb);
+--color-brand-text: var(--color-brand-text-base);
+--color-brand-text-rgb: var(--color-brand-text-base-rgb);
 --color-accent: var(--color-amber-500);
 --color-accent-rgb: var(--color-amber-500-rgb);
 
@@ -447,6 +451,8 @@
 --color-on-brand-rgb: var(--color-on-brand-dark-rgb);
 --color-brand-soft: var(--color-sky-700);
 --color-brand-soft-rgb: var(--color-sky-700-rgb);
+--color-brand-text: var(--color-sky-400);
+--color-brand-text-rgb: var(--color-sky-400-rgb);
 --color-chart-1: #75abd5;
 --color-chart-1-rgb: 117 171 213;
 --color-chart-2: #bde6f5;
@@ -540,6 +546,8 @@
 --color-on-brand-rgb: var(--color-on-brand-base-rgb);
 --color-brand-soft: var(--color-sky-700);
 --color-brand-soft-rgb: var(--color-sky-700-rgb);
+--color-brand-text: var(--color-sky-400);
+--color-brand-text-rgb: var(--color-sky-400-rgb);
 --color-chart-1: #75abd5;
 --color-chart-1-rgb: 117 171 213;
 --color-chart-2: #bde6f5;

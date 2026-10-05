@@ -217,6 +217,15 @@ export { camelCaseKeys, snakeCaseKeys } from './utils/case';
 export { toPageParams, fromPageResult } from './utils/page';
 export type { PageParams, PageResult } from './utils/page';
 export { extractApiErrorMessage, extractApiError, createHandleApiError } from './utils/error';
+// 查询状态分类单点（RC-B4-01 / ADR-B4-01）：error/空/无权判定的唯一语义源
+export {
+	classifyQueryState,
+	getHttpStatus,
+	isForbiddenError,
+	isRetryableError,
+	isEmptyData,
+} from './utils/query-state';
+export type { QueryState, QueryStateInput } from './utils/query-state';
 export {
 	extractList,
 	extractItem,

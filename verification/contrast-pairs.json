@@ -78,6 +78,20 @@
       "role": "fill-text"
     },
     {
+      "label": "品牌色作文本 / 页面底（用 brand-text，不是 brand —— 填充色直接当文本对白底可能低至 3.24:1）",
+      "fg": "color.brand-text",
+      "bg": "color.bg-primary",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
+      "label": "品牌色作文本 / 卡片底（同上，brand-text）",
+      "fg": "color.brand-text",
+      "bg": "color.bg-surface",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
       "label": "焦点环 / 页面底",
       "fg": "focus.ring-color",
       "bg": "color.bg-primary",
