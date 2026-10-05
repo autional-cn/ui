@@ -74,6 +74,8 @@ declare const tokens: {
       "danger-soft": string;
       "info-text": string;
       "info-soft": string;
+      "primary-soft": string;
+      "$primary-soft-note": string;
       "$soft-note": string;
       "warning-text": string;
       "text-disabled": string;
@@ -343,6 +345,7 @@ declare const tokens: {
         "danger-soft": string;
         "info-text": string;
         "info-soft": string;
+        "primary-soft": string;
         "warning-text": string;
         "text-disabled": string;
         brand: string;

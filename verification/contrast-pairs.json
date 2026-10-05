@@ -8,6 +8,13 @@
   },
   "pairs": [
     {
+      "label": "品牌文字 / 品牌柔和底（侧栏选中态）",
+      "fg": "color.brand-text",
+      "bg": "color.primary-soft",
+      "min": 4.5,
+      "role": "body-text"
+    },
+    {
       "label": "正文 / 页面底",
       "fg": "color.text-primary",
       "bg": "color.bg-primary",

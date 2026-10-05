@@ -34,6 +34,10 @@ module.exports = {
       },
       Card: {
         colorBorderSecondary: '#a3c7e3'
+      },
+      Menu: {
+        itemSelectedBg: '#d1e3f1',
+        itemSelectedColor: '#003153'
       }
     } },
   dark: { token: {
@@ -63,6 +67,10 @@ module.exports = {
       },
       Card: {
         colorBorderSecondary: '#1a4a65'
+      },
+      Menu: {
+        itemSelectedBg: '#0f3348',
+        itemSelectedColor: '#a2dcf0'
       }
     } },
 };

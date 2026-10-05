@@ -445,6 +445,20 @@ const antdComponents = (ctx) => ({
   Card: {
     colorBorderSecondary: ctx.resolve('{color.border-subtle}'),
   },
+  // KI-016 / KI-017：控制台侧栏**选中态**的底色与文字。
+  // 此前桥里没有 Menu 的任何组件级 token ⇒ antd 自己从 colorPrimary 推导选中底色，
+  // 实测推导出 rgb(133,144,148)（一个与品牌色无关的灰蓝），#003153 铺上去只有 **4.1:1** ——
+  // platform / admin 两个控制台的外壳目标页（第 53 轮加的取景框）首跑就被 check-contrast 报红。
+  // 方向与 L19 一致：**站点跟着设计系统走**，用设计系统的「柔和容器档」配对
+  // （primary-soft × brand-text，两对都已进 verification/contrast-pairs.json 由 T08 复算）。
+  // 与 Card 同理**只覆盖 Menu 这一个组件**：全局 colorPrimaryBg / colorPrimary 会连带改掉
+  // Select / Tabs / Dropdown / Steps 等所有吃它的组件 —— 那是另一次该单独评审的全舰队换色。
+  // ⚠ 组件级 token 有「配了等于没配」的先例（见上面 cellPaddingBlockMD）：这一条同样**必须**
+  // 在浏览器里量到 antd Menu 的真实计算样式才算数，静态断言不算。
+  Menu: {
+    itemSelectedBg: ctx.resolve('{color.primary-soft}'),
+    itemSelectedColor: ctx.resolve('{color.brand-text}'),
+  },
 });
 
 outputs.set(

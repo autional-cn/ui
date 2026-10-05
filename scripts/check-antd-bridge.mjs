@@ -38,6 +38,12 @@ const bridge = (await import(pathToFileURL(BRIDGE).href)).default;
 const TOKENS = loadTokens();
 const expectLight = resolvedIn(TOKENS, {})['color.border-subtle'];
 const expectDark = resolvedIn(TOKENS, { variant: 'dark' })['color.border-subtle'];
+// KI-016 / KI-017：侧栏**选中态**（Menu）的柔和底 + 文字角色。此前桥里没有 Menu 组件级 token，
+// antd 便从 colorPrimary 自行推导选中底色（实测 rgb(133,144,148)），#003153 铺上去只有 4.1:1。
+const menuBgLight = resolvedIn(TOKENS, {})['color.primary-soft'];
+const menuBgDark = resolvedIn(TOKENS, { variant: 'dark' })['color.primary-soft'];
+const menuFgLight = resolvedIn(TOKENS, {})['color.brand-text'];
+const menuFgDark = resolvedIn(TOKENS, { variant: 'dark' })['color.brand-text'];
 
 // ① 桥上声明的值必须等于令牌（令牌是 SSOT，桥是它的投影）
 for (const [mode, expect, declared] of [
@@ -51,7 +57,24 @@ for (const [mode, expect, declared] of [
   }
 }
 
-// ── 探针页：同页四张卡，一次采集给出正负对照 ────────────────────────────
+// ①-b 同上，但针对 Menu 的两个键（缺了它们 antd 会自己推导选中底色）
+for (const [mode, bgExpect, fgExpect, comps] of [
+  ['light', menuBgLight, menuFgLight, bridge.light.components?.Menu],
+  ['dark', menuBgDark, menuFgDark, bridge.dark.components?.Menu],
+]) {
+  if (!comps?.itemSelectedBg || !comps?.itemSelectedColor) {
+    problems.push('antd-bridge 桥（' + mode + '）没有下发 Menu.itemSelectedBg / itemSelectedColor —— 侧栏选中态会回落到 antd 从 colorPrimary 自行推导的底色（KI-016 / KI-017）');
+  } else {
+    if (String(comps.itemSelectedBg).toLowerCase() !== String(bgExpect).toLowerCase()) {
+      problems.push('antd-bridge 桥（' + mode + '）下发的 Menu.itemSelectedBg=' + comps.itemSelectedBg + '，而令牌 color.primary-soft=' + bgExpect + ' —— 桥与 SSOT 不一致');
+    }
+    if (String(comps.itemSelectedColor).toLowerCase() !== String(fgExpect).toLowerCase()) {
+      problems.push('antd-bridge 桥（' + mode + '）下发的 Menu.itemSelectedColor=' + comps.itemSelectedColor + '，而令牌 color.brand-text=' + fgExpect + ' —— 桥与 SSOT 不一致');
+    }
+  }
+}
+
+// ── 探针页：同页四张卡 + 三个选中态菜单，一次采集给出正负对照 ────────────
 const PROBE = join(ROOT, 'packages', 'ui', 'node_modules', '.antd-bridge-probe');
 // 探针在 packages/ui/node_modules/ 下（那里才解析得到 antd/react），桥在 packages/tokens/dist/，
 // 所以用相对路径引它 —— esbuild 不解析 file:// 形式的 specifier。
@@ -59,7 +82,7 @@ const BRIDGE_FROM_PROBE = relative(PROBE, BRIDGE).split(sep).join('/');
 
 const MAIN = `import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ConfigProvider, Card, theme } from 'antd';
+import { ConfigProvider, Card, Menu, theme } from 'antd';
 import antdTheme from '${BRIDGE_FROM_PROBE}';
 
 const cases = [
@@ -74,6 +97,7 @@ createRoot(document.getElementById('root')).render(
 			<div key={name} style={{ padding: 12 }}>
 				<ConfigProvider theme={t}>
 					<Card title={name}>probe</Card>
+					<Menu mode="inline" selectedKeys={[name]} items={[{ key: name, label: name }]} />
 				</ConfigProvider>
 			</div>
 		))}
@@ -147,6 +171,34 @@ if (esbuild) {
       else {
         rows.push('  ' + 'without-components'.padEnd(20) + ' 实测 ' + neg.padEnd(20) + ' 期望 ≠ ' + rgb(expectLight) + (neg !== rgb(expectLight) ? '  ✅' : '  ❌'));
         if (neg === rgb(expectLight)) problems.push('antd-bridge 阴性对照与阳性同值（都是 ' + neg + '）—— 测量没有区分力：这个颜色不是 components 带来的，阳性断言等于什么都没验');
+      }
+      // ── Menu 选中态：同样的三重口径 ────────────────────────────────────
+      const menuMeasured = await page.evaluate(() => {
+        const out = {};
+        for (const li of document.querySelectorAll('li.ant-menu-item-selected')) {
+          const cs = getComputedStyle(li);
+          out[String(li.textContent).trim()] = { bg: cs.backgroundColor, color: cs.color };
+        }
+        return out;
+      });
+      for (const [name, bgHex, fgHex] of [
+        ['with-bridge', menuBgLight, menuFgLight],
+        ['dark-with-bridge', menuBgDark, menuFgDark],
+      ]) {
+        const got = menuMeasured[name];
+        if (!got) { problems.push('antd-bridge 探针页没有渲染出「' + name + '」的选中态菜单项 —— 探针本身坏了，Menu 这一组断言失去意义'); continue; }
+        const bgOk = got.bg === rgb(bgHex), fgOk = got.color === rgb(fgHex);
+        rows.push('  ' + (name + ' menu').padEnd(20) + ' 实测 ' + got.bg.padEnd(20) + ' 期望 ' + rgb(bgHex) + (bgOk ? '  ✅' : '  ❌') +
+          '   文字 ' + got.color + (fgOk ? ' ✅' : ' ❌ 期望 ' + rgb(fgHex)));
+        if (!bgOk) problems.push('antd-bridge「' + name + '」的 antd Menu 选中底色实测 ' + got.bg + '，期望 ' + rgb(bgHex) + '（令牌 color.primary-soft）—— 组件级令牌下发了但 antd 没有吃到（KI-016 / KI-017）');
+        if (!fgOk) problems.push('antd-bridge「' + name + '」的 antd Menu 选中文字实测 ' + got.color + '，期望 ' + rgb(fgHex) + '（令牌 color.brand-text）—— 同上');
+      }
+      // 阴性对照：不给 components 时必须与阳性不同（否则这一组断言等于什么都没验）
+      const menuNeg = menuMeasured['without-components'];
+      if (!menuNeg) problems.push('antd-bridge 探针页没有渲染出 Menu 的阴性对照 —— 少了对照，Menu 的阳性断言不成立');
+      else {
+        rows.push('  ' + 'without-components menu'.padEnd(20) + ' 实测 ' + menuNeg.bg.padEnd(20) + ' 期望 ≠ ' + rgb(menuBgLight) + (menuNeg.bg !== rgb(menuBgLight) ? '  ✅' : '  ❌'));
+        if (menuNeg.bg === rgb(menuBgLight)) problems.push('antd-bridge Menu 阴性对照与阳性同值（都是 ' + menuNeg.bg + '）—— 测量没有区分力：这个底色不是 components 带来的');
       }
       info.push('antd-bridge 实测（真实 chromium）：\n' + rows.join('\n'));
     }
