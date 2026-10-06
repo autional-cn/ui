@@ -661,6 +661,25 @@ const preset = {
       },
       fontSize: presetFontSize,
       spacing: TOKENS.core.space,
+      // ── 动效（第 56 轮接进来）─────────────────────────────────────────────
+      // 在此之前 motion 的九个令牌**没有生成过任何类**：站点写的 duration-200 用的是
+      // Tailwind 出厂值，只是恰好与令牌同值 —— 于是「时长只走令牌」这句话没有判据支撑。
+      // 键取**毫秒数值**（duration-200），因为那是舰队已经写着的类名；取语义键
+      // （duration-base）会让 50 多处改名却零收益。令牌名仍然是 SSOT 里的语义名。
+      transitionDuration: Object.fromEntries(
+        Object.entries(TOKENS.core.motion)
+          .filter(([k, v]) => k.startsWith('duration-') && typeof v === 'string' && /^\d+ms$/.test(v))
+          .map(([, v]) => [v.replace('ms', ''), v]),
+      ),
+      // easing 用令牌名（ease-standard / ease-out / ease-in / ease-in-out）。
+      // 注意：其中三个与 Tailwind **同名不同值**（ease-out、ease-in-out 不同，ease-in 相同），
+      // 所以这一步会把站点上这几个类的曲线换成设计系统的 —— 是一次有意的动效收敛，
+      // 而且**静态截图量不到它**（见 §11 第 56 轮）。
+      transitionTimingFunction: Object.fromEntries(
+        Object.entries(TOKENS.core.motion)
+          .filter(([k, v]) => k.startsWith('ease-') && typeof v === 'string' && /^(cubic-bezier\(|linear$)/.test(v))
+          .map(([k, v]) => [k.slice('ease-'.length), v]),
+      ),
       borderRadius: TOKENS.core.radius,
       boxShadow: TOKENS.core.shadow,
       zIndex: TOKENS.core.z,

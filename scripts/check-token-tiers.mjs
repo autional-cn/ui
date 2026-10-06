@@ -74,6 +74,16 @@ const keys = (node) => Object.keys(node || {}).filter((k) => !k.startsWith('$'))
 const RADIUS = new Set(keys(T.core.radius));
 const SHADOW = new Set(keys(T.core.shadow));
 const SPACE = new Set(keys(T.core.space));
+// 动效：duration 的合法值 = 令牌里的毫秒数值（preset 就是按毫秒值生成 duration-<n> 的）
+const DURATION = new Set(keys(T.core.motion)
+  .filter((k) => k.startsWith('duration-'))
+  .map((k) => String(T.core.motion[k]).replace('ms', '')));
+const EASE = new Set(keys(T.core.motion).filter((k) => k.startsWith('ease-')).map((k) => k.slice('ease-'.length)));
+// 图标描边：SSOT 里的 icon.stroke
+const STROKE = String(T.core.icon.stroke);
+// 数据可视化（进度环 / 评分环 / 图表）**不是图标** —— 它们自己的描边是图形参数，不是图标纪律。
+// 判据用**文件名**声明这条边界（Ring / Score / Chart / Gauge），与「配置即声明」的既有做法一致。
+const VIZ_FILE = /(Ring|Score|Chart|Gauge|Sparkline|Donut)\.(tsx|ts|jsx|js|astro)$/i;
 const DIRS = new Set(['t', 'b', 'l', 'r', 's', 'e', 'tl', 'tr', 'bl', 'br', 'ss', 'se', 'es', 'ee']);
 const SPACE_PREFIX = 'p|px|py|pt|pb|pl|pr|ps|pe|m|mx|my|mt|mb|ml|mr|ms|me|gap|gap-x|gap-y|space-x|space-y|inset|inset-x|inset-y|top|bottom|left|right|start|end';
 const SENTINEL = 'rounded-zz9-probe dsh-token-tier-probe-zz9';
@@ -111,21 +121,64 @@ export function scanText(text) {
     if (SPACE.has(v)) continue;                    // SSOT 的键即合法（含密度档与节奏档）
     out.push({ cls: m[0], cat: 'space', index: m.index });
   }
+  // 动效：duration-<毫秒> 与 ease-<名字>（第 56 轮接进 preset 后，二者都由令牌派生）
+  for (const m of s.matchAll(/(?<![\w-])duration-(\d+|\[[^\]]+\])/g)) {
+    if (DURATION.has(m[1])) continue;
+    out.push({ cls: m[0], cat: 'motion', index: m.index });
+  }
+  for (const m of s.matchAll(/(?<![\w-])ease-([a-z-]+)/g)) {
+    if (EASE.has(m[1])) continue;
+    out.push({ cls: m[0], cat: 'motion', index: m.index });
+  }
+  return out;
+}
+
+/** 图标描边：判据是「**图标**只走一个档位」，所以要先把「不是图标的东西」认出来。
+ *  排除三类（都从上下文判定，不靠白名单）：
+ *    ① 手绘 SVG 图形（<svg>/<path>/<circle>/<rect>…）—— 转圈指示器、状态插画自带线宽；
+ *    ② 数据可视化组件（Ring / Score / Chart / Gauge…）—— 环的粗细是**图形参数**；
+ *    ③ 定义处（没有 JSX 标签上下文的 props 默认值）—— 由文件名那份 VIZ_FILE 规则兜。
+ *  剩下的就是图标：lucide 组件、或站点的图标包装组件（如 <Icon />）。 */
+const RAW_SVG = /^(svg|g|path|circle|rect|line|polyline|polygon|ellipse|defs|text|tspan|use|mask|clipPath|linearGradient|radialGradient|stop)$/;
+const VIZ_NAME = /(Ring|Score|Chart|Gauge|Sparkline|Donut)/;
+export function scanStroke(text, relPath) {
+  if (VIZ_FILE.test(relPath || '')) return [];
+  const s = stripComments(String(text));
+  const out = [];
+  // 取值形态有三种： strokeWidth="2" / strokeWidth={2} / strokeWidth={cond ? 2.5 : 2}
+  // 第三种是「条件描边」（选中态变粗），早先的正则整个漏掉了它 —— 实测：authenticator 的底部导航
+  // 写的就是 strokeWidth={isActive ? 2.5 : 2}，而闸门一声不吭。度量器漏报比误报更难发现。
+  for (const m of s.matchAll(/strokeWidth\s*[=:]\s*(?:\{([^}]*)\}|["']?([0-9.]+))/g)) {
+    const values = m[1] !== undefined ? (m[1].match(/[0-9]+(?:\.[0-9]+)?/g) || []) : [m[2]];
+    const bad = values.filter((v) => v !== STROKE);
+    if (!bad.length) continue;
+    const before = s.slice(0, m.index);
+    const tagMatch = before.match(/<([A-Za-z][\w.]*)[^<>]*$/);
+    const tag = tagMatch ? tagMatch[1] : '';
+    if (!tag) continue;                       // ③ 定义处 / 非 JSX 上下文
+    if (RAW_SVG.test(tag)) continue;          // ① 手绘 SVG 图形
+    if (VIZ_NAME.test(tag)) continue;         // ② 数据可视化组件
+    out.push({ cls: 'strokeWidth=' + bad.join('/') + ' on <' + tag + '>', cat: 'stroke', index: m.index });
+  }
   return out;
 }
 
 // ── 度量器自检（双向）────────────────────────────────────────────────────
 const problems = [];
 const warns = [];
-const POS = '<div class="rounded-2xl shadow-md py-7 rounded">x</div>';
-const NEG_BLOCK = '/* rounded-2xl shadow-md py-7 */ <span class="rounded-none shadow-none p-0 gap-0">y</span>';
-const NEG_LINE = '// rounded-3xl shadow-lg py-9\n<div class="rounded-xs shadow-card p-1.5 gap-16">z</div>';
+const POS = '<div class="rounded-2xl shadow-md py-7 rounded duration-700 ease-spring" strokeWidth={2.5}>x</div>';
+const NEG_BLOCK = '/* rounded-2xl shadow-md py-7 duration-700 */ <span class="rounded-none shadow-none p-0 gap-0">y</span>';
+const NEG_LINE = '// rounded-3xl shadow-lg py-9 duration-999\n<div class="rounded-xs shadow-card p-1.5 gap-16 duration-200 ease-out ease-standard" strokeWidth={2}>z</div>';
+const NEG_VIZ = 'strokeWidth={3}';
 const posHits = scanText(POS);
-const negHits = scanText(NEG_BLOCK).length + scanText(NEG_LINE).length;
-const posCats = { radius: 0, shadow: 0, space: 0 };
+const negHits = scanText(NEG_BLOCK).length + scanText(NEG_LINE).length
+  + scanStroke(NEG_LINE, 'probe/Thing.tsx').length            // strokeWidth={2} 合法
+  + scanStroke(NEG_VIZ, 'components/CountdownRing.tsx').length; // 进度环不是图标
+const posCats = { radius: 0, shadow: 0, space: 0, motion: 0, stroke: 0 };
 for (const h of posHits) posCats[h.cat]++;
-if (posCats.radius !== 2 || posCats.shadow !== 1 || posCats.space !== 1) {
-  problems.push('TT00 度量器正向控制失败：正例应数出 radius=2 / shadow=1 / space=1，实际 ' + JSON.stringify(posCats) + ' —— 解析器失灵时棘轮会全绿，那比红危险');
+for (const h of scanStroke(POS, 'probe/Thing.tsx')) posCats[h.cat]++;
+if (posCats.radius !== 2 || posCats.shadow !== 1 || posCats.space !== 1 || posCats.motion !== 2 || posCats.stroke !== 1) {
+  problems.push('TT00 度量器正向控制失败：正例应数出 radius=2 / shadow=1 / space=1 / motion=2 / stroke=1，实际 ' + JSON.stringify(posCats) + ' —— 解析器失灵时棘轮会全绿，那比红危险');
 }
 if (negHits !== 0) {
   problems.push('TT00 度量器负向控制失败：反例（注释里的类名、rounded-none/shadow-none、-0、合法档位）数出了 ' + negHits + ' 条 —— 度量器在误报');
@@ -136,11 +189,13 @@ if (scanText(SENTINEL).length !== 1) {
 
 // ── 站点侧扫描（棘轮）───────────────────────────────────────────────────
 function scanSite(dir) {
-  const acc = { radius: 0, shadow: 0, space: 0 };
+  const acc = { radius: 0, shadow: 0, space: 0, motion: 0, stroke: 0 };
   for (const f of walk(dir)) {
     const rel = relative(SITES, f).split('\\').join('/');
     if (SKIPREL.some((rx) => rx.test(rel))) continue;
-    for (const h of scanText(readFileSync(f, 'utf8'))) acc[h.cat]++;
+    const text = readFileSync(f, 'utf8');
+    for (const h of scanText(text)) acc[h.cat]++;
+    for (const h of scanStroke(text, rel)) acc[h.cat]++;
   }
   return acc;
 }
@@ -157,7 +212,7 @@ for (const f of walk(join(ROOT, 'packages'))) {
   if (SKIPREL.some((rx) => rx.test(rel))) continue;
   const text = readFileSync(f, 'utf8');
   const stripped = stripComments(text);
-  for (const h of scanText(text)) {
+  for (const h of [...scanText(text), ...scanStroke(text, rel)]) {
     const before = stripped.slice(0, h.index);
     const line = before.split('\n').length;
     dsHits.push({ file: rel, line, cls: h.cls, cat: h.cat });
@@ -171,7 +226,7 @@ export function compareRatchet(counts, reg) {
   for (const [site, acc] of Object.entries(counts)) {
     const base = reg && reg.sites && reg.sites[site];
     if (!base) { w.push('TT02 ' + site + ' 未登记在台账里（新站点？跑 --write-registry 补登）'); continue; }
-    for (const cat of ['radius', 'shadow', 'space']) {
+    for (const cat of ['radius', 'shadow', 'space', 'motion', 'stroke']) {
       const now = acc[cat], was = base[cat] || 0;
       if (now > was) p.push('TT02 ' + site + ' 的「' + cat + '」从 ' + was + ' 涨到 ' + now + ' —— 棘轮只许减');
       else if (now < was) w.push('TT02 ' + site + ' 的「' + cat + '」从 ' + was + ' 降到 ' + now + ' —— 请跑 --write-registry 跟新台账');
@@ -182,11 +237,12 @@ export function compareRatchet(counts, reg) {
 
 // ── --selftest：棘轮本身的双向对照（证明它会红，也证明它不误报）────────────
 if (process.argv.includes('--selftest')) {
-  const fixture = { sites: { 'probe-site': { radius: 1, shadow: 1, space: 1 } } };
-  const up = compareRatchet({ 'probe-site': { radius: 2, shadow: 1, space: 1 } }, fixture);
-  const same = compareRatchet({ 'probe-site': { radius: 1, shadow: 1, space: 1 } }, fixture);
-  const down = compareRatchet({ 'probe-site': { radius: 0, shadow: 1, space: 1 } }, fixture);
-  const unreg = compareRatchet({ 'not-in-registry': { radius: 0, shadow: 0, space: 0 } }, fixture);
+  const Z = { radius: 0, shadow: 0, space: 0, motion: 0, stroke: 0 };
+  const fixture = { sites: { 'probe-site': { ...Z, radius: 1 } } };
+  const up = compareRatchet({ 'probe-site': { ...Z, radius: 2 } }, fixture);
+  const same = compareRatchet({ 'probe-site': { ...Z, radius: 1 } }, fixture);
+  const down = compareRatchet({ 'probe-site': { ...Z, radius: 0 } }, fixture);
+  const unreg = compareRatchet({ 'not-in-registry': { ...Z } }, fixture);
   const ok =
     up.problems.length === 1 && same.problems.length === 0 && down.problems.length === 0 &&
     down.warns.length === 1 && unreg.problems.length === 0 && unreg.warns.length === 1;
@@ -222,21 +278,28 @@ for (const a of allowance) {
 }
 
 // ── 输出 ────────────────────────────────────────────────────────────────
-const totals = Object.values(siteCounts).reduce((a, c) => ({ radius: a.radius + c.radius, shadow: a.shadow + c.shadow, space: a.space + c.space }), { radius: 0, shadow: 0, space: 0 });
+const CATS = ['radius', 'shadow', 'space', 'motion', 'stroke'];
+const totals = Object.values(siteCounts).reduce((a, c) => {
+  const next = { ...a };
+  for (const k of CATS) next[k] = (a[k] || 0) + (c[k] || 0);
+  return next;
+}, { radius: 0, shadow: 0, space: 0, motion: 0, stroke: 0 });
 const dsByCat = dsHits.reduce((a, h) => ({ ...a, [h.cat]: (a[h.cat] || 0) + 1 }), {});
 
 if (AS_JSON) {
-  console.log(JSON.stringify({ siteCounts, dsHits, totals, problems, warns, legal: { radius: [...RADIUS], shadow: [...SHADOW], space: [...SPACE] } }, null, 2));
+  console.log(JSON.stringify({ siteCounts, dsHits, totals, problems, warns, legal: { radius: [...RADIUS], shadow: [...SHADOW], space: [...SPACE], duration: [...DURATION], ease: [...EASE], stroke: STROKE } }, null, 2));
 } else {
-  console.log('令牌档位闸门：合法档位 radius=' + [...RADIUS].join('/') + ' shadow=' + [...SHADOW].join('/') + ' space=' + [...SPACE].join('/') + '（读自 tokens/tokens.json）');
+  console.log('令牌档位闸门：合法档位 radius=' + [...RADIUS].join('/') + ' shadow=' + [...SHADOW].join('/'));
+  console.log('              space=' + [...SPACE].join('/'));
+  console.log('              duration=' + [...DURATION].join('/') + 'ms · ease=' + [...EASE].join('/') + ' · icon.stroke=' + STROKE + '（全部读自 tokens/tokens.json）');
   console.log('');
-  console.log('  站点              圆角   阴影   间距');
+  console.log('  站点              圆角   阴影   间距   动效   描边');
   for (const [s, c] of Object.entries(siteCounts)) {
-    console.log('  ' + s.padEnd(16) + String(c.radius).padStart(4) + String(c.shadow).padStart(7) + String(c.space).padStart(7));
+    console.log('  ' + s.padEnd(16) + CATS.map((k) => String(c[k] || 0).padStart(6)).join(''));
   }
-  console.log('  ' + '合计'.padEnd(15) + String(totals.radius).padStart(4) + String(totals.shadow).padStart(7) + String(totals.space).padStart(7));
+  console.log('  ' + '合计'.padEnd(15) + CATS.map((k) => String(totals[k] || 0).padStart(6)).join(''));
   console.log('');
-  console.log('  设计系统自身：' + dsHits.length + ' 处（硬零；过渡期白名单 ' + allowance.length + ' 条 · 圆角 ' + (dsByCat.radius || 0) + ' / 阴影 ' + (dsByCat.shadow || 0) + ' / 间距 ' + (dsByCat.space || 0) + '）');
+  console.log('  设计系统自身：' + dsHits.length + ' 处（硬零；过渡期白名单 ' + allowance.length + ' 条 · ' + CATS.map((k) => k + ' ' + (dsByCat[k] || 0)).join(' / ') + '）');
   for (const h of dsHits) console.log('    ' + h.file + ':' + h.line + '  ' + h.cls);
   console.log('');
   for (const w of warns) console.log('  [WARN] ' + w);
@@ -249,7 +312,7 @@ if (WRITE && !AS_JSON) {
   const next = {
     $comment: '令牌档位台账（棘轮）。站点侧的计数只许减不许增；设计系统自身是硬零，白名单是**过渡期**登记（批次 2 与 ui 发版绑定后必须清空）。生成：node scripts/check-token-tiers.mjs --write-registry。',
     generatedAt: new Date().toISOString().slice(0, 10),
-    legal: { radius: [...RADIUS], shadow: [...SHADOW], space: [...SPACE] },
+    legal: { radius: [...RADIUS], shadow: [...SHADOW], space: [...SPACE], duration: [...DURATION], ease: [...EASE], stroke: STROKE },
     sites: siteCounts,
     ds: {
       $comment: '设计系统组件里的档位外用法。每一处都必须给出改法与它等的是哪条发版链 —— 空数组是本闸门的终点。',

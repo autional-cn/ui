@@ -305,10 +305,15 @@
 --motion-duration-base: 200ms;
 --motion-duration-slow: 300ms;
 --motion-duration-slower: 500ms;
+--motion-duration-timeline: 1000ms;
 --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
 --motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+--motion-ease-linear: cubic-bezier(0, 0, 1, 1);
+
+/* ── icon ── */
+--icon-stroke: 2;
 
 /* ── focus ── */
 --focus-ring-width: 2px;

@@ -1,8 +1,8 @@
 {
   "$description": "令牌快照锁（生成物，勿手改）。重建：node scripts/token-lock.mjs。比对：node scripts/token-lock.mjs --check。",
-  "hash": "6887c62ee517482d06262984c831a9514ff02cc2713ffc983f768e9efea37e43",
-  "generatedAt": "2026-10-06T19:16:58.193Z",
-  "entries": 381,
+  "hash": "35071f1dd60b72c4381c74ab7f287dc7a4a53889ea111e0442a95c39c7c46b18",
+  "generatedAt": "2026-10-06T21:21:16.769Z",
+  "entries": 384,
   "tokens": {
     "core:a11y.touch-target": "44px",
     "core:color.accent": "{color.amber.500}",
@@ -178,6 +178,7 @@
       "Noto Serif SC",
       "serif"
     ],
+    "core:icon.stroke": "2",
     "core:image.brand-grid": "linear-gradient(rgba(0, 49, 83, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 49, 83, 0.08) 1px, transparent 1px)",
     "core:image.brand-radial": "radial-gradient(circle at top, rgba(135, 206, 235, 0.22), transparent 44%)",
     "core:image.page-dark": "radial-gradient(circle at top left, rgba(135, 206, 235, 0.12), transparent 28%), radial-gradient(circle at top right, rgba(255, 191, 0, 0.08), transparent 20%), linear-gradient(180deg, #041d31 0%, #031425 45%, #020b14 100%)",
@@ -196,8 +197,10 @@
     "core:motion.duration-instant": "100ms",
     "core:motion.duration-slow": "300ms",
     "core:motion.duration-slower": "500ms",
+    "core:motion.duration-timeline": "1000ms",
     "core:motion.ease-in": "cubic-bezier(0.4, 0, 1, 1)",
     "core:motion.ease-in-out": "cubic-bezier(0.65, 0, 0.35, 1)",
+    "core:motion.ease-linear": "cubic-bezier(0, 0, 1, 1)",
     "core:motion.ease-out": "cubic-bezier(0.16, 1, 0.3, 1)",
     "core:motion.ease-standard": "cubic-bezier(0.4, 0, 0.2, 1)",
     "core:radius.full": "9999px",

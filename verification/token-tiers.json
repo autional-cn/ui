@@ -35,78 +35,122 @@
       "2.5",
       "3.5",
       "section-gap"
-    ]
+    ],
+    "duration": [
+      "100",
+      "150",
+      "200",
+      "300",
+      "500",
+      "1000"
+    ],
+    "ease": [
+      "standard",
+      "out",
+      "in",
+      "in-out",
+      "linear"
+    ],
+    "stroke": "2"
   },
   "sites": {
     "admin": {
       "radius": 0,
-      "shadow": 1,
-      "space": 1
+      "shadow": 0,
+      "space": 1,
+      "motion": 0,
+      "stroke": 0
     },
     "auth": {
       "radius": 0,
-      "shadow": 17,
-      "space": 2
+      "shadow": 3,
+      "space": 2,
+      "motion": 0,
+      "stroke": 0
     },
     "authenticator": {
       "radius": 0,
-      "shadow": 8,
-      "space": 3
+      "shadow": 0,
+      "space": 3,
+      "motion": 0,
+      "stroke": 0
     },
     "brand": {
       "radius": 0,
       "shadow": 0,
-      "space": 3
+      "space": 3,
+      "motion": 0,
+      "stroke": 0
     },
     "developer": {
       "radius": 0,
-      "shadow": 1,
-      "space": 10
+      "shadow": 0,
+      "space": 10,
+      "motion": 0,
+      "stroke": 0
     },
     "docs": {
       "radius": 0,
       "shadow": 0,
-      "space": 1
+      "space": 1,
+      "motion": 0,
+      "stroke": 0
     },
     "platform": {
       "radius": 0,
       "shadow": 0,
-      "space": 0
+      "space": 0,
+      "motion": 0,
+      "stroke": 0
     },
     "reference": {
       "radius": 0,
-      "shadow": 1,
-      "space": 0
+      "shadow": 0,
+      "space": 0,
+      "motion": 0,
+      "stroke": 0
     },
     "security": {
       "radius": 0,
       "shadow": 6,
-      "space": 0
+      "space": 0,
+      "motion": 0,
+      "stroke": 0
     },
     "status": {
       "radius": 0,
-      "shadow": 21,
-      "space": 4
+      "shadow": 2,
+      "space": 4,
+      "motion": 0,
+      "stroke": 0
     },
     "trust": {
       "radius": 0,
-      "shadow": 21,
-      "space": 0
+      "shadow": 4,
+      "space": 0,
+      "motion": 0,
+      "stroke": 0
     },
     "user": {
       "radius": 0,
-      "shadow": 25,
-      "space": 1
+      "shadow": 8,
+      "space": 1,
+      "motion": 0,
+      "stroke": 0
     },
     "web": {
       "radius": 3,
-      "shadow": 10,
-      "space": 9
+      "shadow": 4,
+      "space": 9,
+      "motion": 0,
+      "stroke": 0
     },
     "wiki": {
       "radius": 0,
       "shadow": 0,
-      "space": 2
+      "space": 2,
+      "motion": 0,
+      "stroke": 0
     }
   },
   "ds": {

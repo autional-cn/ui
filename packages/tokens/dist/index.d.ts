@@ -274,10 +274,17 @@ declare const tokens: {
       "duration-base": string;
       "duration-slow": string;
       "duration-slower": string;
+      "duration-timeline": string;
       "ease-standard": string;
       "ease-out": string;
       "ease-in": string;
       "ease-in-out": string;
+      "ease-linear": string;
+      $note: string;
+    };
+    icon: {
+      stroke: string;
+      $note: string;
     };
     focus: {
       "ring-width": string;
