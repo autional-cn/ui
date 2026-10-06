@@ -6,7 +6,7 @@
 //
 // 为什么需要它：preset 是 \`theme.extend\` 而不是整表覆盖，所以 Tailwind 的出厂值
 // （\`rounded\` 4px、\`shadow-sm/md/lg\`、间距 7/9/11/14/24/28…）**是能生成出来的**。
-// 于是这些类不会像裸色阶那样被 K1（写不出来的类）拦下 —— 第 50 轮实测：全舰队 817 处
+// 于是这些类不会像裸色阶那样被 K1（写不出来的类）拦下 —— 第 55 轮实测：全舰队 817 处
 // 写在档位之外，而 27 道闸门没有一道在守它。L5/C11 收色阶时踩的是同一个形态。
 //
 // 判据的两侧（缺一侧就不成立）：
@@ -17,15 +17,15 @@
 // 判据的口径（不是黑白名单，是从 SSOT 派生的）：
 //   合法集合**直接读 tokens/tokens.json**，不在这里硬编码 —— 改令牌，判据跟着动。
 //   · radius：xs/sm/md/lg/xl/xxl/full；\`rounded-none\` 合法（0 不是档位，是「没有圆角」）；
-//     裸 \`rounded\` 违规（Tailwind DEFAULT 4px，在档位里没有名字 —— 第 50 轮已补 xs 给它）。
+//     裸 \`rounded\` 违规（Tailwind DEFAULT 4px，在档位里没有名字 —— 第 55 轮已补 xs 给它）。
 //   · shadow：soft/card/brand/code/deep；\`shadow-none\` 合法。
-//   · space：SSOT 的键（含第 50 轮补进 SSOT 的控件密度档 0.5/1.5/2.5/3.5 与节奏档 16/20）；
+//   · space：SSOT 的键（含第 55 轮补进 SSOT 的控件密度档 0.5/1.5/2.5/3.5 与节奏档 16/20）；
 //     \`-0\` 合法（「无间距」不是档位问题）；任意值 \`-[…]\` 违规。
 //
 // 度量器自检（学 C5/C9/C10/C11 的做法，双向都要有）：
 //   正例 —— 一段必然违规的样本必须被数出来；数不出来说明解析器失灵，棘轮会**全绿**。
 //   反例 —— 注释里的类名、\`rounded-none\`、\`-0\`、测试文件里的断言串都不许命中。
-//   第 50 轮实测的教训：SectionCard.tsx 顶上的注释就写着 \`rounded-2xl\`（解释为什么不用它），
+//   第 55 轮实测的教训：SectionCard.tsx 顶上的注释就写着 \`rounded-2xl\`（解释为什么不用它），
 //   只剥块注释的扫描器会把它当成违规 —— 注释必须**两种都剥**（\`/* */\` 与 \`//\`）。
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
@@ -59,7 +59,7 @@ function walk(dir, out = []) {
   return out;
 }
 
-/** 剥注释：块注释与行注释都要剥（第 50 轮的实测教训见文件头）。 */
+/** 剥注释：块注释与行注释都要剥（第 55 轮的实测教训见文件头）。 */
 const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 // ── 合法档位：从 SSOT 派生 ────────────────────────────────────────────────
@@ -247,7 +247,7 @@ if (WRITE && !AS_JSON) {
     sites: siteCounts,
     ds: {
       $comment: '设计系统组件里的档位外用法。每一处都必须给出改法与它等的是哪条发版链 —— 空数组是本闸门的终点。',
-      allowance: allowance.length ? allowance : dsHits.map((h) => ({ file: h.file, class: h.cls, plan: '批次 2：随 ui rc 发版收敛（见 docs/PORTAL-SHARED-LAYER-DESIGN.md §11 第 50 轮）' })),
+      allowance: allowance.length ? allowance : dsHits.map((h) => ({ file: h.file, class: h.cls, plan: '批次 2：随 ui rc 发版收敛（见 docs/PORTAL-SHARED-LAYER-DESIGN.md §11 第 55 轮）' })),
     },
   };
   writeFileSync(REGISTRY, JSON.stringify(next, null, 2) + '\n');

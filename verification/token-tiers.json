@@ -36,7 +36,7 @@
       "20",
       "section-gap"
     ],
-    "$notes": "第 50 轮把舰队真实在用的值收进 SSOT：控件密度档 0.5/1.5/2.5/3.5（530 处）与节奏档 16/20（64px 50 处、80px 35 处）。它们此前只在 Tailwind 出厂主题里存在 —— 于是「6px 到底合不合规」没有答案，536 处间距违规里其实有 500 处是本该合法却被算作违规的。收进来之后，剩下的 36 处才是真正写在档位之外的。"
+    "$notes": "第 55 轮把舰队真实在用的值收进 SSOT：控件密度档 0.5/1.5/2.5/3.5（530 处）与节奏档 16/20（64px 50 处、80px 35 处）。它们此前只在 Tailwind 出厂主题里存在 —— 于是「6px 到底合不合规」没有答案，536 处间距违规里其实有 500 处是本该合法却被算作违规的。收进来之后，剩下的 36 处才是真正写在档位之外的。"
   },
   "sites": {
     "admin": {
@@ -110,7 +110,7 @@
       "space": 2
     }
   },
-  "$siteComment": "第 50 轮基线（全舰队 321 处：圆角 174 / 阴影 111 / 间距 36）。收敛顺序与依赖见 docs/PORTAL-SHARED-LAYER-DESIGN.md §11 第 50 轮：圆角的 174 处里绝大多数是**同值改名**（rounded → rounded-xs 都是 4px；rounded-2xl → md 都是 16px；rounded-3xl → lg 都是 24px），零视觉变化，但必须先发 preset —— 站点侧写 rounded-xs 而 preset 里没有这一档时，K1（check-classnames）会把它判成写不出来的死类。",
+  "$siteComment": "第 55 轮基线（全舰队 321 处：圆角 174 / 阴影 111 / 间距 36）。收敛顺序与依赖见 docs/PORTAL-SHARED-LAYER-DESIGN.md §11 第 55 轮：圆角的 174 处里绝大多数是**同值改名**（rounded → rounded-xs 都是 4px；rounded-2xl → md 都是 16px；rounded-3xl → lg 都是 24px），零视觉变化，但必须先发 preset —— 站点侧写 rounded-xs 而 preset 里没有这一档时，K1（check-classnames）会把它判成写不出来的死类。",
   "ds": {
     "$comment": "设计系统组件里的档位外用法：**硬零**。白名单是过渡期登记，每一条都必须写明改法与它等的是哪条发版链 —— 空数组是本闸门的终点。它们不能单独改的原因：站点产物 CSS 是从**已发布的** @autional/ui 扫出来的，改了 DS 源码而没发版时，check-ds-classes 会（正确地）报「站点产物里没有 shadow-card 这个类」。所以这一批与 ui rc 发版是同一条链。",
     "allowance": [
@@ -162,7 +162,7 @@
       {
         "file": "packages/ui/src/molecules/Toast.tsx",
         "class": "rounded",
-        "plan": "→ rounded-xs（4px 同值改名：第 50 轮已给这一档补上名字）"
+        "plan": "→ rounded-xs（4px 同值改名：第 55 轮已给这一档补上名字）"
       },
       {
         "file": "packages/ui/src/molecules/PageContainer.tsx",
