@@ -405,6 +405,14 @@ export function useAdminBillingAlerts(params?: any) {
   });
 }
 
+/** 查询租户信用余额（管理端） */
+export function useAdminBillingCredit_balanceByCreditBalance(tenantId: string) {
+  return useQuery({
+    queryKey: ['billing-service', 'by_' + tenantId] as const,
+    queryFn: () => api.adminBillingCreditBalanceByCreditBalance(tenantId),
+  });
+}
+
 /** 获取红字发票详情 */
 export function useAdminBillingCredit_noteByCreditNote(number: string) {
   return useQuery({
@@ -418,6 +426,14 @@ export function useAdminBillingCredit_notes(params?: any) {
   return useQuery({
     queryKey: ['billing-service', params] as const,
     queryFn: () => api.adminBillingCreditNotes(params),
+  });
+}
+
+/** 查询信用交易记录（管理端） */
+export function useAdminBillingCredit_transactionsByCreditTransactions(tenantId: string, params?: any) {
+  return useQuery({
+    queryKey: ['billing-service', 'by_' + tenantId, params] as const,
+    queryFn: () => api.adminBillingCreditTransactionsByCreditTransactions(tenantId, params),
   });
 }
 
@@ -5249,6 +5265,17 @@ export function usePutAdminBillingFeature_gatesOverrides() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => api.adminBillingFeatureGatesOverridesPut(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['billing-service'] });
+    },
+  });
+}
+
+/** 清除功能开关覆盖 */
+export function useDeleteAdminBillingFeature_gatesOverridesByOverrides() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (gateKey: string) => api.adminBillingFeatureGatesOverridesByOverridesDelete(gateKey),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['billing-service'] });
     },

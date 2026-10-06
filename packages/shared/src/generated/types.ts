@@ -896,11 +896,13 @@ export interface BillingRecordListResponse {
 export interface BillingRecordResponse {
   amount?: number;  // @example 99
   appId?: string;  // @example app_001
+  billingCycle?: string;  // @example monthly
   createdAt?: string;  // @example 2026-04-01T00:00:00Z
   currency?: string;  // @example CNY
   description?: string;  // @example 专业版月度订阅
   invoiceNumber?: string;  // @example INV-2026-001
   lineItems?: InvoiceLineItemResponse[];
+  plan?: string;  // @example pro
   recordId?: string;  // @example rec_001
   status?: string;  // @example paid
   tenantId?: string;  // @example tnt_xyz789
@@ -1162,12 +1164,14 @@ export interface InvoiceLineItemResponse {
 export interface InvoiceResponse {
   amount?: number;  // @example 104.94
   appId?: string;  // @example app_001
+  billingCycle?: string;  // @example monthly
   currency?: string;  // @example CNY
   dueDate?: string;  // @example 2026-04-15T00:00:00Z
   invoiceNumber?: string;  // @example INV-2026-001
   issuedAt?: string;  // @example 2026-04-01T00:00:00Z
   lineItems?: InvoiceLineItemResponse[];
   paidAt?: string;  // @example 2026-04-10T15:00:00Z
+  plan?: string;  // @example pro
   status?: string;  // @example issued
   tenantId?: string;  // @example tnt_xyz789
 }
@@ -1443,7 +1447,7 @@ export interface TenantStatisticsResponse {
   mrr?: number;  // @example 99
   retentionRate?: number;  // @example 0.95
   tenantId?: string;  // @example tnt_xyz789
-  totalSpend?: number;  // @example 1188
+  totalSpend?: number;  // UP-53：「未实现」与「真实 0」在契约上必须可区分——指针 + omitempty， 服务层未提供时字段整体省略（消费方渲染「暂不可用」），杜绝假 0 序列化。 | @example 1188
 }
 
 export interface TrialActionDetailResponse {

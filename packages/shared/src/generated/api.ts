@@ -808,6 +808,15 @@ export async function adminBillingAlertsByAlertsPut(alertId: string, data: Updat
 }
 
 /**
+ * 查询租户信用余额（管理端）
+ * 与用户面 /billing/credit-balance/{tenant_id} 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingCreditBalanceByCreditBalance(tenantId: string) {
+  const res = await api.get(`/billing/api/v1/admin/billing/credit-balance/${tenantId}`);
+  return res.data;
+}
+
+/**
  * 删除红字发票
  * 物理删除一张红字发票记录
  */
@@ -842,6 +851,19 @@ export async function adminBillingCreditNotes(params?: {
   page_size?: number;  // 每页条数
 }) {
   const res = await api.get(`/billing/api/v1/admin/billing/credit-notes`, { params });
+  return res.data;
+}
+
+/**
+ * 查询信用交易记录（管理端）
+ * 与用户面 /billing/credit-transactions/{tenant_id} 同体、同租户范围；供控制台在 admin 平面读取。
+ */
+export async function adminBillingCreditTransactionsByCreditTransactions(tenantId: string, params?: {
+  page?: number;  // 页码
+  page_size?: number;  // 每页条数
+  source?: string;  // 交易来源 (proration/refund/promo/manual_adjust)
+}) {
+  const res = await api.get(`/billing/api/v1/admin/billing/credit-transactions/${tenantId}`, { params });
   return res.data;
 }
 
@@ -896,6 +918,14 @@ export async function adminBillingFeatureGatesOverrides() {
 export async function adminBillingFeatureGatesOverridesPut(data: OverrideRequest) {
   const res = await api.put(`/billing/api/v1/admin/billing/feature-gates/overrides`, data);
   return res.data;
+}
+
+/**
+ * 清除功能开关覆盖
+ * 删除当前租户指定 gate_key 的功能开关覆盖，功能恢复为套餐默认权益。幂等：覆盖不存在时同样返回成功与当前覆盖列表。
+ */
+export async function adminBillingFeatureGatesOverridesByOverridesDelete(gateKey: string) {
+  await api.delete(`/billing/api/v1/admin/billing/feature-gates/overrides/${gateKey}`);
 }
 
 /**
