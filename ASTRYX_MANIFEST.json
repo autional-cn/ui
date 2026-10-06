@@ -21,7 +21,7 @@
     "regenerate": "pnpm gen",
     "verify": "pnpm gen:check",
     "packages": {
-      "@autional-cn/tokens": {
+      "@autional/tokens": {
         "css": "packages/tokens/tokens.css",
         "cssCore": "packages/tokens/primitives.css",
         "profiles": "packages/tokens/profiles/*.css",
@@ -30,7 +30,7 @@
         "antdBridge": "packages/tokens/dist/antd-theme.js",
         "charts": "packages/tokens/dist/chart.js"
       },
-      "@autional-cn/tailwind-preset": {
+      "@autional/tailwind-preset": {
         "preset": "packages/tailwind-preset/index.js",
         "css": "packages/tailwind-preset/tokens.css"
       }
@@ -41,9 +41,9 @@
       "variants": ["portal", "auth", "dark", "authenticator", "auth-tenant"]
     },
     "consumption": [
-      "CSS: @import '@autional-cn/tailwind-preset/tokens.css'; then an optional profile stylesheet, then packages/tokens/primitives.css for content sites.",
-      "Tailwind: presets: [require('@autional-cn/tailwind-preset')].",
-      "antd: ConfigProvider token from @autional-cn/tokens/antd-theme (light/dark), algorithm switched with the theme mode."
+      "CSS: @import '@autional/tailwind-preset/tokens.css'; then an optional profile stylesheet, then packages/tokens/primitives.css for content sites.",
+      "Tailwind: presets: [require('@autional/tailwind-preset')].",
+      "antd: ConfigProvider token from @autional/tokens/antd-theme (light/dark), algorithm switched with the theme mode."
     ],
     "primitives": "packages/tokens/primitives.css",
     "deprecatedPaths": {
@@ -590,7 +590,7 @@
       "specificPrimitives": [],
       "mustHavePatterns": [
         "product surfaces consume semantic tokens (bg-surface, text-primary, border-subtle) rather than raw neutral or gray classes",
-        "antd apps register ConfigProvider with the @autional-cn/tokens antd bridge so component colors follow the brand",
+        "antd apps register ConfigProvider with the @autional/tokens antd bridge so component colors follow the brand",
         "one icon library (lucide-react) per page",
         "color scheme driven by .dark / [data-theme] blocks emitted from tokens.json, never by a local override file"
       ]

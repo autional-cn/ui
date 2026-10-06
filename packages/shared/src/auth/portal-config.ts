@@ -5,7 +5,7 @@
  * 消除跨 Portal 的角色常量重复定义。
  *
  * 用法:
- *   import { ADMIN_GUARDS, AdminGuard } from '@autional-cn/shared';
+ *   import { ADMIN_GUARDS, AdminGuard } from '@autional/shared';
  *   // 路由中: <AdminGuard><Page /></AdminGuard>
  *   替代: <RequireAuth allowedRoles={['super_admin', 'admin']}><Page /></RequireAuth>
  *

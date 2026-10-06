@@ -3,7 +3,7 @@
  *
  * Content-site brand surfaces and documentation patterns, consolidated from
  * legacy/styles/{website,docs-site,developer-site}-global.css.
- * Consumes only CSS variables from @autional-cn/tokens, so the visual result
+ * Consumes only CSS variables from @autional/tokens, so the visual result
  * follows whichever profile stylesheet is loaded (docs / developer / marketing).
  */
 

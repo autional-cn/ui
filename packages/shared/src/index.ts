@@ -184,7 +184,7 @@ export { buildTenantUrls } from './auth/build-tenant-urls';
 export { resolvePortalBasename } from './config/resolve-basename';
 
 // 生成代码的命名空间再导出（GeneratedApi / ApiGenerated / GeneratedTypes / ApiTypes）。
-// 说明：这 4 行原先指向 @autional-cn/api-generated —— 那是各站逐站副本里用
+// 说明：这 4 行原先指向 @autional/api-generated —— 那是各站逐站副本里用
 // file:../../scripts/generate/api-generated-package 提供的本地包，一旦 shared 走 npm 发布
 // 就必然解析不到（authenticator / security 的 tsc 就是这么炸的：TS2305 has no exported member）。
 // 本包内的 src/generated/* 是同一份生成结果，因此改指包内相对路径；

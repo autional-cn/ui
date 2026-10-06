@@ -7,7 +7,7 @@
 //
 // 用法（站点 vitest 配置的 setupFiles 里）：
 //   import '@testing-library/jest-dom/vitest';
-//   import '@autional-cn/ui/test-setup';
+//   import '@autional/ui/test-setup';
 //
 // 这不是「为了让测试过而 mock」：matchMedia 与 ResizeObserver 是真实浏览器里就有的 API，
 // jsdom 只是没实现。不补的后果实测过：antd 组件会在 rc-component 的 useLayoutEffect 里抛错，

@@ -3,7 +3,7 @@
 // 用法: node scripts/check-consumers.mjs
 //
 // 背景（实测）：9 个站点各自带一份 packages/tailwind-preset/tokens.css 拷贝，
-// 且没有任何站点声明对 @autional-cn/* 的依赖 —— 交付方式是「手工拷贝」。
+// 且没有任何站点声明对 @autional/* 的依赖 —— 交付方式是「手工拷贝」。
 // 实测 admin 的拷贝只有 89 个变量，权威版本有 186 个，缺 97 个（含整组 chart-* 与 method-*）。
 // gen:check / lint-tokens / token-lock 都只看 ui/ 内部，看不见这件事。
 
@@ -123,19 +123,19 @@ for (const bt of (cfg.byteTargets || [])) {
 // ── 交付通道：设计系统必须走 npm，不得回退成内置副本（2026-09 P4 收口）────────────
 // 此前 14 个站点各存一份 packages/tailwind-preset/ 拷贝，命名空间是伪造的：读起来像在消费
 // 设计系统，实际用的是自己仓库里的分支（KI-006）。P4 已把 14 个站点改成依赖已发布的
-// @autional-cn/*，内置副本全部删除。这条断言防的是「又退回去」——而且它同时补上了上面
+// @autional/*，内置副本全部删除。这条断言防的是「又退回去」——而且它同时补上了上面
 // 那些拷贝比对的**盲区**：副本删光后 targets/byteTargets 只匹配到共享组件层，
 // 「每个站点都真的从 npm 消费设计系统」这件事本身没有任何闸门在看。
 const SITES_DIR = resolve(ROOT, '..', 'sites');
-const NPM_REQUIRED = ['@autional-cn/tailwind-preset', '@autional-cn/tokens'];
-// @autional-cn/ui 是**条件必需**：只有源码真的 import 了组件库的站点才必须声明它。
+const NPM_REQUIRED = ['@autional/tailwind-preset', '@autional/tokens'];
+// @autional/ui 是**条件必需**：只有源码真的 import 了组件库的站点才必须声明它。
 // 实测：brand 与 5 个 Astro 站（developer/docs/reference/web/wiki）的源码里 0 处引用组件库，
 // 强制它们声明等于制造假依赖（brand 原来那个未使用的依赖就是本轮删掉的）。
-// 条件必需：只有源码真的 import 了某个 @autional-cn 包的站点，才必须声明它。
+// 条件必需：只有源码真的 import 了某个 @autional 包的站点，才必须声明它。
 // 实测：brand 与 5 个 Astro 站源码里 0 处引用组件库；Astro 站的文档页虽然写着
-// `'@autional-cn/react'`，但那是**文案里的字符串**，不是 import —— 所以判据必须是
+// `'@autional/react'`，但那是**文案里的字符串**，不是 import —— 所以判据必须是
 // `from '<pkg>'` 这种形态，不能用 includes(pkg)。
-const CONDITIONAL_NPM = ['@autional-cn/ui', '@autional-cn/react'];
+const CONDITIONAL_NPM = ['@autional/ui', '@autional/react'];
 // 引号写进字符类时用 \u0027 / \u0022，避免在字符串里再转义引号——
 // 第一版就是在这里被转义坑了：生成出来的正则里引号没转义，整个文件语法错误。
 const Q = "[\\u0027\\u0022]";
@@ -153,7 +153,7 @@ function siteImportsUi(sitePath, pkg) {
       const q = join(d, e.name);
       if (e.isDirectory()) stack.push(q);
       // 只扫 ts/tsx/js/jsx：.astro 里大量出现**文档代码示例**
-      // （实测 web/src/pages/sdk.astro 的模板字符串里就写着 import { AuthProvider } from '@autional-cn/react'），
+      // （实测 web/src/pages/sdk.astro 的模板字符串里就写着 import { AuthProvider } from '@autional/react'），
       // 那是文案不是 import，扫进去会得到假阳性。这几个包在 Astro 站里本来 0 处真实引用，
       // 所以这个收窄不会漏掉真问题；真正无条件必需的 tokens / tailwind-preset 仍由 NPM_REQUIRED 覆盖全部 14 站。
       else if (/\.(ts|tsx|js|jsx)$/.test(e.name)) {
@@ -172,24 +172,24 @@ if (existsSync(SITES_DIR)) {
     if (!statSync(sitePath).isDirectory()) continue;
     channelChecked++;
     // 组件库与令牌一样：交付方式是 npm 依赖，本地副本（packages/ui）同样不得残留。
-    // 2026-09：@autional-cn/ui 已发布，14 个站点的 packages/ui 全部删除（5 个 Astro 站
+    // 2026-09：@autional/ui 已发布，14 个站点的 packages/ui 全部删除（5 个 Astro 站
     // 那份 ErrorBoundary 也是死文件——源码里 0 处引用）。
     if (existsSync(join(sitePath, 'packages', 'tsconfig'))) {
       channelBad++;
       vendorFound++;
-      console.log('  [DRIFT] ' + site + '：仍有内置副本 packages/tsconfig/ —— @autional-cn/tsconfig 已发布，副本必须删除');
+      console.log('  [DRIFT] ' + site + '：仍有内置副本 packages/tsconfig/ —— @autional/tsconfig 已发布，副本必须删除');
     }
     if (existsSync(join(sitePath, 'packages', 'ui'))) {
       channelBad++;
       vendorFound++;
-      console.log('  [DRIFT] ' + site + '：仍有内置副本 packages/ui/ —— 组件库已发布为 @autional-cn/ui，副本必须删除');
+      console.log('  [DRIFT] ' + site + '：仍有内置副本 packages/ui/ —— 组件库已发布为 @autional/ui，副本必须删除');
     }
     if (existsSync(join(sitePath, 'packages', 'tailwind-preset'))) {
       channelBad++;
       vendorFound++;
       console.log('  [DRIFT] ' + site + '：仍有内置副本 packages/tailwind-preset/ —— 设计系统已由 npm 交付，副本必须删除');
     }
-    // 收集该站点所有 package.json 里对 @autional-cn/* 的声明
+    // 收集该站点所有 package.json 里对 @autional/* 的声明
     const decl = {};
     const pjs = [join(sitePath, 'package.json')];
     for (const g of ['apps', 'packages']) {
@@ -202,7 +202,7 @@ if (existsSync(SITES_DIR)) {
       let j;
       try { j = JSON.parse(readFileSync(p, 'utf8')); } catch (e) { continue; }
       for (const key of ['dependencies', 'devDependencies']) {
-        for (const [k, v] of Object.entries(j[key] || {})) if (k.indexOf('@autional-cn/') === 0) decl[k] = v;
+        for (const [k, v] of Object.entries(j[key] || {})) if (k.indexOf('@autional/') === 0) decl[k] = v;
       }
     }
     const required = NPM_REQUIRED.concat(CONDITIONAL_NPM.filter((p) => siteImportsUi(sitePath, p)));

@@ -1,5 +1,5 @@
 {
-  "name": "@autional-cn/shared",
+  "name": "@autional/shared",
   "version": "0.1.0-rc.32",
   "description": "Autional shared layer — API client, auth, types, hooks, utils",
   "license": "AGPL-3.0",
@@ -35,7 +35,7 @@
     "zustand": "5.0.13"
   },
   "devDependencies": {
-    "@autional-cn/tsconfig": "workspace:*",
+    "@autional/tsconfig": "workspace:*",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "jsdom": "29.1.1",

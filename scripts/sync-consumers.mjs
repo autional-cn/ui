@@ -6,7 +6,7 @@
 //   node scripts/sync-consumers.mjs --write --rollback-vendor   # 回滚通道：把内置副本写回去
 //
 // 2026-09 P4：设计系统改由 npm 交付，14 个站点的 packages/tailwind-preset/ 已全部删除，
-// 站点改为依赖已发布的 @autional-cn/tailwind-preset 与 @autional-cn/tokens。
+// 站点改为依赖已发布的 @autional/tailwind-preset 与 @autional/tokens。
 // 因此本脚本保留两个**常开**职责——共享组件层（packages/ui/src/molecules/ErrorBoundary.tsx）
 // 与图标套件（站点 public/）；内置副本降级为**回滚通道**，只在显式 --rollback-vendor 时执行。
 // 目标发现也不再以「站点里有内置副本」为条件：那个条件在副本删光后会让 targets 变成 0，
@@ -14,11 +14,11 @@
 
 // 为什么需要它（实测 2026-09）：
 //   9 个站点各自在**自己仓库内**有一个 packages/tailwind-preset，锁文件解析为
-//     '@autional-cn/tailwind-preset': { specifier: workspace:*, version: link:../../packages/tailwind-preset }
-//   于是站点里的 `@import '@autional-cn/tailwind-preset/tokens.css'` 用的是它自己的内置分支。
+//     '@autional/tailwind-preset': { specifier: workspace:*, version: link:../../packages/tailwind-preset }
+//   于是站点里的 `@import '@autional/tailwind-preset/tokens.css'` 用的是它自己的内置分支。
 //   命名空间是伪造的——读起来像在消费设计系统，实际没有。这是 KI-006 的机制。
 //   更麻烦的是两边形态都不一样：权威 packages/tailwind-preset/tokens.css 是 254 字节的
-//   转发文件（@import '@autional-cn/tokens/tokens.css'），站点副本是 6.5KB 的内联快照，
+//   转发文件（@import '@autional/tokens/tokens.css'），站点副本是 6.5KB 的内联快照，
 //   来自更早的一代（primary-50 是 #e8f1f8，权威已是 #e9f3f9）。所以「复制粘贴」修不了，
 //   必须**生成**：本脚本把权威的完整内联产物写进站点，使其自洽且与权威逐字节一致，
 //   之后由 check-consumers.mjs 守住不再漂移。
@@ -42,7 +42,7 @@ const ONLY = (() => { const i = process.argv.indexOf('--site'); return i >= 0 ? 
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
 
 // 写入站点的那份 tokens.css 用**完整内联产物**而不是转发文件，
-// 站点只 link 了 tailwind-preset 一个包，@import '@autional-cn/tokens/…' 在那里解析不到。
+// 站点只 link 了 tailwind-preset 一个包，@import '@autional/tokens/…' 在那里解析不到。
 const SOURCES = [
   { from: 'packages/tokens/tokens.css', to: 'packages/tailwind-preset/tokens.css' },
   { from: 'packages/tailwind-preset/index.js', to: 'packages/tailwind-preset/index.js' },
@@ -53,7 +53,7 @@ const SOURCES = [
 // 共享组件层（KI-013）：packages/ui 是共享组件库，却在 9 个站点各存一份、
 // 29 个文件里只有 ErrorBoundary.tsx 不同，且差异只在默认文案。
 // 以 ui 仓库的 shared/ui/ErrorBoundary.tsx 为权威统一下发。
-// 2026-09：共享组件层已发布为 @autional-cn/ui@0.1.0-rc，这一项随之退役。
+// 2026-09：共享组件层已发布为 @autional/ui@0.1.0-rc，这一项随之退役。
 // 之前它把 ErrorBoundary.tsx 下发给**全部 14 个站点**，其中 5 个 Astro 站的源码里
 // 0 处引用它（实测 grep），9 个 SPA 站则有完整的 packages/ui 副本、现在改为 npm 依赖。
 // 保留一个空数组是为了让下面的调用点不必改，语义是「共享组件层不再走拷贝通道」。

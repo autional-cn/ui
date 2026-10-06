@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { Table } from 'antd';
-import antdTheme from '@autional-cn/tokens/antd-theme';
+import antdTheme from '@autional/tokens/antd-theme';
 import { ThemeProvider } from '../../context/ThemeProvider';
 import { AntdThemeProvider, useAntdApp } from '../AntdThemeProvider';
 

@@ -1,6 +1,6 @@
 // 返回值必须显式写成 Uint8Array<ArrayBuffer>：TS 5.7 起 TypedArray 带上了 buffer 的类型参数，
 // 裸写 Uint8Array 等于 Uint8Array<ArrayBufferLike>，而 PushManager.subscribe 要的是 BufferSource
-// （= ArrayBufferView<ArrayBuffer>）—— 于是 @autional-cn/react 那边整包类型检查红着，
+// （= ArrayBufferView<ArrayBuffer>）—— 于是 @autional/react 那边整包类型检查红着，
 // 而 shared 自己的项目里看不出来（两边 tsconfig 的解析路径不同）。实测踩到，见计划 L1。
 export function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 	const padding = '='.repeat((4 - (base64String.length % 4)) % 4);

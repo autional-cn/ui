@@ -1,7 +1,7 @@
 // dist-tags — 发布通道的 tag 政策（2026-10-02 新增，见计划文末「规则 2」）。
 //
-// 为什么需要它：@autional-cn/shared 连发多次只打了 rc 没跟 latest，
-// 于是 latest 停在 0.1.0-rc.4 而 rc 已到 0.1.0-rc.10 —— 任何人 npm i @autional-cn/shared
+// 为什么需要它：@autional/shared 连发多次只打了 rc 没跟 latest，
+// 于是 latest 停在 0.1.0-rc.4 而 rc 已到 0.1.0-rc.10 —— 任何人 npm i @autional/shared
 // 都会装到几天前的构建。站点是精确 pin 所以没受影响，**这正是它危险的地方：
 // 一条通道坏了，另一条通道掩盖了它。**
 //
@@ -13,22 +13,20 @@ import { join } from 'node:path';
 import { ROOT } from './tokens.mjs';
 
 export const PACKAGES = [
-  '@autional-cn/tokens',
-  '@autional-cn/tailwind-preset',
-  '@autional-cn/ui',
-  '@autional-cn/shared',
-  '@autional-cn/react',
-  '@autional-cn/tsconfig',
-  '@autional-cn/eslint-config'
+  '@autional/tokens',
+  '@autional/tailwind-preset',
+  '@autional/ui',
+  '@autional/shared',
+  '@autional/tsconfig',
+  '@autional/eslint-config'
 ];
 export const PKG_DIR = {
-  '@autional-cn/tokens': 'packages/tokens',
-  '@autional-cn/tailwind-preset': 'packages/tailwind-preset',
-  '@autional-cn/ui': 'packages/ui',
-  '@autional-cn/shared': 'packages/shared',
-  '@autional-cn/react': 'packages/react',
-  '@autional-cn/tsconfig': 'packages/tsconfig',
-  '@autional-cn/eslint-config': 'packages/eslint-config'
+  '@autional/tokens': 'packages/tokens',
+  '@autional/tailwind-preset': 'packages/tailwind-preset',
+  '@autional/ui': 'packages/ui',
+  '@autional/shared': 'packages/shared',
+  '@autional/tsconfig': 'packages/tsconfig',
+  '@autional/eslint-config': 'packages/eslint-config'
 };
 export const versionOf = (pkg) => JSON.parse(readFileSync(join(ROOT, PKG_DIR[pkg], 'package.json'), 'utf8')).version;
 

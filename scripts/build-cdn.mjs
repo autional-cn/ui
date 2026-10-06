@@ -85,7 +85,7 @@ const CSS = [
   ['packages/tokens/primitives.css', 'primitives.css'],
 ];
 // profiles 是**按站点**覆盖调色板的样式表（docs / developer）。此前只经 npm 下发，
-// 站点从 @import '@autional-cn/tokens/profiles/x.css' 取；CDN 上没有它们，
+// 站点从 @import '@autional/tokens/profiles/x.css' 取；CDN 上没有它们，
 // 于是「CDN 作为运行期唯一来源」这个前提不成立（少了它 Astro 站会变配色）。
 const PROFILES = [
   ['packages/tokens/profiles/docs.css', 'profiles/docs.css'],
@@ -331,8 +331,8 @@ const SNIPPETS = [
    '<link rel="icon" type="image/svg+xml" href="' + ABS + '/icons/favicon.svg">\n' +
    '<link rel="manifest" href="' + ABS + '/icons/site.webmanifest">'],
   ['构建期代码（Node / Vite / Astro）—— 走 npm，不要走 CDN',
-   'pnpm add @autional-cn/tokens @autional-cn/tailwind-preset\n' +
-   "import '@autional-cn/tokens/tokens.css'"]
+   'pnpm add @autional/tokens @autional/tailwind-preset\n' +
+   "import '@autional/tokens/tokens.css'"]
 ];
 const snippetHtml = SNIPPETS.map(([t, code]) =>
   '<h3>' + t + '</h3><pre><code>' + code.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</code></pre>').join('\n');

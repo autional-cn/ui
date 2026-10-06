@@ -14,7 +14,7 @@
 // 设计系统组件类生成闸门（verify 第 19 道）
 // 用法: node scripts/check-ds-classes.mjs [--json]
 //
-// 守的是什么：一个站点 import 了 @autional-cn/ui 的组件，**不等于**这些组件的样式进了产物。
+// 守的是什么：一个站点 import 了 @autional/ui 的组件，**不等于**这些组件的样式进了产物。
 //
 // 实测过的静默失败（2026-10-03 发现）：四个门户的 tailwind content glob 指向
 // '../../packages/ui/src' —— 那个目录在组件库改成 npm 依赖时就被删了。结果：
@@ -209,16 +209,16 @@ for (const site of readdirSync(SITES)) {
   // 站点实际安装的 DS 源码：SPA 在 apps/<app>/node_modules，内容站/根装在站点根
   const candidates = [];
   const appsDir = join(siteDir, 'apps');
-  if (existsSync(appsDir)) for (const a of readdirSync(appsDir)) candidates.push(join(appsDir, a, 'node_modules', '@autional-cn', 'ui', 'src'));
-  candidates.push(join(siteDir, 'node_modules', '@autional-cn', 'ui', 'src'));
+  if (existsSync(appsDir)) for (const a of readdirSync(appsDir)) candidates.push(join(appsDir, a, 'node_modules', '@autional', 'ui', 'src'));
+  candidates.push(join(siteDir, 'node_modules', '@autional', 'ui', 'src'));
   candidates.push(LOCAL_PKG);
   const pkgDir = candidates.find((d) => existsSync(d));
   const EXPORTS = buildExportMap(pkgDir);
-  if (EXPORTS.size === 0) { infos.push('D0 ' + site + '：读不到 @autional-cn/ui 的导出表（' + pkgDir + '）—— 跳过'); continue; }
+  if (EXPORTS.size === 0) { infos.push('D0 ' + site + '：读不到 @autional/ui 的导出表（' + pkgDir + '）—— 跳过'); continue; }
 
   const imported = new Set();
   for (const f of srcFiles) {
-    for (const m of readFileSync(f, 'utf8').matchAll(/import\s+(?:type\s+)?\{([^}]+)\}\s*from\s*'@autional-cn\/ui'/g)) {
+    for (const m of readFileSync(f, 'utf8').matchAll(/import\s+(?:type\s+)?\{([^}]+)\}\s*from\s*'@autional\/ui'/g)) {
       for (const raw of m[1].split(',')) {
         const name = raw.trim().split(/\s+as\s+/)[0].trim();
         if (name && EXPORTS.has(name)) imported.add(name);

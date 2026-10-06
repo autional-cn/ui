@@ -1,5 +1,5 @@
 {
-  "extends": "@autional-cn/tsconfig/react.json",
+  "extends": "@autional/tsconfig/react.json",
   "compilerOptions": {
     "rootDir": "src",
     "baseUrl": ".",

@@ -28,7 +28,7 @@ const STEPS = [
   { key: 'capabilities', label: '预设能力契约（模板用了需要插件的类，插件是否真的在）', cmd: ['node', 'scripts/check-preset-capabilities.mjs'] },
   { key: 'classnames', label: '类名可达性（裸色阶类名写了但生成不出来）', cmd: ['node', 'scripts/check-classnames.mjs'] },
   { key: 'publish', label: '发布一致性（npm 已发布内容是否仍等于当前 SSOT）', cmd: ['node', 'scripts/check-publish.mjs'] },
-  { key: 'dep-policy', label: '依赖策略（@autional-cn/* 精确声明 + 部署安装冻结）', cmd: ['node', 'scripts/check-dep-policy.mjs'] },
+  { key: 'dep-policy', label: '依赖策略（@autional/* 精确声明 + 部署安装冻结）', cmd: ['node', 'scripts/check-dep-policy.mjs'] },
   { key: 'ds-classes', label: '设计系统组件类生成（导入的组件用到的类必须在产物 CSS 里）', cmd: ['node', 'scripts/check-ds-classes.mjs'] },
   { key: 'non-tenant', label: '业务路由名单（各 portal 注册的非租户首段 vs 自己的路由表）', cmd: ['node', 'scripts/check-non-tenant.mjs'] },
   { key: 'icon-vocabulary', label: '图标词汇（同一概念只许一种写法；棘轮）', cmd: ['node', 'scripts/check-icon-vocabulary.mjs'] },

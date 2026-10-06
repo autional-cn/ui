@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // pin-fleet-deps — 把 14 个站点的**依赖侧**对齐到舰队政策。两件事，都是同一个问题的两半：
 //
-//   ① 版本声明精确化：  "@autional-cn/ui": "^0.1.0-rc.2"  →  "0.1.0-rc.2"
+//   ① 版本声明精确化：  "@autional/ui": "^0.1.0-rc.2"  →  "0.1.0-rc.2"
 //   ② 部署安装冻结：    vercel.json 的 "pnpm install"     →  "pnpm install --frozen-lockfile"
 //
 // 为什么必须两件一起做（2026-10-03 实测，不是推断）：
@@ -9,7 +9,7 @@
 //   14 个站里有 13 个的 vercel.json 写的是 "pnpm install"（**非 frozen**），只有 web 用了
 //   --frozen-lockfile。而站点声明的是 caret —— 于是：
 //
-//     · 任何一次 @autional-cn/ui 发布（例如 rc.3）会**立即进入 13 个站的下一次生产构建**，
+//     · 任何一次 @autional/ui 发布（例如 rc.3）会**立即进入 13 个站的下一次生产构建**，
 //       而没有任何站点 commit；
 //     · 计划里写的「逐站切外壳」不成立 —— 它们同一时刻一起变；
 //     · 「单站 revert」也不成立 —— 撤回 package.json 也拦不住，因为区间仍是 ^0.1.0-rc.2。
@@ -67,7 +67,7 @@ for (const site of existsSync(SITES) ? readdirSync(SITES).sort() : []) {
     for (const sec of ['dependencies', 'devDependencies', 'peerDependencies']) {
       if (!j[sec]) continue;
       for (const [name, spec] of Object.entries(j[sec])) {
-        if (name.indexOf('@autional-cn/') !== 0) continue;
+        if (name.indexOf('@autional/') !== 0) continue;
         const want = fleet.get(name);
         if (!want) { depChanges.push({ pj, name, from: spec, to: null, why: 'rc tag 读不到（离线？）' }); continue; }
         if (spec === want) continue;

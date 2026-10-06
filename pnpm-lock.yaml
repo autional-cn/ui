@@ -31,31 +31,6 @@ importers:
         specifier: 8.71.0
         version: 8.71.0(eslint@10.12.0)(typescript@5.8.3)
 
-  packages/react:
-    dependencies:
-      '@autional-cn/shared':
-        specifier: workspace:*
-        version: link:../shared
-    devDependencies:
-      '@autional-cn/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
-      '@types/react':
-        specifier: 19.2.14
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: 19.2.3
-        version: 19.2.3(@types/react@19.2.14)
-      react:
-        specifier: 19.2.5
-        version: 19.2.5
-      react-dom:
-        specifier: 19.2.5
-        version: 19.2.5(react@19.2.5)
-      typescript:
-        specifier: 5.8.3
-        version: 5.8.3
-
   packages/shared:
     dependencies:
       '@opentelemetry/api':
@@ -86,7 +61,7 @@ importers:
         specifier: 5.0.13
         version: 5.0.13(@types/react@19.2.14)(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))
     devDependencies:
-      '@autional-cn/tsconfig':
+      '@autional/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@testing-library/jest-dom':
@@ -116,7 +91,7 @@ importers:
 
   packages/tailwind-preset:
     dependencies:
-      '@autional-cn/tokens':
+      '@autional/tokens':
         specifier: workspace:*
         version: link:../tokens
       tailwindcss:
@@ -129,9 +104,9 @@ importers:
 
   packages/ui:
     devDependencies:
-      '@autional-cn/tokens':
-        specifier: 0.1.0-rc.6
-        version: 0.1.0-rc.6
+      '@autional/tokens':
+        specifier: workspace:*
+        version: link:../tokens
       '@testing-library/jest-dom':
         specifier: 6.9.1
         version: 6.9.1
@@ -241,9 +216,6 @@ packages:
 
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
-
-  '@autional-cn/tokens@0.1.0-rc.6':
-    resolution: {integrity: sha512-Jb3QMCeJj+Kv/kVVa9A9rZiTH9xud/Rsh2kgXgOswQVmznUsJAsdbkAUN6acJvxIZRm4+r67zJ5M3Q10mvIAhQ==}
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -2239,8 +2211,6 @@ snapshots:
   '@asamuzakjp/generational-cache@1.0.1': {}
 
   '@asamuzakjp/nwsapi@2.3.9': {}
-
-  '@autional-cn/tokens@0.1.0-rc.6': {}
 
   '@babel/code-frame@7.29.7':
     dependencies:

@@ -4,7 +4,7 @@
 //
 // 守两条政策。两条都是 2026-10-03 实测出「不钉住会出事」之后立的：
 //
-// ① **@autional-cn/\* 的声明必须精确**，不得有 ^ / ~ / workspace:
+// ① **@autional/\* 的声明必须精确**，不得有 ^ / ~ / workspace:
 //    理由不是洁癖，是产品要求：一致性。caret（^0.1.0-rc.2）允许 >=rc.2 <0.2.0 ——
 //    也就是**「两个门户跑不同版本的组件库」是一个合法状态**。而"这些 portal 看起来
 //    像同一家公司的同一个产品"正是本项目的目标；把它的反面写进 package.json 是自相矛盾。
@@ -58,7 +58,7 @@ for (const site of readdirSync(SITES).sort()) {
     for (const sec of ['dependencies', 'devDependencies', 'peerDependencies']) {
       if (!j[sec]) continue;
       for (const [name, spec] of Object.entries(j[sec])) {
-        if (name.indexOf('@autional-cn/') !== 0) continue;
+        if (name.indexOf('@autional/') !== 0) continue;
         checked++;
         if (/^[\^~]/.test(spec) || spec.indexOf('workspace:') === 0) {
           loose++;
@@ -90,7 +90,7 @@ for (const site of readdirSync(SITES).sort()) {
 }
 
 // ── P3 默认入口不得（直接或间接）引入**可选 peer** ─────────────────────────
-// 为什么这条属于「依赖策略」：@autional-cn/ui 把 antd / dayjs / react-hook-form 声明为
+// 为什么这条属于「依赖策略」：@autional/ui 把 antd / dayjs / react-hook-form 声明为
 // **optional** peerDependency，而那个 optional 标记成立的前提是**默认入口不 import 它们**。
 // 一旦 src/index.ts 的闭包里出现了其中之一，所有消费方（含不吃这些库的 user、5 个 Astro 站、营销站）
 // 都被迫安装它 —— 而 peer 的 optional 只是「不报错」，它**阻止不了**这件事。

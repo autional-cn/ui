@@ -1,5 +1,5 @@
 {
-  "name": "@autional-cn/ui",
+  "name": "@autional/ui",
   "version": "0.1.0-rc.42",
   "description": "Autional shared React component library (atoms + molecules) — the canonical home of the component layer",
   "license": "AGPL-3.0",
@@ -42,7 +42,7 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@autional-cn/tokens": ">=0.1.0-rc",
+    "@autional/tokens": ">=0.1.0-rc",
     "antd": ">=6.0.0",
     "dayjs": ">=1.11.0",
     "i18next": ">=26.0.0",
@@ -68,7 +68,7 @@
     }
   },
   "devDependencies": {
-    "@autional-cn/tokens": "0.1.0-rc.6",
+    "@autional/tokens": "workspace:*",
     "antd": "6.5.0",
     "dayjs": "1.11.20",
     "@testing-library/jest-dom": "6.9.1",

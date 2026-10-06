@@ -1,5 +1,5 @@
 {
-  "$comment": "lint warning 台账（棘轮，C14）。键 = ESLint 规则名，值 = 该站该规则的 warning 数。只许减不许增；error 不在台账里 —— 它必须恒为 0。首轮 921 条 warning 的来源与理由见 @autional-cn/eslint-config/index.js。",
+  "$comment": "lint warning 台账（棘轮，C14）。键 = ESLint 规则名，值 = 该站该规则的 warning 数。只许减不许增；error 不在台账里 —— 它必须恒为 0。首轮 921 条 warning 的来源与理由见 @autional/eslint-config/index.js。",
   "updated": "2026-10-05",
   "apps": {
     "admin": {

@@ -8,7 +8,7 @@
 // 字节检查全绿，因为检查的是**按本地版本号取到的那份**，跟 tag 无关。
 //
 // 设计系统的产物有**三个交付面**，它们都应当由同一份 SSOT 派生：
-//   ① npm 包（@autional-cn/*）—— 构建期代码
+//   ① npm 包（@autional/*）—— 构建期代码
 //   ② CDN（cdn.autional.cn/ui/v<版本>/）—— 运行期资产
 //   ③ 站点内的 vendored 副本 —— 回滚通道
 //
@@ -36,29 +36,28 @@ const infos = [];
 
 // 发布出去的包 → 与本地哪个产物对应。只列会被消费方真正使用的文件。
 const PAIRS = [
-  ['@autional-cn/tokens', 'tokens.css',                      'packages/tokens/tokens.css'],
-  ['@autional-cn/tokens', 'primitives.css',                  'packages/tokens/primitives.css'],
-  ['@autional-cn/tokens', 'dist/index.js',                   'packages/tokens/dist/index.js'],
-  ['@autional-cn/tokens', 'dist/index.d.ts',                 'packages/tokens/dist/index.d.ts'],
-  ['@autional-cn/tokens', 'dist/tokens.json',                'packages/tokens/dist/tokens.json'],
-  ['@autional-cn/tokens', 'dist/chart.js',                   'packages/tokens/dist/chart.js'],
-  ['@autional-cn/tokens', 'dist/antd-theme.mjs',             'packages/tokens/dist/antd-theme.mjs'],
-  ['@autional-cn/tokens', 'profiles/docs.css',               'packages/tokens/profiles/docs.css'],
-  ['@autional-cn/tokens', 'profiles/developer.css',          'packages/tokens/profiles/developer.css'],
-  ['@autional-cn/tokens', 'fonts/inter-latin-wght-normal.woff2', 'packages/tokens/fonts/inter-latin-wght-normal.woff2'],
-  ['@autional-cn/tailwind-preset', 'index.js',               'packages/tailwind-preset/index.js'],
-  ['@autional-cn/tailwind-preset', 'index.d.ts',             'packages/tailwind-preset/index.d.ts'],
+  ['@autional/tokens', 'tokens.css',                      'packages/tokens/tokens.css'],
+  ['@autional/tokens', 'primitives.css',                  'packages/tokens/primitives.css'],
+  ['@autional/tokens', 'dist/index.js',                   'packages/tokens/dist/index.js'],
+  ['@autional/tokens', 'dist/index.d.ts',                 'packages/tokens/dist/index.d.ts'],
+  ['@autional/tokens', 'dist/tokens.json',                'packages/tokens/dist/tokens.json'],
+  ['@autional/tokens', 'dist/chart.js',                   'packages/tokens/dist/chart.js'],
+  ['@autional/tokens', 'dist/antd-theme.mjs',             'packages/tokens/dist/antd-theme.mjs'],
+  ['@autional/tokens', 'profiles/docs.css',               'packages/tokens/profiles/docs.css'],
+  ['@autional/tokens', 'profiles/developer.css',          'packages/tokens/profiles/developer.css'],
+  ['@autional/tokens', 'fonts/inter-latin-wght-normal.woff2', 'packages/tokens/fonts/inter-latin-wght-normal.woff2'],
+  ['@autional/tailwind-preset', 'index.js',               'packages/tailwind-preset/index.js'],
+  ['@autional/tailwind-preset', 'index.d.ts',             'packages/tailwind-preset/index.d.ts'],
 ];
 
 // 目录级比对：整包逐文件比，而不是手写清单。
-// 为什么加（2026-09 轮次 47）：组件库 @autional-cn/ui 是在轮次 45 才发布的，
+// 为什么加（2026-09 轮次 47）：组件库 @autional/ui 是在轮次 45 才发布的，
 // 而 PAIRS 是手列的 —— 于是它**发布之后没有任何闸门在看**：改了 ui/packages/ui 的源码、
 // 忘了重新发布，17 道门照样全绿，而 9 个站点拿到的还是旧包。
 // 组件库有 20+ 个源文件，手列一份清单必然随文件增删而腐烂，所以这一条直接走目录。
 const DIR_PAIRS = [
-  ['@autional-cn/ui', 'packages/ui/src'],
-  ['@autional-cn/shared', 'packages/shared/src'],
-  ['@autional-cn/react', 'packages/react/src'],
+  ['@autional/ui', 'packages/ui/src'],
+  ['@autional/shared', 'packages/shared/src'],
 ];
 
 // 每个包读**自己**的版本。原来是一把尺子量所有包（统一取 tokens 的版本），
@@ -72,7 +71,7 @@ try {
   //
   // registry 必须显式钉死：删掉 NPM_CONFIG_USERCONFIG 只是让 npm 回到默认位置，
   // 而默认位置就是 ~/.npmrc —— 本机那份把 registry 指向 npmmirror。闸门在临时目录里跑，
-  // ui/.npmrc 的 @autional-cn:registry 作用不到，于是刚发布的版本在镜像站同步前必然 ETARGET
+  // ui/.npmrc 的 @autional:registry 作用不到，于是刚发布的版本在镜像站同步前必然 ETARGET
   // （实测：shared@0.1.0-rc.10 已在 npmjs 可下载，闸门仍报 no matching version）。
   const env = { ...process.env };
   delete env.NPM_CONFIG_USERCONFIG;
@@ -105,7 +104,7 @@ try {
     packCache.set(dirRel, set);
     return set;
   };
-  const PKG_DIR_OF = { '@autional-cn/ui': 'packages/ui', '@autional-cn/shared': 'packages/shared', '@autional-cn/react': 'packages/react' };
+  const PKG_DIR_OF = { '@autional/ui': 'packages/ui', '@autional/shared': 'packages/shared' };
   let same = 0;
 
   let total = PAIRS.length;
@@ -149,7 +148,7 @@ try {
   }
 
   // 发布**通道**的 tag 政策：latest 必须等于 rc。
-  // 只校验版本号还不够——实测 @autional-cn/shared 连发多次只打了 rc 没跟 latest，
+  // 只校验版本号还不够——实测 @autional/shared 连发多次只打了 rc 没跟 latest，
   // latest 停在 0.1.0-rc.4 而 rc 已到 0.1.0-rc.10，任何人都装到旧构建；
   // 而站点全部精确 pin，所以**没有任何站点会报错**，它可以一直错下去。
   const tags = await auditDistTags();
@@ -172,7 +171,7 @@ try {
 
 if (AS_JSON) console.log(JSON.stringify({ versions: Object.fromEntries(pkgs.map((p) => [p, versionOf(p)])), infos, problems }, null, 2));
 else {
-  console.log('发布一致性闸门：' + pkgs.map((p) => p.replace('@autional-cn/', '') + '@' + versionOf(p)).join('  '));
+  console.log('发布一致性闸门：' + pkgs.map((p) => p.replace('@autional/', '') + '@' + versionOf(p)).join('  '));
   for (const i of infos) console.log('  [INFO ] ' + i);
   for (const p of problems) console.log('  [ERROR] ' + p);
   const skipped = infos.some((i) => i.indexOf('SKIP') >= 0);

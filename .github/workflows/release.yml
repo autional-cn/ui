@@ -9,7 +9,7 @@ name: release
 # 必须落在一个显式的人为决策点上。
 #
 # 前置 secret（缺任何一个都会在 preflight 硬失败，不会静默跳过）：
-#   NPM_TOKEN       @autional-cn 作用域的 publish 权限
+#   NPM_TOKEN       @autional 作用域的 publish 权限
 #   CDN_PUSH_TOKEN  对 autional-cn/cdn 有 contents:write 的 PAT
 #                   （跨仓推送不能用 GITHUB_TOKEN）
 
@@ -32,7 +32,7 @@ jobs:
         run: |
           missing=0
           if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::缺少 secret NPM_TOKEN（@autional-cn 作用域的 publish 权限）"; missing=1
+            echo "::error::缺少 secret NPM_TOKEN（@autional 作用域的 publish 权限）"; missing=1
           fi
           if [ -z "$CDN_PUSH_TOKEN" ]; then
             echo "::error::缺少 secret CDN_PUSH_TOKEN（对 autional-cn/cdn 有 contents:write 的 PAT）"; missing=1

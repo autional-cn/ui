@@ -76,7 +76,7 @@ const consumer = { scanned: 0, installed: [], missing: [], channels: new Map() }
 // CDN 交付判据（2026-09 轮次 42 起，唯一通道）。（2026-09 轮次 42 起的主通道）。站点的 <head> 直接 <link> CDN 的 tokens.css，
 // 而 tokens.css 里的 @font-face 用相对路径 url('./fonts/…') 引用同一目录下的 woff2。
 // 判据必须落在**这条真实路径**上：只看 node_modules 里有没有字体文件会误判——
-// 换轨之后站点依旧装着 @autional-cn/tokens（antd-theme 还要用），依赖树里也依旧有 fonts/，
+// 换轨之后站点依旧装着 @autional/tokens（antd-theme 还要用），依赖树里也依旧有 fonts/，
 // 但没有任何东西会把它打进产物（实测：9 个 SPA 站点换轨后 dist 里 woff2 引用数为 0）。
 // 「依赖树里有文件」与「浏览器会去取那个文件」是两件事，判据要盯后者。
 const CDN_DIR = process.env.AUTIONAL_CDN_DIR || resolve(ROOT, '..', 'cdn');
@@ -125,7 +125,7 @@ if (existsSync(sitesDir)) {
     for (const f of webfonts) {
       // 判据（2026-09 轮次 42）：**浏览器会不会去取那个字体文件**。
       // 历史上这里叠过三条判据 —— 站点声明依赖 / stations 内置副本 / 依赖树里有字体文件。
-      // 换轨到 CDN 之后每一条都变成「成立，但不再代表交付」：站点依旧装着 @autional-cn/tokens
+      // 换轨到 CDN 之后每一条都变成「成立，但不再代表交付」：站点依旧装着 @autional/tokens
       // （antd-theme 还要用），依赖树里也依旧有 fonts/，而**产物里一个 woff2 都没有**。
       // 判据叠得越多，闸门越容易因为**过时的理由**而全绿——P4 那次误判 9 个站点就是这个病。
       // 所以这一轮不再往上叠第 ④ 条，而是收敛成一条：<head> 必须 link CDN 的 tokens.css，

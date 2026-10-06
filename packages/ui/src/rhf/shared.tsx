@@ -1,6 +1,6 @@
 'use client';
 
-// @autional-cn/ui/rhf 的绑定控件：把 react-hook-form 的 useController 也包掉，
+// @autional/ui/rhf 的绑定控件：把 react-hook-form 的 useController 也包掉，
 // 于是调用点只剩「字段名 + 标签 + 输入属性」，标签/错误/aria 接线一律由设计系统给。
 //
 // 为什么值得包：整个舰队有 50 处 react-hook-form 的 register( 调用点（user 10 / auth 34 / status 4 / trust 2），

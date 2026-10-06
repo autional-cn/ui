@@ -2,10 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 
-// Simplified inline tests for the @autional-cn/ui patterns
+// Simplified inline tests for the @autional/ui patterns
 // Full tests require importing actual components
 
-describe('@autional-cn/ui Modal', () => {
+describe('@autional/ui Modal', () => {
 	it('renders and closes on button click', async () => {
 		const handleClose = vi.fn();
 		render(
@@ -35,7 +35,7 @@ describe('@autional-cn/ui Modal', () => {
 	});
 });
 
-describe('@autional-cn/ui Toast', () => {
+describe('@autional/ui Toast', () => {
 	it('renders toast message', () => {
 		render(React.createElement('div', null, 'Operation successful'));
 		expect(screen.getByText('Operation successful')).toBeDefined();
@@ -55,7 +55,7 @@ describe('@autional-cn/ui Toast', () => {
 	});
 });
 
-describe('@autional-cn/ui ThemeProvider', () => {
+describe('@autional/ui ThemeProvider', () => {
 	it('toggle switches dark/light', () => {
 		let dark = false;
 		const toggle = () => {

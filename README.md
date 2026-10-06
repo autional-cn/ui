@@ -13,12 +13,12 @@ ui/
 ├── tokens/tokens.json          ← 唯一手写文件（L1 core / L2 profiles / L3 variants）
 ├── scripts/generate.mjs        ← 生成器：pnpm gen / pnpm gen:check
 ├── packages/
-│   ├── tokens/                 @autional-cn/tokens
+│   ├── tokens/                 @autional/tokens
 │   │   ├── tokens.css          生成：L1 core + [data-theme] 变体块
 │   │   ├── profiles/*.css      生成：L2 profile 覆盖（docs / developer）
 │   │   ├── primitives.css      手写：品牌类 + 内容站 base 层
 │   │   └── dist/               生成：tokens.json / index.d.ts / antd-theme.js / chart.js
-│   └── tailwind-preset/        @autional-cn/tailwind-preset（生成）
+│   └── tailwind-preset/        @autional/tailwind-preset（生成）
 ├── assets/{logo,favicon}/      品牌图形与 favicon（唯一一套）
 ├── docs/                       规范细则（guidelines / case-studies / 资产套件说明）
 ├── DESIGN.md                   ← 设计规范 v1.0（人读；值与 JSON 保持一致）
@@ -81,20 +81,20 @@ CI：`.github/workflows/verify.yml`，push 与 PR 都会跑这三条。
 
 ```css
 /* app/site 入口样式 */
-@import '@autional-cn/tailwind-preset/tokens.css';   /* L1 core + 变体 */
-@import '@autional-cn/tokens/profiles/docs.css';     /* L2，按站点选，必须在 core 之后 */
-@import '@autional-cn/tokens/primitives.css';        /* 内容站共享品牌类 */
+@import '@autional/tailwind-preset/tokens.css';   /* L1 core + 变体 */
+@import '@autional/tokens/profiles/docs.css';     /* L2，按站点选，必须在 core 之后 */
+@import '@autional/tokens/primitives.css';        /* 内容站共享品牌类 */
 ```
 
 ```ts
 // tailwind.config.ts
-import preset from '@autional-cn/tailwind-preset';
+import preset from '@autional/tailwind-preset';
 export default { darkMode: 'class', presets: [preset], content: ['./src/**/*.{ts,tsx}'], theme: { extend: {} } };
 ```
 
 ```tsx
 // antd 应用：令牌桥接，别让组件回落到 antd 默认蓝
-import antdTheme from '@autional-cn/tokens/antd-theme';
+import antdTheme from '@autional/tokens/antd-theme';
 <ConfigProvider theme={{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
                          token: (isDark ? antdTheme.dark : antdTheme.light).token }}>
 ```

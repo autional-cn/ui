@@ -2,13 +2,13 @@
 // check-typecheck —— 类型检查闸门
 //
 // 为什么需要它：本计划第 41 轮补的「发布一致性」管的是 npm 与 SSOT 同步，
-// 但**没有任何东西跑过 tsc**。实测后果：@autional-cn/react 的类型检查红了很久没人知道
+// 但**没有任何东西跑过 tsc**。实测后果：@autional/react 的类型检查红了很久没人知道
 // （两处错误：缺 @types/react、以及 Uint8Array<ArrayBufferLike> 与 BufferSource 不兼容），
-// 而它是对外 SDK —— web / developer / docs 三个站在宣传 "npm install @autional-cn/react"。
+// 而它是对外 SDK —— web / developer / docs 三个站在宣传 "npm install @autional/react"。
 // 「没有闸门的检查等于没有检查」在这一条上是最字面的：连跑都没跑过。
 //
 // 判据分两层：
-//   ① ui 工作区：pnpm -r typecheck（设计系统 + shared + react 三个包）
+//   ① ui 工作区：pnpm -r typecheck（设计系统 + shared 两个包）
 //   ② 在册门户：逐站 tsc --noEmit（四个在册门户）
 // 站点未安装 node_modules 时**跳过**并打印 INFO —— 与视觉回归闸门同样的约定：
 // 跳过必须在输出里看得见，不能静默当成通过。

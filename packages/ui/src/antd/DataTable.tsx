@@ -11,7 +11,7 @@
 //   若这里改成一套自研的窄 API，等于**用自制 API 取代 antd 的成熟 API** —— 与「antd 比我们手写的成熟」
 //   这个定调相反，而且 156 处都要改造。薄透传下，一致性收益收窄为「视觉六项」，但它是真的、代价可控。
 //
-// 视觉那六项**不在这里写死**：它们在 @autional-cn/tokens 的 antd 桥里（components.Table），
+// 视觉那六项**不在这里写死**：它们在 @autional/tokens 的 antd 桥里（components.Table），
 // 由 AntdThemeProvider 下发给 ConfigProvider。所以即便某个门户暂时没换用 DataTable，
 // 只要挂了 Provider，它的表格外观也已经统一 —— 覆盖面比「只统一换用处」大一个数量级。
 

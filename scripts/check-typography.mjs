@@ -276,18 +276,18 @@ if (existsSync(sitesDir)) {
 // 指纹用共享层独有的那条规则（html { font-family: var(--font-sans) }）——站点的 app 级 CSS
 // 已不再重复它，CDN 的 tokens.css 也不进 bundle，所以它只可能来自共享层。
 const SHARED_CSS_MARK = /font-family:\s*var\(--font-sans\)/;
-const SHARED_UI_IMPORT = /from\s+['"]@autional-cn\/ui['"]|require\(\s*['"]@autional-cn\/ui['"]\s*\)/;
+const SHARED_UI_IMPORT = /from\s+['"]@autional\/ui['"]|require\(\s*['"]@autional\/ui['"]\s*\)/;
 if (existsSync(sitesDir)) {
   const rows = [];
   for (const site of readdirSync(sitesDir)) {
     const sp = join(sitesDir, site);
     if (!statSync(sp).isDirectory()) continue;
     // 2026-09 起组件库走 npm，判据不再依赖「站点里有 packages/ui」——那个目录已经全部删除。
-    // 改为直接问：这个站点的源码真的 import 了 @autional-cn/ui 吗？import 了而产物里没有它，
+    // 改为直接问：这个站点的源码真的 import 了 @autional/ui 吗？import 了而产物里没有它，
     // 才是要抓的病（声明了但不交付）。
     const src = collectSrc(sp, []).filter((f) => !SRC_SKIP.test(f));
     const uses = src.some((f) => SHARED_UI_IMPORT.test(readFileSync(f, 'utf8')));
-    if (!uses) { info.push('TY6 ' + site + '：声明了 @autional-cn/ui 但源码里没有任何 import —— 未参与（基底层由 CDN 的 tokens.css 提供）'); continue; }
+    if (!uses) { info.push('TY6 ' + site + '：声明了 @autional/ui 但源码里没有任何 import —— 未参与（基底层由 CDN 的 tokens.css 提供）'); continue; }
     const css = collectCss(sp, []).filter((f) => /[\\/]dist[\\/]/.test(f));
     if (!css.length) { info.push('TY6 ' + site + '：没有构建产物，跳过'); continue; }
     const text = css.map((f) => readFileSync(f, 'utf8')).join('\n');
@@ -332,7 +332,7 @@ if (existsSync(sitesDir)) {
     problems.push('TY4b 有 ' + notGoverned.length + ' 个站点的编译产物里找不到任何品牌 preset 指纹（' +
       presetFingerprints.map((f) => f.name).join(' / ') + '）：' + notGoverned.map((v) => v.site).join(', ') +
       '。这些站点的字号/圆角等工具类来自 Tailwind 默认而非品牌 preset，即排版不受品牌管辖。' +
-      '修法：在该站点的 tailwind.config 里加载 @autional-cn/tailwind-preset（见 pnpm sync:consumers）。');
+      '修法：在该站点的 tailwind.config 里加载 @autional/tailwind-preset（见 pnpm sync:consumers）。');
   }
 }
 

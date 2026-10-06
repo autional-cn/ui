@@ -41,7 +41,7 @@ function InvalidHarness() {
 	);
 }
 
-describe('@autional-cn/ui/rhf 绑定控件', () => {
+describe('@autional/ui/rhf 绑定控件', () => {
 	it('标签通过 htmlFor 连到真实控件上（不是只画了一个 label）', () => {
 		render(<Harness />);
 		const input = screen.getByLabelText('邮箱');

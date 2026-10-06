@@ -5,7 +5,7 @@
  * 替代在每个路由中重复传入 allowedRoles 的模式。
  *
  * 用法:
- *   import { AdminGuard, PlatformGuard, SecurityGuard } from '@autional-cn/shared';
+ *   import { AdminGuard, PlatformGuard, SecurityGuard } from '@autional/shared';
  *
  *   // admin-console 路由:
  *   <AdminGuard><DashboardPage /></AdminGuard>

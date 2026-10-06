@@ -7,7 +7,7 @@
 // 再因为找不到配置而以 2 退出 —— 这条命令从来没在本仓跑过，它只是一个名字。
 // 这正是「没有闸门的检查等于没有检查」的最字面版本：**这里连检查都不存在。**
 //
-// 现在：规则只有一个来源（@autional-cn/eslint-config），站点只留三行 eslint.config.mjs。
+// 现在：规则只有一个来源（@autional/eslint-config），站点只留三行 eslint.config.mjs。
 // 本闸门做三件事：
 //   ① 每个在册门户必须**真的声明** eslint 与共享配置（防止又退回「脚本指向空气」）；
 //   ② 跑一遍，**error 必须为 0**；
@@ -52,14 +52,14 @@ for (const { site, app } of APPS) {
     problems.push('C14 ' + site + '：package.json 里没有 lint 脚本 —— 在册门户必须有一条可执行的 lint');
     continue;
   }
-  if (!deps['eslint'] || !deps['@autional-cn/eslint-config']) {
-    problems.push('C14 ' + site + '：没有声明 eslint / @autional-cn/eslint-config —— ' +
+  if (!deps['eslint'] || !deps['@autional/eslint-config']) {
+    problems.push('C14 ' + site + '：没有声明 eslint / @autional/eslint-config —— ' +
       '实测过这一种坏法：脚本写着 eslint src/，而 eslint 根本没装，命令从上层目录捡到别的项目的 ESLint 再报「找不到配置」。' +
       '「声明了却跑不了」比「没声明」更糟，因为它看起来是有的。');
     continue;
   }
   if (!existsSync(join(dir, 'eslint.config.mjs')) && !existsSync(join(dir, 'eslint.config.js'))) {
-    problems.push('C14 ' + site + '：没有 eslint.config.mjs（flat config）—— 配置也必须只有一个来源：@autional-cn/eslint-config');
+    problems.push('C14 ' + site + '：没有 eslint.config.mjs（flat config）—— 配置也必须只有一个来源：@autional/eslint-config');
     continue;
   }
 
@@ -114,7 +114,7 @@ if (WRITE) {
   const prev = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
   const out = {
     $comment: 'lint warning 台账（棘轮，C14）。键 = ESLint 规则名，值 = 该站该规则的 warning 数。只许减不许增；' +
-      'error 不在台账里 —— 它必须恒为 0。首轮 921 条 warning 的来源与理由见 @autional-cn/eslint-config/index.js。',
+      'error 不在台账里 —— 它必须恒为 0。首轮 921 条 warning 的来源与理由见 @autional/eslint-config/index.js。',
     updated: new Date().toISOString().slice(0, 10),
     apps: {}
   };

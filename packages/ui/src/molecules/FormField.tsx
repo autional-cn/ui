@@ -8,7 +8,7 @@
 // 每一处都在重新决定「标签怎么摆、错误颜色是什么、读屏器怎么念」。
 //
 // 它**不依赖任何表单库**：配合 react-hook-form 的 register、配合 Controller、配合自研控件都能用。
-// 绑定 react-hook-form 的那一组（把 useController 也包掉）在 @autional-cn/ui/rhf 入口。
+// 绑定 react-hook-form 的那一组（把 useController 也包掉）在 @autional/ui/rhf 入口。
 
 import * as React from 'react';
 
@@ -35,7 +35,7 @@ interface FieldA11y {
 
 const FieldA11yContext = React.createContext<FieldA11y | null>(null);
 
-/** 供控件取用外壳生成的 id 与 aria 接线（@autional-cn/ui/rhf 的绑定控件已经替你接了）。 */
+/** 供控件取用外壳生成的 id 与 aria 接线（@autional/ui/rhf 的绑定控件已经替你接了）。 */
 export function useFormFieldA11y(): FieldA11y | null {
 	return React.useContext(FieldA11yContext);
 }

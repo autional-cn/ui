@@ -4,10 +4,10 @@
 //
 // 为什么放在这里，而不是让每个站点各写一份：
 //   在此之前，三个控制台各有一份 lib/antd-app.tsx，逻辑相同（ConfigProvider + 中英 locale
-//   + dark 算法 + @autional-cn/tokens/antd-theme 的 token）。四份同构代码就是四份会各自漂移的东西。
+//   + dark 算法 + @autional/tokens/antd-theme 的 token）。四份同构代码就是四份会各自漂移的东西。
 //   这一份是它的唯一实现；站点只挂 Provider，不 import antd。
 //
-// 为什么单独一个子路径入口（@autional-cn/ui/antd）而不是并进根入口：
+// 为什么单独一个子路径入口（@autional/ui/antd）而不是并进根入口：
 //   根入口的消费方里有不吃 antd 的（user 之前是、5 个 Astro 站也是）。
 //   把 antd 并进根入口，等于让所有人替一个他们不用的库付包体积。
 //   所以：antd 是**可选** peerDependency，默认入口 0 处 import antd（有闸门断言）。
@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import 'dayjs/locale/zh-cn';
 // antd 主题由设计系统下发，这里**不写死任何色值**。
 // （控制台此前硬编码过 5 个色值 + borderRadius:6，那是 KI-011：令牌变更传导不到，各控制台各自漂移。）
-import antdTheme from '@autional-cn/tokens/antd-theme';
+import antdTheme from '@autional/tokens/antd-theme';
 import { useTheme } from '../context/ThemeProvider';
 
 export interface AntdThemeProviderProps {

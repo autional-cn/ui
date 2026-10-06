@@ -10,11 +10,11 @@
  *   Dashboard/首页。404 页由各 portal 通过 notFound prop 注入
  *   （shared 组件不能 import 具体 app 的 not-found/page）。
  *
- * ⚠️ 依赖约束: shared 包 dependencies 无 @autional-cn/ui，禁止 import @autional-cn/ui
+ * ⚠️ 依赖约束: shared 包 dependencies 无 @autional/ui，禁止 import @autional/ui
  * （会引入未声明依赖/循环依赖）。loading 默认值用内联 div 骨架，
  * 样式用 CSS 变量 var(--color-*)，在 .dark 下自动反转（AGENTS.md 设计规范）。
  * ⚠️ useTenantSlugFromUrl 内部相对导入（'../auth/slug-from-url'），
- * 不要从包名 '@autional-cn/shared' 导入自身。
+ * 不要从包名 '@autional/shared' 导入自身。
  */
 
 'use client';
@@ -64,13 +64,13 @@ export interface TenantIndexGuardProps {
 	children?: ReactNode;
 	/** 白名单校验失败渲染的 404 页（各 portal 注入自己的 NotFoundPage） */
 	notFound?: ReactNode;
-	/** loading 占位（缺省渲染内联简单骨架，不依赖 @autional-cn/ui） */
+	/** loading 占位（缺省渲染内联简单骨架，不依赖 @autional/ui） */
 	loading?: ReactNode;
 }
 
 /**
  * 默认 loading 占位 — 内联骨架（零依赖）。
- * 不使用 @autional-cn/ui（shared 包无该依赖，避免未声明依赖/循环依赖）；
+ * 不使用 @autional/ui（shared 包无该依赖，避免未声明依赖/循环依赖）；
  * 样式用 CSS 变量 var(--color-*)，在 .dark 下自动反转。
  */
 function DefaultLoadingSkeleton() {

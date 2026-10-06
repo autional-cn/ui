@@ -357,7 +357,7 @@ for (const [name, profile] of Object.entries(TOKENS.profiles)) {
   }
   outputs.set(
     `packages/tokens/profiles/${name}.css`,
-    `/**\n * Autional profile: ${name} — ${GENERATED('tokens/tokens.json')}\n * Load AFTER @autional-cn/tokens/tokens.css.\n */\n\n${blocks.join('\n\n')}\n`,
+    `/**\n * Autional profile: ${name} — ${GENERATED('tokens/tokens.json')}\n * Load AFTER @autional/tokens/tokens.css.\n */\n\n${blocks.join('\n\n')}\n`,
   );
 }
 
@@ -463,7 +463,7 @@ const antdComponents = (ctx) => ({
 
 outputs.set(
   'packages/tokens/dist/antd-theme.js',
-  `'use strict';\n/** ${GENERATED('tokens/tokens.json')}\n *\n * antd v5/v6 ThemeConfig bridge. Usage:\n *   const antdToken = require('@autional-cn/tokens/antd-theme');\n *   <ConfigProvider theme={{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,\n *                            token: (isDark ? antdToken.dark : antdToken.light).token }}>\n */\n` +
+  `'use strict';\n/** ${GENERATED('tokens/tokens.json')}\n *\n * antd v5/v6 ThemeConfig bridge. Usage:\n *   const antdToken = require('@autional/tokens/antd-theme');\n *   <ConfigProvider theme={{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,\n *                            token: (isDark ? antdToken.dark : antdToken.light).token }}>\n */\n` +
     `module.exports = {\n  light: { token: ${js(antdToken(light), 1)}, components: ${js(antdComponents(light), 2)} },\n  dark: { token: ${js(antdToken(dark), 1)}, components: ${js(antdComponents(dark), 2)} },\n};\n`,
 );
 
@@ -474,7 +474,7 @@ outputs.set(
   `/** ${GENERATED('tokens/tokens.json')}
  *
  * antd v5/v6 ThemeConfig bridge (ESM). Usage:
- *   import antdTheme from '@autional-cn/tailwind-preset/antd-theme.mjs';
+ *   import antdTheme from '@autional/tailwind-preset/antd-theme.mjs';
  *   <ConfigProvider theme={{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
  *                            token: (isDark ? antdTheme.dark : antdTheme.light).token }}>
  *
@@ -692,7 +692,7 @@ outputs.set(
 
 outputs.set(
   'packages/tailwind-preset/tokens.css',
-  `@import '@autional-cn/tokens/tokens.css';\n\n/* ${GENERATED('tokens/tokens.json')} — redirect kept so existing\n   \`@import '@autional-cn/tailwind-preset/tokens.css'\` consumers keep working. */\n`,
+  `@import '@autional/tokens/tokens.css';\n\n/* ${GENERATED('tokens/tokens.json')} — redirect kept so existing\n   \`@import '@autional/tailwind-preset/tokens.css'\` consumers keep working. */\n`,
 );
 
 // ─────────────────────────────────────────────────────────────────────────────

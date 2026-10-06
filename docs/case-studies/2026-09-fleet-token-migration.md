@@ -24,9 +24,9 @@
 三种形态：
 
 1. **伪造的命名空间**（9 个 SPA 站点）：站点里写着
-   `@import '@autional-cn/tailwind-preset/tokens.css'`，读起来像在消费设计系统。
+   `@import '@autional/tailwind-preset/tokens.css'`，读起来像在消费设计系统。
    但每个站点在自己仓库内有一个同名包，锁文件解析为
-   `'@autional-cn/tailwind-preset': { specifier: workspace:*, version: link:../../packages/tailwind-preset }`。
+   `'@autional/tailwind-preset': { specifier: workspace:*, version: link:../../packages/tailwind-preset }`。
    那个 namespace 是被内置分支伪造的。
 2. **配置层内联**（5 个 Astro 站点：docs / developer / web / reference / wiki）：
    连 `packages/` 目录都没有，不 import 任何令牌，而是在 `tailwind.config.cjs` 里

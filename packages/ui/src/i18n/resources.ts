@@ -1,5 +1,5 @@
 /**
- * @autional-cn/ui 组件文案的单一出处（i18n 资源形态，扁平点键——对齐消费站
+ * @autional/ui 组件文案的单一出处（i18n 资源形态，扁平点键——对齐消费站
  * `keySeparator: false` 的扁平键约定）。
  *
  * 消费站在自己的 i18n 初始化时调用 `registerUiI18n(i18n)` 注册本表；未注册时

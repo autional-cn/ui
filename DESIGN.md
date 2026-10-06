@@ -5,8 +5,8 @@ description: Canonical visual identity and token contract for every Autional sur
 sourceOfTruth: tokens/tokens.json
 generatedBy: pnpm gen
 packages:
-  tokens: "@autional-cn/tokens"
-  tailwindPreset: "@autional-cn/tailwind-preset"
+  tokens: "@autional/tokens"
+  tailwindPreset: "@autional/tailwind-preset"
 machineSpec: ASTRYX_MANIFEST.json
 ---
 
@@ -63,14 +63,14 @@ packages/tokens/dist/{tokens.json,index.js,index.d.ts,antd-theme.js,chart.js}
 
 ```css
 /* app or site entry stylesheet */
-@import '@autional-cn/tailwind-preset/tokens.css';   /* L1 core + variants */
-@import '@autional-cn/tokens/profiles/docs.css';     /* L2, load AFTER core */
-@import '@autional-cn/tokens/primitives.css';        /* shared brand classes */
+@import '@autional/tailwind-preset/tokens.css';   /* L1 core + variants */
+@import '@autional/tokens/profiles/docs.css';     /* L2, load AFTER core */
+@import '@autional/tokens/primitives.css';        /* shared brand classes */
 ```
 
 ```ts
 // tailwind.config.ts
-import preset from '@autional-cn/tailwind-preset';
+import preset from '@autional/tailwind-preset';
 export default { darkMode: 'class', presets: [preset], content: [...], theme: { extend: {} } };
 ```
 
@@ -192,7 +192,7 @@ of unrelated things uses `chart-N`.
 For chart libraries that need literal hex strings rather than CSS variables:
 
 ```js
-import chart from '@autional-cn/tokens/chart';
+import chart from '@autional/tokens/chart';
 // chart.chart['1'], chart.method.get, chart.semantic.success
 ```
 
@@ -458,7 +458,7 @@ antd is a first-class dependency of the console face — kept, not replaced — 
 is bound to the token system through `ConfigProvider`:
 
 ```tsx
-import antdToken from '@autional-cn/tokens/antd-theme';
+import antdToken from '@autional/tokens/antd-theme';
 
 <ConfigProvider
   theme={{

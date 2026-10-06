@@ -1,7 +1,7 @@
 /** GENERATED FILE — DO NOT EDIT. Source: tokens/tokens.json · Regenerate: pnpm gen · v0.1.0-rc
  *
  * antd v5/v6 ThemeConfig bridge (ESM). Usage:
- *   import antdTheme from '@autional-cn/tailwind-preset/antd-theme.mjs';
+ *   import antdTheme from '@autional/tailwind-preset/antd-theme.mjs';
  *   <ConfigProvider theme={{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
  *                            token: (isDark ? antdTheme.dark : antdTheme.light).token }}>
  *

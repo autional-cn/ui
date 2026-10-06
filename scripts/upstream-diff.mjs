@@ -56,11 +56,11 @@ function walk(dir, out = []) {
 const sha = (p) => createHash('sha256').update(readFileSync(p, 'utf8').split('\r\n').join('\n')).digest('hex').slice(0, 12);
 
 // 命名空间归一化。为什么需要（第 43 轮实测）：舰队是上游 authms/web 的**换牌分叉**，
-// 绝大多数文件只差 AuthMS→Autional / @authms→@autional-cn。第一版报告把这类文件
+// 绝大多数文件只差 AuthMS→Autional / @authms→@autional。第一版报告把这类文件
 // 也算成「上游与舰队之间真正的差」，于是 39 个里混进了 14 个**等价**文件，
 // 真正需要人评估的 29 个被淹没。判据先把噪声去掉，人再看剩下的。
 const canon = (p) => readFileSync(p, 'utf8').split('\r\n').join('\n')
-  .replace(/@authms\//g, '@autional-cn/')
+  .replace(/@authms\//g, '@autional/')
   .replace(/\bAuthMS\b/g, 'Autional')
   .replace(/\bauthms\b/g, 'autional');
 

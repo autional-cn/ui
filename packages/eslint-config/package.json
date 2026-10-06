@@ -1,5 +1,5 @@
 {
-  "name": "@autional-cn/eslint-config",
+  "name": "@autional/eslint-config",
   "version": "0.1.0-rc.1",
   "description": "Autional fleet ESLint flat config — one source of truth for lint rules",
   "license": "AGPL-3.0",

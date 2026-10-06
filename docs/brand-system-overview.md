@@ -105,7 +105,7 @@
 - 看案例：`docs/case-studies/`
 - 拿资源：`assets/logo/`、`assets/favicon/`
 - 用类名：`packages/tokens/primitives.css`
-- 用令牌：`@autional-cn/tokens` / `@autional-cn/tailwind-preset`
+- 用令牌：`@autional/tokens` / `@autional/tailwind-preset`
 - 查契约：`node astryx-manifest-cli.mjs …`
 
 `legacy/` 只作迁移参考，新站点不要消费。

@@ -2,7 +2,7 @@
 /** GENERATED FILE — DO NOT EDIT. Source: tokens/tokens.json · Regenerate: pnpm gen · v0.1.0-rc
  *
  * antd v5/v6 ThemeConfig bridge. Usage:
- *   const antdToken = require('@autional-cn/tokens/antd-theme');
+ *   const antdToken = require('@autional/tokens/antd-theme');
  *   <ConfigProvider theme={{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
  *                            token: (isDark ? antdToken.dark : antdToken.light).token }}>
  */

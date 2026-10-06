@@ -144,12 +144,12 @@ function measureAntdSite(siteDir) {
     for (const k of ANTD_KINDS) specifiers[k] += c.specifiers[k];
     if (c.touchesAntd) rec.filesAntd++;
     if (c.touchesIcons) rec.filesIcons++;
-    if (/AntdThemeProvider/.test(txt) && /from\s+['"]@autional-cn\/ui\/antd['"]/.test(txt)) rec.bridge.push(rel);
+    if (/AntdThemeProvider/.test(txt) && /from\s+['"]@autional\/ui\/antd['"]/.test(txt)) rec.bridge.push(rel);
     if (/ConfigProvider/.test(txt) && /theme\s*=/.test(txt)) {
       const m = /theme\s*=\s*\{\{([\s\S]*?)\n\s*\}\}/.exec(txt) || /theme\s*=\s*\{\{([\s\S]*?)\}\}/.exec(txt);
       const block = m ? m[1] : '';
       const hexes = [...new Set((block.match(HEX_RE) || []).map((h) => h.toLowerCase()))].filter((h) => colorToToken.has(h));
-      rec.ownTheme.push({ rel, hasToken: /token\s*:/.test(block), hexes, consumesBridge: /antd-theme|antdTheme|@autional-cn\/tokens/.test(txt) });
+      rec.ownTheme.push({ rel, hasToken: /token\s*:/.test(block), hexes, consumesBridge: /antd-theme|antdTheme|@autional\/tokens/.test(txt) });
     }
   }
   return rec;
@@ -305,7 +305,7 @@ if (WRITE_REGISTRY) {
   const chPrev = existsSync(CONSOLE_HEADERS_PATH) ? JSON.parse(readFileSync(CONSOLE_HEADERS_PATH, 'utf8')) : null;
   const ch = countConsoleHeaders();
   writeFileSync(CONSOLE_HEADERS_PATH, JSON.stringify({
-    $comment: '控制台页头台账（棘轮，D5）。inline = 页面自己写 text-xl font-semibold 的 <h1>；marketing = 控制台误用设计系统的营销 PageHeader。两者都只许减不许增，convergedSites 里的站点必须为 0（该站已全部改用 @autional-cn/ui 的 ConsolePageHeader）。',
+    $comment: '控制台页头台账（棘轮，D5）。inline = 页面自己写 text-xl font-semibold 的 <h1>；marketing = 控制台误用设计系统的营销 PageHeader。两者都只许减不许增，convergedSites 里的站点必须为 0（该站已全部改用 @autional/ui 的 ConsolePageHeader）。',
     updated: TODAY,
     convergedSites: (chPrev && chPrev.convergedSites) || [],
     inline: ch.inline,
@@ -330,7 +330,7 @@ if (WRITE_REGISTRY) {
 // 判据分两档，跟着**该站点是否已在台账里收敛**走：
 //   · 未收敛：站点仍可自持 ConfigProvider，但必须有 token，且不得手写设计系统已有的色值；
 //   · 已收敛（themeConverged=true）：**不许**再自己拿 ConfigProvider —— 必须挂
-//     @autional-cn/ui/antd 的 AntdThemeProvider，主题只能从设计系统下发。
+//     @autional/ui/antd 的 AntdThemeProvider，主题只能从设计系统下发。
 // 为什么必须分档：2026-10 起三个控制台把主题收进了设计系统，本地已经没有 ConfigProvider。
 // 旧判据「没有 ConfigProvider 就是没接主题」会把已经收敛的站点判成红的，方向正好相反；
 // 而如果把判据整体放宽成「有桥或有 ConfigProvider 都算」，收敛状态就再也没人守了。
@@ -343,11 +343,11 @@ for (const site of antdSites) {
     problems.push('C1 ' + site + ' 源码里使用了 antd，但既没有自己的 ConfigProvider theme，也没有挂设计系统的 AntdThemeProvider——antd 组件将使用出厂配色（primary #1677ff），与已接入品牌的控制台不一致');
   }
   if (converged && !rec.bridge.length) {
-    problems.push('C1 ' + site + ' 在台账里登记为 themeConverged=true，但源码里没有任何文件挂 @autional-cn/ui/antd 的 AntdThemeProvider——登记与事实不符：要么补挂桥，要么把台账改回 false');
+    problems.push('C1 ' + site + ' 在台账里登记为 themeConverged=true，但源码里没有任何文件挂 @autional/ui/antd 的 AntdThemeProvider——登记与事实不符：要么补挂桥，要么把台账改回 false');
   }
   for (const o of rec.ownTheme) {
     if (converged) {
-      problems.push('C1 ' + site + ' 已收敛到设计系统，但 ' + o.rel + ' 仍自己拿 ConfigProvider theme= —— antd 主题只能由 @autional-cn/ui/antd 下发，本地再拿一份就是又一处会各自漂移的实现（这正是 KI-011 的成因）');
+      problems.push('C1 ' + site + ' 已收敛到设计系统，但 ' + o.rel + ' 仍自己拿 ConfigProvider theme= —— antd 主题只能由 @autional/ui/antd 下发，本地再拿一份就是又一处会各自漂移的实现（这正是 KI-011 的成因）');
       continue;
     }
     if (!o.hasToken) {
@@ -355,7 +355,7 @@ for (const site of antdSites) {
       continue;
     }
     if (o.hexes.length && !o.consumesBridge) {
-      problems.push('C1 ' + o.rel + ' 的 antd 主题手写了 ' + o.hexes.length + ' 个设计系统已有色值（' + o.hexes.slice(0, 5).join(' ') + '）而不是消费 @autional-cn/tokens/antd-theme——令牌变更不会传导到这里');
+      problems.push('C1 ' + o.rel + ' 的 antd 主题手写了 ' + o.hexes.length + ' 个设计系统已有色值（' + o.hexes.slice(0, 5).join(' ') + '）而不是消费 @autional/tokens/antd-theme——令牌变更不会传导到这里');
     }
   }
 }
@@ -378,7 +378,7 @@ if (!antdRegistry) {
   for (const [site, rec] of Object.entries(antdMeasured)) {
     const entry = antdRegistry.sites ? antdRegistry.sites[site] : null;
     if (!entry) {
-      problems.push('C5 ' + site + ' 有 antd 直接依赖但没有登记在 verification/antd-entries.json——新出现的消费方先登记（--write-registry）并在评审里说明为什么不能走 @autional-cn/ui/antd');
+      problems.push('C5 ' + site + ' 有 antd 直接依赖但没有登记在 verification/antd-entries.json——新出现的消费方先登记（--write-registry）并在评审里说明为什么不能走 @autional/ui/antd');
       continue;
     }
     // RangePicker 是用法计数，不进「入口数」这个总数（口径混在一起会让总数失去意义），单独报。
@@ -393,7 +393,7 @@ if (!antdRegistry) {
       else if (now < was) shrank.push(k + ' ' + was + '→' + now);
     }
     if (grew.length) {
-      problems.push('C5 ' + site + ' 新增了直接 import antd 的入口（' + grew.join('、') + '）。全舰队的 antd 入口只减不增：能走 @autional-cn/ui/antd 的走设计系统，确实缺能力就先把能力补进设计系统，而不是在站点里直接 import。');
+      problems.push('C5 ' + site + ' 新增了直接 import antd 的入口（' + grew.join('、') + '）。全舰队的 antd 入口只减不增：能走 @autional/ui/antd 的走设计系统，确实缺能力就先把能力补进设计系统，而不是在站点里直接 import。');
     }
     for (const k of closedKinds) {
       if ((rec.specifiers[k] || 0) > 0) {
@@ -405,7 +405,7 @@ if (!antdRegistry) {
     }
   }
   info.push('C5 直接 import antd 的入口总数：' + total + ' 处（' + ANTD_KINDS.filter((k) => k !== 'RangePicker').join(' / ') + '），分布在 ' + Object.keys(antdMeasured).length + ' 个站点');
-  info.push('C5 直接用 antd RangePicker 的处数：' + rangeTotal + ' 处（按用法计；收敛目标是改走 @autional-cn/ui/antd 的 DateRangeFilter）');
+  info.push('C5 直接用 antd RangePicker 的处数：' + rangeTotal + ' 处（按用法计；收敛目标是改走 @autional/ui/antd 的 DateRangeFilter）');
 }
 
 
@@ -460,7 +460,7 @@ for (const r of c2rows) {
 // ── C3 packages/ui 的本地副本 ───────────────────────────────────────────
 // 判据变过一次，跟着**交付方式**变：
 //   · 2026-09 之前：组件库以 9 份逐字节相同的副本存在，C3 守的是「它们不许分叉」；
-//   · 2026-09 起：组件库发布为 @autional-cn/ui@0.1.0-rc，14 个站点全部改为 npm 依赖，
+//   · 2026-09 起：组件库发布为 @autional/ui@0.1.0-rc，14 个站点全部改为 npm 依赖，
 //     本地副本清零。于是判据从「N 份里只有 1 种实现」改成 **「0 份」** ——与 P4 对
 //     packages/tailwind-preset 的处理完全同构。
 // 为什么要改而不是留着：留着「1 种实现」会让副本悄悄长回来时**照样全绿**
@@ -470,10 +470,10 @@ for (const site of readdirSync(SITES)) {
   if (existsSync(join(SITES, site, 'packages', 'ui'))) uiCopies.push(site);
 }
 info.push('C3 packages/ui 的本地副本：' + uiCopies.length + ' 个站点' +
-  (uiCopies.length ? '（' + uiCopies.join('/') + '）' : '——全部走已发布的 @autional-cn/ui'));
+  (uiCopies.length ? '（' + uiCopies.join('/') + '）' : '——全部走已发布的 @autional/ui'));
 if (uiCopies.length) {
   problems.push('C3 有 ' + uiCopies.length + ' 个站点还留着组件库副本 packages/ui（' + uiCopies.join('/') +
-    '）。组件库已发布为 @autional-cn/ui@0.1.0-rc，站点应声明 npm 依赖、删除副本——' +
+    '）。组件库已发布为 @autional/ui@0.1.0-rc，站点应声明 npm 依赖、删除副本——' +
     '「拷贝而非依赖」正是这一层要消灭的东西。');
 }
 
@@ -589,7 +589,7 @@ const CHUNK_POLICY = {
   'vendor-charts': ['recharts'],
   'vendor-query': ['@tanstack/react-query'],
   'vendor-i18n': ['i18next', 'react-i18next'],
-  'shared-api': ['@autional-cn/shared'],
+  'shared-api': ['@autional/shared'],
 };
 const libToChunk = new Map();
 for (const [chunk, libs] of Object.entries(CHUNK_POLICY)) for (const l of libs) libToChunk.set(l, chunk);
@@ -641,7 +641,7 @@ info.push('C6 已采纳分块策略的站点：' + c6sites.size + ' 个（' + [.
 //   ② **用 antd 的站点**必须消费设计系统那一份 —— antd 同时依赖这两个 API。
 //      这一条刻意**不**对全舰队要求：不吃 antd 的站补了也用不上，
 //      那会变成「给 5 个站点加一个用不到的 import」——判据要跟着事实走，不是跟着整齐走。
-const C7_SETUP_IMPORT = '@autional-cn/ui/test-setup';
+const C7_SETUP_IMPORT = '@autional/ui/test-setup';
 const c7setup = new Map();
 for (const site of readdirSync(SITES)) {
   const sp = join(SITES, site);
@@ -698,7 +698,7 @@ if (!antdRegistry) {
   for (const [site, n] of Object.entries(tableCounts)) {
     const was = recorded[site] || 0;
     if (n > was) {
-      problems.push('C8 ' + site + ' 新增了手写 <table>（' + was + ' → ' + n + '）。表格一律走 @autional-cn/ui/antd 的 DataTable：手写表要自己实现排序/分页/空态/加载态，而且必然与其余 portal 长得不一样。');
+      problems.push('C8 ' + site + ' 新增了手写 <table>（' + was + ' → ' + n + '）。表格一律走 @autional/ui/antd 的 DataTable：手写表要自己实现排序/分页/空态/加载态，而且必然与其余 portal 长得不一样。');
     } else if (n < was) {
       warns.push('C8 ' + site + ' 的手写 <table> 从 ' + was + ' 降到 ' + n + ' —— 这是进展，请跑 node scripts/check-consistency.mjs --write-registry 更新台账');
     }
@@ -762,7 +762,7 @@ if (!antdRegistry) {
   for (const [site, n] of Object.entries(overlayCounts)) {
     const was = recorded[site] || 0;
     if (n > was) {
-      problems.push('C9 ' + site + ' 新增了手写全屏浮层（' + was + ' → ' + n + '）。弹窗走 @autional-cn/ui 的 Modal：Esc 关闭、body 滚动锁、点击遮罩关闭这些行为不该由每个页面各自实现一遍。');
+      problems.push('C9 ' + site + ' 新增了手写全屏浮层（' + was + ' → ' + n + '）。弹窗走 @autional/ui 的 Modal：Esc 关闭、body 滚动锁、点击遮罩关闭这些行为不该由每个页面各自实现一遍。');
     } else if (n < was) {
       warns.push('C9 ' + site + ' 的手写浮层从 ' + was + ' 降到 ' + n + ' —— 这是进展，请跑 node scripts/check-consistency.mjs --write-registry 更新台账');
     }
@@ -804,7 +804,7 @@ if (!existsSync(CONSOLE_HEADERS_PATH)) {
       const was = recorded[site] || 0;
       const n = now[site] || 0;
       if (n > was) {
-        problems.push('C10 ' + site + ' 新增了「' + LABEL[kind] + '」（' + was + ' → ' + n + '）。控制台的页头一律走 @autional-cn/ui 的 ConsolePageHeader：一个产品里一半页面左对齐小标题、另一半居中大标题，正是这一条要消掉的东西。');
+        problems.push('C10 ' + site + ' 新增了「' + LABEL[kind] + '」（' + was + ' → ' + n + '）。控制台的页头一律走 @autional/ui 的 ConsolePageHeader：一个产品里一半页面左对齐小标题、另一半居中大标题，正是这一条要消掉的东西。');
       } else if (n < was) {
         warns.push('C10 ' + site + ' 的「' + LABEL[kind] + '」从 ' + was + ' 降到 ' + n + ' —— 这是进展，请跑 node scripts/check-consistency.mjs --write-registry 更新台账');
       }

@@ -5,7 +5,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 	error?: string;
 }
 
-// 外观来自 ../internal/field-styles —— 与 @autional-cn/ui/rhf 的绑定控件同一份，不各自维护。
+// 外观来自 ../internal/field-styles —— 与 @autional/ui/rhf 的绑定控件同一份，不各自维护。
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 	({ className = '', error, ...props }, ref) => {
 		return (

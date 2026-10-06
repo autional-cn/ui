@@ -1,11 +1,11 @@
-// @autional-cn/eslint-config —— 全舰队共享的 ESLint flat config。
+// @autional/eslint-config —— 全舰队共享的 ESLint flat config。
 //
 // 为什么要有它：2026-10-04 实测，四个在册门户的 package.json 里都写着 "lint": "eslint src/"，
 // 但**全舰队没有一份 ESLint 配置、也没有任何一处把 eslint 声明成依赖** ——
 // `pnpm exec eslint` 解析到的是上层目录里**别的项目**装的那一份（D:\\deepseek-harness\\node_modules\\...），
 // 再因为找不到配置而以 2 退出。也就是说这条命令从来没在本仓跑过，它只是一个名字。
 //
-// 与 @autional-cn/tsconfig 同一个形状：**规则只有一个来源**，站点那边只留三行。
+// 与 @autional/tsconfig 同一个形状：**规则只有一个来源**，站点那边只留三行。
 //
 // ── 为什么首次引入不用「全 error」 ──────────────────────────────────────
 // 首轮实测（recommended 全家桶）：四个门户共 1156 条，其中
