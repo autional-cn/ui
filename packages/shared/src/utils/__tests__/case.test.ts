@@ -62,6 +62,27 @@ describe('snakeCaseKeys acronym-aware（U385）', () => {
 	});
 });
 
+// U407 wire 约定锁定：数字贴词尾（`_<数字>` 形态对 lodash camel 折叠不可逆，wire 禁止使用）。
+// 原 wire 键 live_stream_blocked_under_16 与 under16 在响应方向折叠为同名 liveStreamBlockedUnder16
+// ⇒ 请求方向无法还原下划线位置（line1/under_16 同形歧义）。平台侧已把该字段归一为
+// live_stream_blocked_under16（service-tenant U407），本锁固定双向往返无损 + 反例（下划线-数字形态不可逆）。
+describe('snakeCaseKeys ↔ camelCaseKeys 往返（U407 wire 键约定：数字贴词）', () => {
+	it('live_stream_blocked_under16 双向无损（平台 minors 字段现行 wire 形态）', () => {
+		expect(snakeCaseKeys({ liveStreamBlockedUnder16: true })).toEqual({
+			live_stream_blocked_under16: true,
+		});
+		expect(camelCaseKeys({ live_stream_blocked_under16: true })).toEqual({
+			liveStreamBlockedUnder16: true,
+		});
+	});
+
+	it('反例说明：下划线-数字形态（under_16）不可由 camel 还原——故 wire 禁用该形态', () => {
+		// camelCaseKeys 折叠后与 under16 同名；snakeCaseKeys 只能还原出 under16，不可能知道下划线位置。
+		expect(camelCaseKeys({ under_16: true })).toEqual({ under16: true });
+		expect(snakeCaseKeys({ under16: true })).toEqual({ under16: true });
+	});
+});
+
 // camelCaseKeys 回归边界：lodash camelCase 对缩写的行为（响应方向契约，保持现状即可）
 describe('camelCaseKeys 响应方向（现状锁定）', () => {
 	it('snake → camel；缩写键由 lodash 归一为小写驼峰（client_data_json → clientDataJson）', () => {
