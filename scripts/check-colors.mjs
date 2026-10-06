@@ -116,7 +116,9 @@ if (existsSync(EXEMPT_PATH)) exemptions = JSON.parse(readFileSync(EXEMPT_PATH, '
 const expiredEx = exemptions.filter((e) => e.expires && e.expires < TODAY);
 const exemptFor = (rel) => exemptions.find((e) => rel.indexOf(e.match) >= 0);
 
-const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage', 'generated', '.turbo']);
+// wiki-src：wiki 站的**外部生成物**内容树（文档生成器产出的逐端点 HTML，W-02 由 public/ 迁出），
+// 与 public/generated 同类 —— 不是本站源码，不参与色值判据。
+const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage', 'generated', '.turbo', 'wiki-src']);
 const SKIPREL = [/\/packages\/tailwind-preset\//, /\/packages\/tokens\//, /\/packages\/ui\//, /\/scripts\/generate\//];
 const EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.astro', '.html', '.vue', '.svelte']);
 function walk(d, out) {

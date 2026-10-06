@@ -1,6 +1,6 @@
 {
   "$comment": "antd 直接依赖台账（棘轮）。specifiers 计的是**入口数**（具名导入个数），不是用法数。数字只许减不许增：新增直接 import antd 会被 C5 判红。closedKinds 里的种类必须为 0（该批收敛完了）。themeConverged=true 的站点另受 C1 强判据约束：不许自己拿 ConfigProvider。",
-  "updated": "2026-10-06",
+  "updated": "2026-10-07",
   "kinds": [
     "Table",
     "DatePicker",
@@ -27,7 +27,9 @@
   "handwrittenOverlaysBySite": {
     "auth": 2,
     "authenticator": 2,
-    "web": 1
+    "reference": 1,
+    "web": 1,
+    "wiki": 2
   },
   "sites": {
     "admin": {
