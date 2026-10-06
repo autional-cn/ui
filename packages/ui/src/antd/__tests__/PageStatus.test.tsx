@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PageError, PageLoading } from '../PageStatus';
@@ -18,6 +18,23 @@ describe('PageLoading / PageError（控制台整页占位）', () => {
 		const { container } = render(<PageLoading />);
 		// 只断言「有兜底文案」，不写死措辞 —— 措辞是文案，改措辞不该让测试变红。
 		expect((container.textContent ?? '').trim()).not.toBe('');
+	});
+
+	it('Spin 不用已弃用 tip —— antd「tip is deprecated」告警回归锁（U412⑤）', () => {
+		// antd 6 弃用 Spin 的 tip（改用 description），devUseWarning 会经 console.error 发
+		// 「[antd: Spin] `tip` is deprecated」；strict 模式退路走 console.warn。两路都盯住。
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		try {
+			render(<PageLoading tip="正在拉取" />);
+			const all = [...errorSpy.mock.calls, ...warnSpy.mock.calls].map((c) =>
+				c.map((m) => String(m)).join(' '),
+			);
+			expect(all.filter((m) => /deprecated/i.test(m))).toEqual([]);
+		} finally {
+			errorSpy.mockRestore();
+			warnSpy.mockRestore();
+		}
 	});
 
 	it('PageError 显示传入的 message', () => {

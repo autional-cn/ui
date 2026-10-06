@@ -44,7 +44,7 @@ export function PageLoading({ tip, className = '' }: PageLoadingProps) {
 	const text = useStatusText();
 	return (
 		<div className={`flex h-64 items-center justify-center ${className}`}>
-			<Spin size="large" tip={tip ?? text('pageStatus.loading', '加载中…')} />
+			<Spin size="large" description={tip ?? text('pageStatus.loading', '加载中…')} />
 		</div>
 	);
 }
