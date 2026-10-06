@@ -5,22 +5,5 @@
     "到期后 lint 会直接失败：要么修掉，要么重新评估并续期（续期必须改 expires 并写理由）",
     "match 是对 lint finding 的 key 做子串匹配，粒度要够细，不能用来屏蔽整类检查"
   ],
-  "issues": [
-    {
-      "id": "KI-016",
-      "code": "AA1",
-      "match": "platform-shell：span.ant-menu-title-content 「仪表盘」",
-      "reason": "平台控制台侧栏**选中态**菜单项不达 AA：文字 rgb(0,49,83)=#003153（antd colorPrimary ← DS 令牌 color.brand-base）对选中底色 rgb(133,144,148) = 4.1:1 < 4.5:1（14px/400 正文）。**本机实测**`li.ant-menu-item-selected` 的计算样式确认（菜单白底、`data-theme=light`），不是取景框造成的假红 —— 取景框走的是生产同一条 DS antd 主题桥（`AntdThemeProvider`，站点侧由 C1 闸门禁止自配 ConfigProvider）。修法是设计系统 antd 主题桥的**组件级 token**（Menu.itemSelectedBg / itemSelectedColor，第 25 道闸门 check-antd-bridge 正守这一类），会改变四个控制台选中态的视觉，故不由本批单方面改色。 【第 54 轮：根因已修 —— 设计系统侧补了「品牌柔和档」（新令牌 color.primary-soft + 既有 brand-text 配对），桥加 Menu.itemSelectedBg / itemSelectedColor，check-antd-bridge 三重口径实测通过（阴性对照量到的正是本条报红的 rgb(133,144,148)，因果闭合）。但要**发 rc 并让四个站跟版**、且 CDN 资产要重发（tokens.css 变了）之后本条才会真正消掉；发布列车由正在发版的一方推进，故本条保留到期日不变。】",
-      "owner": "ui（antd 主题桥）+ platform 控制台",
-      "expires": "2026-11-30"
-    },
-    {
-      "id": "KI-017",
-      "code": "AA1",
-      "match": "admin-shell：span.ant-menu-title-content 「仪表盘」",
-      "reason": "admin 控制台侧栏**选中态**菜单项不达 AA，与 KI-016（platform-shell）是**同一处缺陷的两个目标页**：文字 rgb(0,49,83)=#003153、选中底色 rgb(133,144,148)、4.1:1 < 4.5:1（14px/400）。两站颜色逐值相同 ⇒ 归属是**设计系统 antd 主题桥**（`AntdThemeProvider` 只下发 `colorPrimary = color.brand-base`，未给 Menu 组件级 token），不是某一站自己的样式。逐目标登记而非合并成一条：合并会把这个缺陷在第三个控制台上出现时也一并吞掉。修法与归属见 KI-016。 【第 54 轮：根因已修 —— 设计系统侧补了「品牌柔和档」（新令牌 color.primary-soft + 既有 brand-text 配对），桥加 Menu.itemSelectedBg / itemSelectedColor，check-antd-bridge 三重口径实测通过（阴性对照量到的正是本条报红的 rgb(133,144,148)，因果闭合）。但要**发 rc 并让四个站跟版**、且 CDN 资产要重发（tokens.css 变了）之后本条才会真正消掉；发布列车由正在发版的一方推进，故本条保留到期日不变。】",
-      "owner": "ui（antd 主题桥）+ admin 控制台",
-      "expires": "2026-11-30"
-    }
-  ]
+  "issues": []
 }
