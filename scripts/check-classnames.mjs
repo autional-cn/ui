@@ -30,6 +30,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT, loadTokens, stripMeta, resolvedIn, contrastRatio } from './lib/tokens.mjs';
+import { makeSkip } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -93,7 +94,7 @@ const FG_PREFIXES = ['text', 'fill', 'stroke', 'decoration', 'caret'];
 // (?<!dark:) —— dark: 变体下的前景色对的是深色底，不能拿浅底比。
 const FILL_RE = new RegExp('(?<!dark:)' + NEG + '(?:' + FG_PREFIXES.join('|') + ')-(' + [...FILL_ONLY.keys()].join('|') + ')' + NEG2, 'g');
 
-const SKIPDIR = new Set(['node_modules','.git','dist','.astro','.next','public','build','coverage','generated']);
+const SKIPDIR = makeSkip('public');
 // 测试面不在管辖内（U394，2026-10-05）：能力回归锁**刻意**以死类字面量作负例探针
 // （如 trust theme-class-guard 的 'bg-primary/10' 编译探针），且测试产物不上线。
 // 不排除会产生已知假阳性——本闸门「命中即错」的前提是对**上线内容**而言的。

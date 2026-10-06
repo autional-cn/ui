@@ -16,6 +16,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT, loadTokens, stripMeta } from './lib/tokens.mjs';
+import { makeSkip } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -97,7 +98,7 @@ try {
   presetProblems.push('P1 预设产物加载失败：' + e.message);
 }
 
-const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage']);
+const SKIPDIR = makeSkip('public');
 function walk(d, out, test) {
   let es; try { es = readdirSync(d, { withFileTypes: true }); } catch (e) { return out; }
   for (const e of es) {

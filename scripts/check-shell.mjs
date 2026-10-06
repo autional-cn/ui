@@ -25,6 +25,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT } from './lib/tokens.mjs';
 import { PORTALS } from './lib/portals.mjs';
+import { makeSkip } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES_DIR = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -48,7 +49,7 @@ const USES_SHELL = /<AppShell\b/;
 // （C2 / C8 / C9 都踩过同一次，这里是第四次；纪律是「扫源码前先剥注释」。）
 const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
 
-const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.build', '.next', 'public', 'coverage']);
+const SKIPDIR = makeSkip('public', '.build');
 function walk(d, out) {
   let es; try { es = readdirSync(d, { withFileTypes: true }); } catch (e) { return out; }
   for (const e of es) {

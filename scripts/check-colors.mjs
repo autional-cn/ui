@@ -24,6 +24,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT, loadTokens, resolvedIn, parseHex, stripMeta, flatten } from './lib/tokens.mjs';
+import { makeSkip } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -118,7 +119,8 @@ const exemptFor = (rel) => exemptions.find((e) => rel.indexOf(e.match) >= 0);
 
 // wiki-src：wiki 站的**外部生成物**内容树（文档生成器产出的逐端点 HTML，W-02 由 public/ 迁出），
 // 与 public/generated 同类 —— 不是本站源码，不参与色值判据。
-const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage', 'generated', '.turbo', 'wiki-src']);
+// 范围：共享定义（第 56 轮起）+ 本闸门额外排除的两个生成物树
+const SKIPDIR = makeSkip('public', 'wiki-src');
 const SKIPREL = [/\/packages\/tailwind-preset\//, /\/packages\/tokens\//, /\/packages\/ui\//, /\/scripts\/generate\//];
 const EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.astro', '.html', '.vue', '.svelte']);
 function walk(d, out) {

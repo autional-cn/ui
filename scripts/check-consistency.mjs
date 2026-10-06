@@ -34,6 +34,7 @@ import { join, resolve, relative, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT, loadTokens, stripMeta, flatten } from './lib/tokens.mjs';
 import { PORTALS } from './lib/portals.mjs';
+import { ARTIFACT_DIRS } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -70,7 +71,7 @@ function walk(dir, acc, test, skip) {
   }
   return acc;
 }
-const SKIP = (e, dir) => ['node_modules', '.git', 'dist', '.astro', '.next'].includes(e.name)
+const SKIP = (e, dir) => ARTIFACT_DIRS.has(e.name)
   || (e.isDirectory() && e.name === 'tailwind-preset' && dir.endsWith('packages'));
 
 if (!existsSync(SITES)) {

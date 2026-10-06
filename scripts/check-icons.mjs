@@ -32,6 +32,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT, loadTokens, resolvedIn } from './lib/tokens.mjs';
+import { makeSkip } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -68,7 +69,7 @@ const declaredThemeColor = (site) => {
   const m = /^\{([^}]+)\}$/.exec(raw);
   return m ? (RES[m[1]] || null) : raw;
 };
-const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage']);
+const SKIPDIR = makeSkip('public');
 function walk(d, out, depth) {
   if (depth > 4) return out;
   let es; try { es = readdirSync(d, { withFileTypes: true }); } catch (e) { return out; }

@@ -31,6 +31,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT, TOKENS_PATH, loadTokens } from './lib/tokens.mjs';
+import { makeSkip } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const WRITE = process.argv.includes('--write-registry');
@@ -38,7 +39,8 @@ const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
 const REGISTRY = join(ROOT, 'verification', 'token-tiers.json');
 
 // ── 扫描范围：与 check-colors.mjs 同一套 SKIPDIR / SKIPREL（判据之间口径要一致）──
-const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage', 'generated', '.turbo', 'wiki-src']);
+// 范围：共享定义（第 56 轮起）+ 生成物树；与 check-colors 同口径
+const SKIPDIR = makeSkip('public', 'wiki-src');
 const SKIPREL = [/(^|\/)packages\/tailwind-preset\//, /(^|\/)packages\/tokens\//, /(^|\/)packages\/ui\/dist\//, /(^|\/)scripts\/generate\.mjs$/];
 const EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.astro', '.mjs', '.vue', '.svelte']);
 // 测试与 story：里面的类名是**断言字符串**，不是渲染出来的类（不做这个排除，SectionCard

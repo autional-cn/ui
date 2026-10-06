@@ -1,6 +1,6 @@
 {
-  "$comment": "令牌档位台账（棘轮）。站点侧的计数只许减不许增；设计系统自身是硬零，白名单是**过渡期**登记。生成/跟新：node scripts/check-token-tiers.mjs --write-registry。判据口径与合法集合见 scripts/check-token-tiers.mjs 文件头（合法集合读自 tokens/tokens.json，不在这里重复硬编码）。",
-  "generatedAt": "2026-10-07",
+  "$comment": "令牌档位台账（棘轮）。站点侧的计数只许减不许增；设计系统自身是硬零，白名单是**过渡期**登记（批次 2 与 ui 发版绑定后必须清空）。生成：node scripts/check-token-tiers.mjs --write-registry。",
+  "generatedAt": "2026-10-06",
   "legal": {
     "radius": [
       "xs",
@@ -19,13 +19,9 @@
       "deep"
     ],
     "space": [
-      "0.5",
       "1",
-      "1.5",
       "2",
-      "2.5",
       "3",
-      "3.5",
       "4",
       "5",
       "6",
@@ -34,43 +30,46 @@
       "12",
       "16",
       "20",
+      "0.5",
+      "1.5",
+      "2.5",
+      "3.5",
       "section-gap"
-    ],
-    "$notes": "第 55 轮把舰队真实在用的值收进 SSOT：控件密度档 0.5/1.5/2.5/3.5（530 处）与节奏档 16/20（64px 50 处、80px 35 处）。它们此前只在 Tailwind 出厂主题里存在 —— 于是「6px 到底合不合规」没有答案，536 处间距违规里其实有 500 处是本该合法却被算作违规的。收进来之后，剩下的 36 处才是真正写在档位之外的。"
+    ]
   },
   "sites": {
     "admin": {
-      "radius": 19,
+      "radius": 0,
       "shadow": 1,
       "space": 1
     },
     "auth": {
-      "radius": 16,
+      "radius": 0,
       "shadow": 17,
       "space": 2
     },
     "authenticator": {
-      "radius": 6,
+      "radius": 0,
       "shadow": 8,
       "space": 3
     },
     "brand": {
-      "radius": 6,
+      "radius": 0,
       "shadow": 0,
       "space": 3
     },
     "developer": {
-      "radius": 11,
+      "radius": 0,
       "shadow": 1,
       "space": 10
     },
     "docs": {
-      "radius": 9,
+      "radius": 0,
       "shadow": 0,
       "space": 1
     },
     "platform": {
-      "radius": 9,
+      "radius": 0,
       "shadow": 0,
       "space": 0
     },
@@ -80,39 +79,38 @@
       "space": 0
     },
     "security": {
-      "radius": 6,
+      "radius": 0,
       "shadow": 6,
       "space": 0
     },
     "status": {
-      "radius": 16,
+      "radius": 0,
       "shadow": 21,
       "space": 4
     },
     "trust": {
-      "radius": 17,
+      "radius": 0,
       "shadow": 21,
       "space": 0
     },
     "user": {
-      "radius": 24,
+      "radius": 0,
       "shadow": 25,
       "space": 1
     },
     "web": {
-      "radius": 31,
+      "radius": 3,
       "shadow": 10,
       "space": 9
     },
     "wiki": {
-      "radius": 4,
+      "radius": 0,
       "shadow": 0,
       "space": 2
     }
   },
-  "$siteComment": "第 55 轮基线（全舰队 321 处：圆角 174 / 阴影 111 / 间距 36）。收敛顺序与依赖见 docs/PORTAL-SHARED-LAYER-DESIGN.md §11 第 55 轮：圆角的 174 处里绝大多数是**同值改名**（rounded → rounded-xs 都是 4px；rounded-2xl → md 都是 16px；rounded-3xl → lg 都是 24px），零视觉变化，但必须先发 preset —— 站点侧写 rounded-xs 而 preset 里没有这一档时，K1（check-classnames）会把它判成写不出来的死类。",
   "ds": {
-    "$comment": "设计系统组件里的档位外用法：**硬零**。第 55 轮把 13 处全部收敛掉了（卡片 shadow-sm → shadow-card、浮层 shadow-lg → shadow-brand、裸 rounded → rounded-xs、PageContainer 的 rounded-2xl → rounded-lg），所以白名单现在是**空数组** —— 这是本闸门的终点状态：任何一条新出现的档位外写法都会直接报红，不需要再登记。它在站点上生效要等 ui rc 发版 + 站点跟版重建产物（见 docs/PORTAL-SHARED-LAYER-DESIGN.md §11 第 55 轮补）。",
+    "$comment": "设计系统组件里的档位外用法。每一处都必须给出改法与它等的是哪条发版链 —— 空数组是本闸门的终点。",
     "allowance": []
   }
 }

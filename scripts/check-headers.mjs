@@ -24,6 +24,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT } from './lib/tokens.mjs';
 import { PORTALS } from './lib/portals.mjs';
+import { makeSkip } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
@@ -48,7 +49,7 @@ if (!existsSync(SITES)) {
   process.exit(0);
 }
 
-const SKIPDIR = new Set(['node_modules', '.git', 'dist', '.astro', '.next', 'public', 'build', 'coverage']);
+const SKIPDIR = makeSkip('public');
 function walk(d, out) {
   let es; try { es = readdirSync(d, { withFileTypes: true }); } catch (e) { return out; }
   for (const e of es) {
