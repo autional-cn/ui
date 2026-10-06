@@ -116,12 +116,6 @@
         "CircleArrowDown"
       ]
     },
-    "edit": {
-      "canonical": "Pencil",
-      "synonyms": [
-        "Edit2"
-      ]
-    },
     "more-vertical": {
       "canonical": "MoreVertical",
       "synonyms": [
@@ -132,5 +126,5 @@
   "converged": [],
   "synonymUsage": {},
   "$vocabulary": "security 第 48 轮迁移时落定的 14 个「舰队外来词」，它们从那一轮起就是舰队词汇的一部分（理由见 PORTAL-SHARED-LAYER-DESIGN.md 第 48 轮的 66 行映射表附录）：Plug / ClipboardCheck / Bug / FileImage / FileType / FileLock / FileArchive / PanelLeftClose / PanelLeftOpen / MessageCircle / MinusCircle / HelpCircle / Radar / Bot",
-  "$concepts-not-alias": "ArrowRightLeft / ArrowLeftRight 是**两个字形**（箭头镜像），不是别名 —— 闸门按同字形判，登记不了。舰队已统一用 ArrowLeftRight（user 的 wallet 页与本站 transfer 页、admin 的 points 页一致）；这类「同概念不同字形」的取舍写进 PORTAL-SHARED-LAYER-DESIGN.md，不塞进这张表。"
+  "$concepts-not-alias": "两类「同概念、不同字形」的取舍**登记不进这张表**（闸门按同字形判，这是对的）：① 编辑 —— Pencil(admin/authenticator/platform/security) vs Edit2(user，已改 Pencil)；② 转账/交换 —— ArrowLeftRight(admin/auth/user-transfer) vs ArrowRightLeft(user-wallet，已改 ArrowLeftRight)。舰队已各自统一；口径写进 PORTAL-SHARED-LAYER-DESIGN.md 第 48 轮补·七。"
 }
