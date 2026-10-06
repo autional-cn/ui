@@ -96,7 +96,7 @@ export function PortalSwitcher({
 				<div
 					{...menuProps}
 					ref={menuRef}
-					className={`absolute top-full z-50 mt-2 w-56 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] py-1 shadow-lg ${
+					className={`absolute top-full z-50 mt-2 w-56 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-elevated)] py-1 shadow-brand ${
 						align === 'left' ? 'left-0' : 'right-0'
 					} ${menuClassName}`}
 				>

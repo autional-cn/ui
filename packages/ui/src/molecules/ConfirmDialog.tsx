@@ -62,7 +62,7 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 			<div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
-			<div className="relative w-full max-w-md rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-6 shadow-lg">
+			<div className="relative w-full max-w-md rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-6 shadow-brand">
 				<button
 					onClick={onCancel}
 					className="absolute right-4 top-4 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"

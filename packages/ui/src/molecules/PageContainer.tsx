@@ -26,7 +26,7 @@ export const PageContainer = React.memo(function PageContainer({
 			className={`flex min-h-screen items-center justify-center px-4 ${padding ? 'py-8' : ''} ${className}`}
 		>
 			<div
-				className={`w-full ${maxWidthClasses[maxWidth]} space-y-6 rounded-2xl bg-[var(--color-bg-surface)] p-8 shadow-lg`}
+				className={`w-full ${maxWidthClasses[maxWidth]} space-y-6 rounded-lg bg-[var(--color-bg-surface)] p-8 shadow-brand`}
 			>
 				{children}
 			</div>

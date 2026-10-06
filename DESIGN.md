@@ -459,15 +459,16 @@ behaviors; deviations are bugs.
 - **SectionCard / PageContainer / PageHeader** — page scaffolding; `SectionCard`
   padding `sm` p-4 / `md` p-6 / `lg` p-8.
 
-**Registered, not fixed — and the reason matters.** 13 places inside the design system itself still
-use off-scale classes (the card components `shadow-sm`, the floating layer `shadow-lg`, two bare
-`rounded`, one `rounded-2xl`). They are enumerated with their targets in
-`verification/token-tiers.json` and reported by `scripts/check-token-tiers.mjs`.
+**Fixed in round 55 — in one unit with the release.** 13 places inside the design system itself used
+off-scale classes: the card components `shadow-sm`, the floating layer `shadow-lg`, two bare
+`rounded`, one `rounded-2xl`. They now read `shadow-card` / `shadow-soft` / `shadow-brand` /
+`rounded-xs` / `rounded-lg`, and `verification/token-tiers.json` keeps an **empty** allowance:
+a new off-scale class in the design system is a hard failure with no registration path.
 
-They cannot be fixed alone: a site's stylesheet only contains a class if the **published** package
+They could not be fixed alone: a site's stylesheet only contains a class if the **published** package
 uses it, so renaming here without shipping leaves `check-ds-classes` red — correctly, because the
-components would then render half-styled in every portal. This batch and the `@autional/ui` rc
-release are one unit of work (see `docs/PORTAL-SHARED-LAYER-DESIGN.md` §11 round 55).
+components would then render half-styled in every portal. So this change ships together with the
+`@autional/ui` rc release, and only lands on the portals after they bump the version and rebuild.
 
 Do not "fix" this by adding a neutral shadow step to the scale to legalise the old names. The
 scale is a language; the fix is to speak it.

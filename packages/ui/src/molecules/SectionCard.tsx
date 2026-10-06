@@ -34,7 +34,7 @@ export const SectionCard = React.memo(function SectionCard({
 }: SectionCardProps) {
 	return (
 		<div
-			className={`rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-sm ${paddingMap[padding]} ${className}`}
+			className={`rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-card ${paddingMap[padding]} ${className}`}
 		>
 			{title && (
 				<h2 className="mb-4 text-base font-semibold text-[var(--color-text-primary)]">{title}</h2>

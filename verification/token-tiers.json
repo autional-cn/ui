@@ -112,73 +112,7 @@
   },
   "$siteComment": "第 55 轮基线（全舰队 321 处：圆角 174 / 阴影 111 / 间距 36）。收敛顺序与依赖见 docs/PORTAL-SHARED-LAYER-DESIGN.md §11 第 55 轮：圆角的 174 处里绝大多数是**同值改名**（rounded → rounded-xs 都是 4px；rounded-2xl → md 都是 16px；rounded-3xl → lg 都是 24px），零视觉变化，但必须先发 preset —— 站点侧写 rounded-xs 而 preset 里没有这一档时，K1（check-classnames）会把它判成写不出来的死类。",
   "ds": {
-    "$comment": "设计系统组件里的档位外用法：**硬零**。白名单是过渡期登记，每一条都必须写明改法与它等的是哪条发版链 —— 空数组是本闸门的终点。它们不能单独改的原因：站点产物 CSS 是从**已发布的** @autional/ui 扫出来的，改了 DS 源码而没发版时，check-ds-classes 会（正确地）报「站点产物里没有 shadow-card 这个类」。所以这一批与 ui rc 发版是同一条链。",
-    "allowance": [
-      {
-        "file": "packages/ui/src/molecules/SectionCard.tsx",
-        "class": "shadow-sm",
-        "plan": "→ shadow-card（DESIGN.md :435 已登记的债；卡片档位）"
-      },
-      {
-        "file": "packages/ui/src/molecules/Result.tsx",
-        "class": "shadow-sm",
-        "plan": "→ shadow-card（结果卡是容器面）"
-      },
-      {
-        "file": "packages/shared/src/components/AuditStatsOnly.tsx",
-        "class": "shadow-sm",
-        "plan": "→ shadow-card（容器面）"
-      },
-      {
-        "file": "packages/ui/src/atoms/Toggle.tsx",
-        "class": "shadow-sm",
-        "plan": "→ shadow-soft（开关是小控件，规范里 soft 的语义就是 pills/small buttons/subtle lift）"
-      },
-      {
-        "file": "packages/ui/src/molecules/Modal.tsx",
-        "class": "shadow-lg",
-        "plan": "→ shadow-brand（浮层组）"
-      },
-      {
-        "file": "packages/ui/src/molecules/ConfirmDialog.tsx",
-        "class": "shadow-lg",
-        "plan": "→ shadow-brand（浮层组）"
-      },
-      {
-        "file": "packages/ui/src/molecules/UserMenu.tsx",
-        "class": "shadow-lg",
-        "plan": "→ shadow-brand（浮层组）"
-      },
-      {
-        "file": "packages/ui/src/molecules/PortalSwitcher.tsx",
-        "class": "shadow-lg",
-        "plan": "→ shadow-brand（浮层组）"
-      },
-      {
-        "file": "packages/ui/src/molecules/Toast.tsx",
-        "class": "shadow-lg",
-        "plan": "→ shadow-brand（浮层组）"
-      },
-      {
-        "file": "packages/ui/src/molecules/Toast.tsx",
-        "class": "rounded",
-        "plan": "→ rounded-xs（4px 同值改名：第 55 轮已给这一档补上名字）"
-      },
-      {
-        "file": "packages/ui/src/molecules/PageContainer.tsx",
-        "class": "shadow-lg",
-        "plan": "→ shadow-brand（浮层/外壳层）"
-      },
-      {
-        "file": "packages/ui/src/molecules/PageContainer.tsx",
-        "class": "rounded-2xl",
-        "plan": "→ rounded-lg（页面容器是容器面，规范 §9：cards radius-lg）"
-      },
-      {
-        "file": "packages/ui/src/molecules/ErrorBoundary.tsx",
-        "class": "rounded",
-        "plan": "→ rounded-xs（4px 同值改名）"
-      }
-    ]
+    "$comment": "设计系统组件里的档位外用法：**硬零**。第 55 轮把 13 处全部收敛掉了（卡片 shadow-sm → shadow-card、浮层 shadow-lg → shadow-brand、裸 rounded → rounded-xs、PageContainer 的 rounded-2xl → rounded-lg），所以白名单现在是**空数组** —— 这是本闸门的终点状态：任何一条新出现的档位外写法都会直接报红，不需要再登记。它在站点上生效要等 ui rc 发版 + 站点跟版重建产物（见 docs/PORTAL-SHARED-LAYER-DESIGN.md §11 第 55 轮补）。",
+    "allowance": []
   }
 }

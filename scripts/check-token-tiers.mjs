@@ -60,7 +60,11 @@ function walk(dir, out = []) {
 }
 
 /** 剥注释：块注释与行注释都要剥（第 55 轮的实测教训见文件头）。 */
-const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+// ⚠️ 长度与换行都要保持：否则报出来的行号是「剥完注释之后的坐标」，与被指的文件对不上
+// （第 55 轮实测：AuditStatsOnly.tsx 的真实行是 32，报出来是 17）。
+const stripComments = (s) => s
+  .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+  .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + ' '.repeat(m.length - p1.length));
 
 // ── 合法档位：从 SSOT 派生 ────────────────────────────────────────────────
 const T = loadTokens();

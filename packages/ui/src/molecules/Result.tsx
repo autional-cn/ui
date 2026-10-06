@@ -65,7 +65,7 @@ export const Result = React.memo(function Result({
 	// 徽标：白底卡片上用同色浅底，整块浅底上退回白色面 —— 两种都保证徽标里的图标仍压在同色浅底上。
 	const badgeCls = tinted ? 'bg-[var(--color-bg-surface)]' : SOFT_TEXT[variant];
 	return (
-		<div className={`flex flex-col items-center rounded-lg border p-8 text-center shadow-sm ${surfaceCls} ${className}`}>
+		<div className={`flex flex-col items-center rounded-lg border p-8 text-center shadow-card ${surfaceCls} ${className}`}>
 			{glyph ? (
 				<span className={`flex h-16 w-16 items-center justify-center rounded-full ${badgeCls} ${tinted ? textTone(variant) : ''}`}>
 					{glyph}

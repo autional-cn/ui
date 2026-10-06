@@ -29,7 +29,7 @@ interface AuditStatsOnlyProps {
 export function AuditStatsOnly({ title, description, children }: AuditStatsOnlyProps) {
 	return (
 		<div className="flex flex-col items-center justify-center min-h-[40vh] p-8">
-			<div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-8">
+			<div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-lg shadow-card border border-gray-200 dark:border-slate-700 p-8">
 				<div className="flex flex-col items-center text-center space-y-4">
 					{/* Lock icon via inline SVG (no external dependency) */}
 					<svg

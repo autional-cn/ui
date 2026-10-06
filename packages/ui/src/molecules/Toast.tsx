@@ -87,13 +87,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 					return (
 						<div
 							key={toast.id}
-							className={`pointer-events-auto flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-lg ${STYLES[toast.type]}`}
+							className={`pointer-events-auto flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-brand ${STYLES[toast.type]}`}
 						>
 							<Icon className="h-4 w-4 shrink-0" />
 							<span className="flex-1">{toast.message}</span>
 							<button
 								onClick={() => removeToast(toast.id)}
-								className="ml-1 shrink-0 rounded p-0.5 opacity-70 hover:bg-white/20 hover:opacity-100"
+								className="ml-1 shrink-0 rounded-xs p-0.5 opacity-70 hover:bg-white/20 hover:opacity-100"
 							>
 								<X className="h-3.5 w-3.5" />
 							</button>

@@ -34,7 +34,7 @@ export const Toggle = React.memo(function Toggle({
 			} ${s.track} ${className}`}
 		>
 			<span
-				className={`inline-block rounded-full bg-white shadow-sm transition-transform ${
+				className={`inline-block rounded-full bg-white shadow-soft transition-transform ${
 					checked ? s.translate : 'translate-x-0.5'
 				} ${s.circle}`}
 			/>

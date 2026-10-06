@@ -138,7 +138,7 @@ export const Modal = React.memo(function Modal({
 				aria-labelledby={title ? titleId : undefined}
 				aria-describedby={title && description ? descriptionId : undefined}
 				tabIndex={-1}
-				className={`relative w-full ${maxWidthClasses[maxWidth]} rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-lg outline-none ${className}`}
+				className={`relative w-full ${maxWidthClasses[maxWidth]} rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-brand outline-none ${className}`}
 			>
 				{title && (
 					<div className="flex items-start justify-between gap-4 border-b border-[var(--color-border-subtle)] px-6 py-4">

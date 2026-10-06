@@ -106,7 +106,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 							{this.state.error?.message || T.unknown}
 						</p>
 						{this.state.error?.stack && (
-							<pre className="mt-4 max-h-60 max-w-2xl overflow-auto rounded bg-neutral-100 p-3 text-left text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+							<pre className="mt-4 max-h-60 max-w-2xl overflow-auto rounded-xs bg-neutral-100 p-3 text-left text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
 								{this.state.error.stack}
 							</pre>
 						)}
