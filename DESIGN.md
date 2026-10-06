@@ -105,9 +105,16 @@ surprise:
 The type scale carrying weights is deliberate: headline hierarchy should come
 from one class. It also means `text-lg font-normal` is required to opt out.
 
-`rounded-2xl` (16px), `rounded-3xl`, `rounded-none`, and `shadow-sm`/`shadow-md`/`shadow-lg`
-are **not** part of the token scale — they fall through to Tailwind defaults.
-Prefer token-backed `rounded-{sm,md,lg,xl,xxl}` and `shadow-{soft,card,brand}`.
+`rounded-2xl` (16px), `rounded-3xl`, bare `rounded` (4px), and `shadow-sm`/`shadow-md`/`shadow-lg`
+are **not** part of the token scale — the preset uses `theme.extend`, so they fall through to
+Tailwind's factory values and still compile. That is exactly why they need a gate: a class that
+renders is not a class that is allowed. Use `rounded-{xs,sm,md,lg,xl,xxl}` and
+`shadow-{soft,card,brand}`. `rounded-none` and `shadow-none` stay legal — zero is not a step,
+it is the absence of one.
+
+Round 50 added the missing steps rather than re-educating the fleet twice: `radius-xs` (4px, the
+"tighter" case below), the density half steps, the 64/80 rhythm steps. `scripts/check-token-tiers.mjs`
+derives the legal sets **from `tokens/tokens.json`** — this paragraph and that gate cannot drift.
 
 `text-4xl` (36px / 40px) is the one case that was **promoted into the scale** instead
 of being left to fall through. Reason: the ladder had a ×1.333 hole between `3xl`
@@ -324,7 +331,18 @@ Non-negotiable minimums.
   tokens: `sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536.
   **CSS variables cannot be used inside media queries** — those tokens exist to
   document the scale; media queries must repeat the literal values.
-- Spacing rhythm: `4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48`.
+- Spacing has **two domains**, and the domain decides which values are legal:
+  - **Layout rhythm** (page and block level): `4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48 / 64 / 80`.
+    The upper two (`space-16` = 64px, `space-20` = 80px) were added in round 50: content sites
+    were already using them in 85 places while the documented ladder stopped at 48, so "the rule
+    is too small" was being recorded as "the site overstepped". One page uses one rhythm step —
+    mixing 64 and 80 inside one site is the inconsistency, not either value on its own.
+  - **Control density** (inside a control): the half steps `0.5 / 1.5 / 2.5 / 3.5`
+    (2 / 6 / 10 / 14px) are legal — badge padding, gaps between inline chips, dense table rows.
+    They are in the token scale, not Tailwind leftovers (round 50), so "is 6px allowed?" now has
+    an answer. Use them for density, never to fine-tune page rhythm.
+  - A token must have a consumer. `hero-gap` (40px) had none and duplicated `space-10`, so it
+    was deleted in round 50 rather than kept as a second name for the same value.
 - The layout is containment-first and card-based. Group related information into
   surfaces instead of letting it float.
 
@@ -353,15 +371,24 @@ Depth supports hierarchy; it does not create spectacle.
 
 - `shadow-soft` — pills, small buttons, subtle lift.
 - `shadow-card` — standard cards and contained blocks.
-- `shadow-brand` — hero shells and floating groups.
+- `shadow-brand` — hero shells and the whole **floating layer**: menus, popovers, dialogs,
+  drawers, toasts. A floating surface always sits above content, so it always takes this step.
 - Dark technical panels may carry deeper shadows; they represent dense content.
+
+These five are **one language, not a palette**. Round 50 measured the fleet and found two
+languages running in parallel: the design system's own components used Tailwind's factory
+`shadow-sm` / `shadow-lg` (neutral black), while content sites and the `docs` / `developer`
+profiles used this family (brand-tinted). A single page could therefore show both. Components
+converge onto this family — do not add a neutral shadow step to accommodate them.
 
 Prefer surface separation plus a subtle border over shadow stacks. Do not use
 large fuzzy colored glows. In documentation, readability outranks atmosphere.
 
 Shapes are rounded but disciplined: pills and buttons full-round; cards `radius-lg`
 (24px); premium shells `radius-xl` (28px); developer panels up to `radius-xxl`
-(32px); inline chips and code tighter. Keep one radius family per page. Rounded
+(32px); inline chips and code `radius-xs` (4px) — round 50 added that step because this
+sentence already said "tighter" while the scale stopped at `radius-sm` (8px), and the fleet
+answered with bare `rounded` (Tailwind's 4px default) in 109 places. Keep one radius family per page. Rounded
 means refined, not playful — never mix sharp industrial corners into a soft shell
 without a semantic reason.
 
@@ -432,8 +459,18 @@ behaviors; deviations are bugs.
 - **SectionCard / PageContainer / PageHeader** — page scaffolding; `SectionCard`
   padding `sm` p-4 / `md` p-6 / `lg` p-8.
 
-`SectionCard` currently uses `shadow-sm` (a Tailwind default, outside the token
-scale). Migrate to `shadow-card` when touching it.
+**Registered, not fixed — and the reason matters.** 13 places inside the design system itself still
+use off-scale classes (the card components `shadow-sm`, the floating layer `shadow-lg`, two bare
+`rounded`, one `rounded-2xl`). They are enumerated with their targets in
+`verification/token-tiers.json` and reported by `scripts/check-token-tiers.mjs`.
+
+They cannot be fixed alone: a site's stylesheet only contains a class if the **published** package
+uses it, so renaming here without shipping leaves `check-ds-classes` red — correctly, because the
+components would then render half-styled in every portal. This batch and the `@autional/ui` rc
+release are one unit of work (see `docs/PORTAL-SHARED-LAYER-DESIGN.md` §11 round 50).
+
+Do not "fix" this by adding a neutral shadow step to the scale to legalise the old names. The
+scale is a language; the fix is to speak it.
 
 ### 10.3 Tables
 

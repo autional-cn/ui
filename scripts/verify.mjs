@@ -34,6 +34,7 @@ const STEPS = [
   { key: 'icon-vocabulary', label: '图标词汇（同一概念只许一种写法；棘轮）', cmd: ['node', 'scripts/check-icon-vocabulary.mjs'] },
   { key: 'antd-bridge', label: 'antd 组件级令牌生效（真实浏览器实测 + 阴性对照）', cmd: ['node', 'scripts/check-antd-bridge.mjs'] },
   { key: 'icon-sizing', label: '图标尺寸（每个 lucide 图标必须带显式尺寸；棘轮）', cmd: ['node', 'scripts/check-icon-sizing.mjs'] },
+  { key: 'token-tiers', label: '令牌档位（圆角/阴影/间距只走档位：DS 硬零 + 站点棘轮）', cmd: ['node', 'scripts/check-token-tiers.mjs'] },
   { key: 'consistency', label: '跨 portal 视觉一致性（antd 主题 / 入口台账棘轮 / 硬编码色 / 组件库份数 / 令牌覆盖 / 分块策略）', cmd: ['node', 'scripts/check-consistency.mjs'] },
   { key: 'hook-naming', label: 'hooks 命名口径（文件名 kebab-case / hook 函数名 useXxx）', cmd: ['node', 'scripts/check-hook-naming.mjs'] },
   { key: 'typecheck', label: '类型检查（ui 工作区 + 四个在册门户）', cmd: ['node', 'scripts/check-typecheck.mjs'] },

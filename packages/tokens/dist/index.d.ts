@@ -240,17 +240,25 @@ declare const tokens: {
       "8": string;
       "10": string;
       "12": string;
-      "hero-gap": string;
+      "16": string;
+      "20": string;
+      "0.5": string;
+      "1.5": string;
+      "2.5": string;
+      "3.5": string;
       "section-gap": string;
+      "$density-note": string;
       "$rhythm-note": string;
     };
     radius: {
+      xs: string;
       sm: string;
       md: string;
       lg: string;
       xl: string;
       xxl: string;
       full: string;
+      $note: string;
     };
     shadow: {
       soft: string;
