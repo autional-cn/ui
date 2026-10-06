@@ -1,6 +1,6 @@
 {
   "$comment": "图标词汇表（棘轮）。设计系统不收图标代码层（14 站里 7 站直连 lucide-react，DS 自己 15 个组件也直连），但**词汇**必须有判据：同一个概念被两个站选成两个名字，就是「看起来不像同一个产品」的最细一处。synonyms 是 lucide 的**同字形重命名对**（旧名 ↔ 新名），canonical 取舰队与设计系统**正在用**的那一个；判据只判「同义词有没有被用」（数字只许减不许增），并给每个同义词标出规范名。",
-  "updated": "2026-10-05",
+  "updated": "2026-10-06",
   "concepts": {
     "warning": {
       "canonical": "AlertTriangle",
@@ -117,9 +117,9 @@
       ]
     },
     "edit": {
-      "canonical": "Edit2",
+      "canonical": "Pencil",
       "synonyms": [
-        "Pen"
+        "Edit2"
       ]
     },
     "more-vertical": {
@@ -131,5 +131,6 @@
   },
   "converged": [],
   "synonymUsage": {},
-  "$vocabulary": "security 第 48 轮迁移时落定的 14 个「舰队外来词」，它们从那一轮起就是舰队词汇的一部分（理由见 PORTAL-SHARED-LAYER-DESIGN.md 第 48 轮的 66 行映射表附录）：Plug / ClipboardCheck / Bug / FileImage / FileType / FileLock / FileArchive / PanelLeftClose / PanelLeftOpen / MessageCircle / MinusCircle / HelpCircle / Radar / Bot"
+  "$vocabulary": "security 第 48 轮迁移时落定的 14 个「舰队外来词」，它们从那一轮起就是舰队词汇的一部分（理由见 PORTAL-SHARED-LAYER-DESIGN.md 第 48 轮的 66 行映射表附录）：Plug / ClipboardCheck / Bug / FileImage / FileType / FileLock / FileArchive / PanelLeftClose / PanelLeftOpen / MessageCircle / MinusCircle / HelpCircle / Radar / Bot",
+  "$concepts-not-alias": "ArrowRightLeft / ArrowLeftRight 是**两个字形**（箭头镜像），不是别名 —— 闸门按同字形判，登记不了。舰队已统一用 ArrowLeftRight（user 的 wallet 页与本站 transfer 页、admin 的 points 页一致）；这类「同概念不同字形」的取舍写进 PORTAL-SHARED-LAYER-DESIGN.md，不塞进这张表。"
 }
