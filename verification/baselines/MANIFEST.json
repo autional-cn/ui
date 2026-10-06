@@ -1,6 +1,6 @@
 {
   "$description": "视觉基线环境固化。跨机器复用基线与字体差异必然误报——本基线绑定下列环境。",
-  "generatedAt": "2026-10-06T18:06:03.467Z",
+  "generatedAt": "2026-10-06T21:02:22.722Z",
   "config": {
     "viewport": {
       "width": 1440,
@@ -23,78 +23,10 @@
   },
   "results": [
     {
-      "name": "developer-home",
+      "name": "admin-console",
       "action": "baseline-written",
-      "bytes": 453875,
-      "sha256": "27c2a017ef8cc591",
-      "env": {
-        "browser": "149.0.7827.55",
-        "viewport": {
-          "width": 1440,
-          "height": 900
-        },
-        "dpr": 1,
-        "platform": "win32",
-        "node": "v24.15.0"
-      },
-      "httpFailures": []
-    },
-    {
-      "name": "authenticator-harness",
-      "action": "baseline-written",
-      "bytes": 61232,
-      "sha256": "ac5fa128e7b70834",
-      "env": {
-        "browser": "149.0.7827.55",
-        "viewport": {
-          "width": 1440,
-          "height": 900
-        },
-        "dpr": 1,
-        "platform": "win32",
-        "node": "v24.15.0"
-      },
-      "httpFailures": []
-    },
-    {
-      "name": "authenticator-harness-light",
-      "action": "baseline-written",
-      "bytes": 66971,
-      "sha256": "f6d57814b5af4c97",
-      "env": {
-        "browser": "149.0.7827.55",
-        "viewport": {
-          "width": 1440,
-          "height": 900
-        },
-        "dpr": 1,
-        "platform": "win32",
-        "node": "v24.15.0"
-      },
-      "httpFailures": []
-    },
-    {
-      "name": "admin-shell",
-      "action": "baseline-written",
-      "bytes": 41404,
-      "sha256": "5e12c8e48fcf27fd",
-      "env": {
-        "browser": "149.0.7827.55",
-        "viewport": {
-          "width": 1440,
-          "height": 900
-        },
-        "dpr": 1,
-        "platform": "win32",
-        "node": "v24.15.0"
-      },
-      "httpFailures": []
-    },
-    {
-      "name": "platform-shell",
-      "action": "baseline-written",
-      "bytes": 29928,
-      "sha256": "2519845ad32cb05d",
+      "bytes": 16753,
+      "sha256": "6f0e105aa564cd5b",
       "env": {
         "browser": "149.0.7827.55",
         "viewport": {
