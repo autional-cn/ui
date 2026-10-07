@@ -18,6 +18,11 @@
 //   ③ theme-color 是**字面量**：它由浏览器消费、不经过 CSS，写 var() 等于没写
 //   ④ 共享清单不得携带每站不同的字段（theme_color）：同一个值不该有两个来源（I18）
 //   ⑤ 14 个站点引用的 CDN 版本必须完全相同（I19）—— 版本漂了就不是「同一个来源」
+//      且必须是 **cdn/ui/latest.json 当前发布的那一版**（I24）。
+//      I24 是第 63 轮真实踩出来的：14 个站**一致地**停在上一版，I19 照样绿，
+//      而那一轮新增的运行期变量（color.bg-code / layout.modal-offset / layout.hero-offset）
+//      只存在于新版 tokens.css 里 ⇒ 浏览器拿不到：站点上的 bg-code 是透明底、两处视口偏移是 0。
+//      **「一致」不等于「当前」**——一个共同的旧来源仍然是旧来源。
 //   ⑥ 样式表 <link> 同样是 CDN canonical 形态（I21），且**只能 link 位置无关的那些**（I22）、
 //      必须 link tokens.css 且 profile 与 consumer-targets.json 声明一致（I23）。
 //      I22 是本轮真实踩出来的：primitives.css 含 Tailwind @layer 片段，直链会让 base 段落
@@ -287,6 +292,39 @@ if (cdnVersions.size > 1) {
 } else if (cdnVersions.size === 1) {
   const [v] = [...cdnVersions.keys()];
   info.push('I19 全部 ' + rows.length + ' 个站点引用同一个 CDN 版本 ' + v);
+}
+
+// ── I24 引用的必须是 cdn/ui/latest.json 当前那一版 ─────────────────────────
+// I19 挡的是「站与站之间漂移」，挡不住「14 个站一致地停在上一版」——第 63 轮实测：
+// 那一轮发了新的 ui/v<版本>（tokens rc.15 新增 color.bg-code / layout.modal-offset /
+// layout.hero-offset），而 14 个站的 <head> 全部还指向前一版，I19 报的是「版本一致 ✅」。
+// 后果不是 404，而是**静默的失效**：那几个变量只存在于新版 tokens.css，
+// 浏览器拿不到 ⇒ .bg-code 变透明底（文字是 text-syntax-plain 的近白色）、
+// pt-[var(--layout-modal-offset)] / mt-[var(--layout-hero-offset)] 算成 0。
+// 判据：**「一致」不等于「当前」**。修法就是配套工具：node scripts/bump-cdn-version.mjs --write。
+const LATEST_PATH = join(CDN_DIR, 'ui', 'latest.json');
+if (cdnVersions.size === 1) {
+  const [refV] = [...cdnVersions.keys()];
+  if (!existsSync(LATEST_PATH)) {
+    problems.push('I24 找不到 ' + LATEST_PATH + ' —— 无法判定站点引用的是不是当前发布版本' +
+      '（先 node scripts/build-cdn.mjs 生成 latest.json）。');
+  } else {
+    let latestV = null;
+    try { latestV = JSON.parse(readFileSync(LATEST_PATH, 'utf8')).version || null; }
+    catch (e) { problems.push('I24 ' + LATEST_PATH + ' 不是合法 JSON'); }
+    if (latestV) {
+      const norm = (s) => String(s).replace(/^v/, '');
+      const sites = cdnVersions.get(refV);
+      if (norm(refV) !== norm(latestV)) {
+        problems.push('I24 站点引用的 CDN 版本 ' + refV + ' **不是当前发布的那一版** ' + latestV +
+          '（' + sites.length + ' 个站：' + sites.join('/') + '）—— 这一次发布新增/改动的运行期变量' +
+          '在浏览器里根本不存在，而 URL 全都 200、所有闸门都会绿。' +
+          '修法：node scripts/bump-cdn-version.mjs --write 后逐站提交。');
+      } else {
+        info.push('I24 全部站点引用的就是当前发布版本 ' + latestV);
+      }
+    }
+  }
 }
 
 if (AS_JSON) console.log(JSON.stringify({ rows, problems, warns, info }, null, 2));
