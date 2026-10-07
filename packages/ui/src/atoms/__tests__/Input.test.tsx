@@ -26,6 +26,21 @@ describe('Input', () => {
 		expect(container.querySelector('div.w-full > div')).toBeNull();
 	});
 
+	it('size / shape 只作用于有槽形态，且高度/圆角只由一个地方发出', () => {
+		const { container } = render(<Input prefix={<span>i</span>} size="lg" shape="pill" placeholder="r" />);
+		const wrapper = container.querySelector('div.w-full > div');
+		expect(wrapper?.className).toContain('h-14');
+		expect(wrapper?.className).toContain('rounded-full');
+		expect(wrapper?.className).not.toContain('h-10');
+		expect(wrapper?.className).not.toContain('rounded-md');
+	});
+
+	it('无槽形态不接受 size/shape（既有消费方零影响）', () => {
+		render(<Input size="lg" shape="pill" placeholder="s" />);
+		expect(screen.getByPlaceholderText('s').className).toContain('h-10');
+		expect(screen.getByPlaceholderText('s').className).toContain('rounded-md');
+	});
+
 	it('suffix 与 error 可以共存', () => {
 		render(<Input suffix={<span data-testid="suf">x</span>} error="必填" />);
 		expect(screen.getByTestId('suf')).toBeTruthy();

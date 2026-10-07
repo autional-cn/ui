@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { fieldControlClass, fieldControlHeight } from '../internal/field-styles';
+import { fieldControlClass, fieldControlClassFor, fieldControlHeight, type FieldShape, type FieldSize } from '../internal/field-styles';
 
-// 注：`prefix` 与 HTML 自带的 `prefix` 属性同名（后者在 <input> 上没有意义，TS 会报
-// 「ReactNode 不能赋给 string」）。所以这里显式 Omit 掉它再重定义 —— 保住最自然的调用名。
-export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix'> {
+// 注：`prefix` 与 `size` 都与 HTML 自带的同名属性冲突（`prefix?: string`、`size?: number`，
+// 而这里要的是 ReactNode 与 'sm'|'md'|'lg'）。两处都是 **tsc 当场报出来的** ——
+// 所以显式 Omit 掉再重定义，保住最自然的调用名，而不是改成 `inputSize` 这种妥协名。
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix' | 'size'> {
 	error?: string;
 	/**
 	 * 前缀槽：图标或极短的单位符号（如货币符号）。
@@ -19,22 +20,32 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
 	prefix?: React.ReactNode;
 	/** 后缀槽：清除按钮、单位后缀一类。同样占真实布局空间。 */
 	suffix?: React.ReactNode;
+	/**
+	 * 尺寸档（第 61 轮）：sm=h-9 / md=h-10（默认）/ lg=h-14。
+	 * 舰队里手写的搜索框有三种几何，这个参数就是为它们准备的 —— **只影响有槽形态**，
+	 * 无槽形态仍走默认高度（既有消费方零影响）。
+	 */
+	size?: FieldSize;
+	/** 形状档：default=rounded-md / pill=rounded-full（大圆角搜索框）。同样只影响有槽形态。 */
+	shape?: FieldShape;
 }
 
 // 外观来自 ../internal/field-styles —— 与 @autional/ui/rhf 的绑定控件同一份，不各自维护。
 //
 // 两种渲染形态（**无槽时逐字节不变**，既有消费方零影响）：
 //   · 无 prefix/suffix：只有一个 <input>，外框在它自己身上（原样）；
-//   · 有槽：外框交给 wrapper，<input> 变透明并占满剩余宽度 —— 高度/圆角由调用方
-//     原有的 className 决定（舰队里搜索框有三种几何：py-2 / py-2.5 / py-3.5 rounded-full），
-//     所以这一层**不替调用方决定尺寸**。
+//   · 有槽：外框交给 wrapper，<input> 变透明并占满剩余宽度 —— 高度/圆角由 `size` / `shape`
+//     两轴决定（第 61 轮补：舰队里搜索框有三种几何 py-2 / py-2.5 / py-3.5 + rounded-full，
+//     组件层若只有一种，站点就只能各自写材质 —— 那就是这条维度存在的原因）。
+//     ⚠️ 调用方**不要**再传高度/内边距/圆角：同一批属性只能有一个来源，否则胜负由
+//     Tailwind 的生成顺序决定，而那是无声的。
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-	({ className = '', error, prefix, suffix, ...props }, ref) => {
+	({ className = '', error, prefix, suffix, size = 'md', shape = 'default', ...props }, ref) => {
 		const hasSlot = prefix != null || suffix != null;
 		return (
 			<div className="w-full">
 				{hasSlot ? (
-					<div className={fieldControlClass(!!error, 'flex items-center gap-2 ' + className)}>
+					<div className={fieldControlClassFor(size, shape, !!error, 'items-center gap-2 ' + className)}>
 						{prefix != null && (
 							<span className="shrink-0 text-[var(--color-text-muted)]" aria-hidden="true">{prefix}</span>
 						)}
