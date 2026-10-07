@@ -188,9 +188,15 @@ it is the one twelve repositories already ship, and it is the continuous
 
 ### Chart series
 
-`chart-1…8` are derived only from the primary/sky/amber families, ordered so
-adjacent series alternate hue family and lightness. `chart-1` is `primary-700`
-so single-series charts sit on the brand anchor.
+`chart-1…8` are **pinned literals**, not references into the brand scales.
+`chart-1` is `primary-700` so single-series charts sit on the brand anchor; 2…8 alternate hue
+family and lightness so adjacent series differ in both.
+
+Pinning is deliberate. Deriving them from primary/sky/amber looked tidier, but the docs and developer
+profiles redefine those scales as their own tint, so derived series silently followed the profile
+(worst pair fell to dE 10.7 normal / 8.4 deuteranopia in docs-dark). A categorical palette is a
+system-level property: two portals drawing the same chart must draw it in the same colours.
+Asserted by `scripts/check-chart-palette.mjs`.
 
 **Never use `chart-N` for status-like series.** Health, delivery, pass/fail and
 similar semantics use `success` / `warning` / `danger`. A categorical breakdown
@@ -207,6 +213,28 @@ import chart from '@autional/tokens/chart';
 
 `method-get` / `post` / `put` / `patch` / `delete` / `head`, shared by the wiki,
 reference, and admin surfaces. Use the token; do not re-pick a green for `POST`.
+
+### Code and syntax colors
+
+`plain / comment / keyword / string / number / function / type / tag`, exposed as `text-syntax-*`.
+The group exists because a brand scale cannot express a **role**. A keyword and a string sit on the
+same line, so what matters is that any two roles are distinguishable — not which brand hue carries
+"string". Before this group, sites hand-picked Tailwind defaults (`text-sky-300`,
+`text-emerald-300`, `text-violet-300`, `text-green-400`, `text-slate-100`); five of those families
+are not in the design system at all.
+
+Values are **pinned literals**, never `{color.*}` references, for the same reason as `chart-*`.
+`scripts/check-syntax-palette.mjs` asserts them against the fleet's real code surfaces
+(`slate-900` / `slate-950`): every role ≥ 4.5:1 contrast (this is text, so 1.4.8 AA, not the 3:1
+used for chart marks), and any two roles ≥ 12 dE normal / ≥ 10 dE deuteranopia. The first candidate
+set looked fine in normal vision (18.9) and collapsed under deuteranopia (3.3) — purple and sky are
+the same colour once red/green is removed, and keyword/function are exactly the pair that appears
+next to each other.
+
+Scope: **dark code surfaces only**. The four light-surface `<pre>` blocks in admin/security inherit
+the page foreground and are deliberately out of scope. The code surface colour itself
+(`bg-slate-900` / `bg-slate-950`) is still a Tailwind default rather than a token — registered as a
+follow-up, and the gate pins the two literals until it is.
 
 ### Borders are profile-dependent
 

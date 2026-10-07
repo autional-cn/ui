@@ -22,7 +22,12 @@
 //   · space：SSOT 的键（含第 55 轮补进 SSOT 的控件密度档 0.5/1.5/2.5/3.5 与节奏档 16/20）；
 //     \`-0\` 合法（「无间距」不是档位问题）；任意值 \`-[…]\` 违规。
 //
-// 度量器自检（学 C5/C9/C10/C11 的做法，双向都要有）：
+//   · spaceArb（任意值）：**但「令牌的算式」不算任意值**（第 62 轮补）。pb-[calc(var(--a)+var(--b))]
+//     与 pt-[15vh] 不是同一件事：前者的每一个数都来自设计系统，改令牌它就跟着变；后者的数是写死的。
+//     口径：calc/min/max/clamp 且**只由设计系统真正发出来的 CSS 变量**（扫 packages/tokens 的生成物得到）
+//     与运算符/括号/无单位数字组成 → 合法；混进任何字面量（+12px）、引用未发出的变量、
+//     或干脆只是一个裸变量（pb-[var(--space-12)] —— 它本来就有档位类 pb-12）→ 照旧违规。
+//// 度量器自检（学 C5/C9/C10/C11 的做法，双向都要有）：
 //   正例 —— 一段必然违规的样本必须被数出来；数不出来说明解析器失灵，棘轮会**全绿**。
 //   反例 —— 注释里的类名、\`rounded-none\`、\`-0\`、测试文件里的断言串都不许命中。
 //   第 55 轮实测的教训：SectionCard.tsx 顶上的注释就写着 \`rounded-2xl\`（解释为什么不用它），
@@ -88,6 +93,37 @@ const DIRS = new Set(['t', 'b', 'l', 'r', 's', 'e', 'tl', 'tr', 'bl', 'br', 'ss'
 const SPACE_PREFIX = 'p|px|py|pt|pb|pl|pr|ps|pe|m|mx|my|mt|mb|ml|mr|ms|me|gap|gap-x|gap-y|space-x|space-y|inset|inset-x|inset-y|top|bottom|left|right|start|end';
 const SENTINEL = '<div class="rounded-zz9-probe dsh-token-tier-probe-zz9" />';
 
+// ── 「令牌的算式」的合法变量集合：扫设计系统**真正发出来的** CSS 变量 ──────
+// 不在这里手抄一份名单：抄一份的结果是「加了令牌而判据不认识」。
+const EMITTED_VARS = new Set();
+for (const dir of [join(ROOT, 'packages', 'tokens'), join(ROOT, 'packages', 'tailwind-preset')]) {
+  const stack = [dir];
+  while (stack.length) {
+    const d = stack.pop();
+    let entries = [];
+    try { entries = readdirSync(d, { withFileTypes: true }); } catch { continue; }
+    for (const e of entries) {
+      const p = join(d, e.name);
+      if (e.isDirectory()) { stack.push(p); continue; }
+      if (extname(e.name) !== '.css') continue;
+      for (const m of readFileSync(p, 'utf8').matchAll(/(--[a-z0-9-]+)\s*:/g)) EMITTED_VARS.add(m[1]);
+    }
+  }
+}
+
+/** 一个 -[…] 任意值是不是「只由设计系统令牌算出来的」。见文件头口径：
+ *  这是**合法**的任意值（随令牌而动），不是档位违规。 */
+export function isTokenCalc(v) {
+  if (!v.startsWith('[') || !v.endsWith(']')) return false;
+  const inner = v.slice(1, -1).trim();
+  if (!/^(calc|min|max|clamp)\(/.test(inner)) return false;
+  const refs = [...inner.matchAll(/var\((--[a-z0-9-]+)\)/g)].map((m) => m[1]);
+  if (!refs.length) return false;
+  if (refs.some((n) => !EMITTED_VARS.has(n))) return false;
+  const rest = inner.replace(/var\(--[a-z0-9-]+\)/g, '').replace(/\b(calc|min|max|clamp)\b/g, '');
+  return /^[\s\d+\-*/().,%]*$/.test(rest);
+}
+
 /** 一段文本里所有「档位外的类」。返回 [{cls, cat, index}] */
 export function scanText(text) {
   const s = stripComments(String(text));
@@ -126,7 +162,11 @@ export function scanText(text) {
     if (SPACE.has(v)) continue;                    // SSOT 的键即合法（含密度档与节奏档）
     // 任意值与档位值**是两个问题**：pt-[15vh] / my-[100px] 是视口与布局定位，不是间距档位。
     // 单列一类（报出来、棘轮钉住），而不是假装它们是档位违规。
-    if (v.startsWith('[')) { push(m[0], 'spaceArb', m.index); continue; }
+    if (v.startsWith('[')) {
+      if (isTokenCalc(v)) continue;                // 令牌的算式 = 随令牌而动，不是裸任意值
+      push(m[0], 'spaceArb', m.index);
+      continue;
+    }
     push(m[0], 'space', m.index);
   }
   // 动效：duration-<毫秒> 与 ease-<名字>（第 56 轮接进 preset 后，二者都由令牌派生）
@@ -180,6 +220,11 @@ const NEG_LINE = '// rounded-3xl shadow-lg py-9 duration-999\n<div class="rounde
 // 反例之二：**不是类语境**的字符串（散文、密码黑名单、断言串）——第 57 轮实测的假阳性来源
 const NEG_PROSE = '<p>我们用了 rounded corners 与 shadow 两件事</p>\nconst list = [\'shadow\', \'py-7\', \'rounded-2xl\']';
 const NEG_VIZ = 'strokeWidth={3}';
+// 第 62 轮：把「令牌的算式」从「裸任意值」里分开 —— 两侧都要有对照
+const CALC_OK = '<div class="pb-[calc(var(--layout-bottom-nav-height)+var(--space-12))] top-[min(var(--space-4),var(--space-8))]" />';
+const CALC_BAD = '<div class="pb-[15vh] pb-[calc(var(--space-12)+12px)] pb-[calc(var(--nope-zz9)+var(--space-12))] pb-[var(--space-12)]" />';
+const calcOkHits = scanText(CALC_OK).length;
+const calcBadHits = scanText(CALC_BAD).filter((h) => h.cat === 'spaceArb').length;
 const posHits = scanText(POS);
 const negHits = scanText(NEG_BLOCK).length + scanText(NEG_LINE).length + scanText(NEG_PROSE).length
   + scanStroke(NEG_LINE, 'probe/Thing.tsx').length            // strokeWidth={2} 合法
@@ -189,6 +234,12 @@ for (const h of posHits) posCats[h.cat]++;
 for (const h of scanStroke(POS, 'probe/Thing.tsx')) posCats[h.cat]++;
 if (posCats.radius !== 2 || posCats.shadow !== 1 || posCats.space !== 1 || posCats.motion !== 2 || posCats.stroke !== 1) {
   problems.push('TT00 度量器正向控制失败：正例应数出 radius=2 / shadow=1 / space=1 / motion=2 / stroke=1，实际 ' + JSON.stringify(posCats) + ' —— 解析器失灵时棘轮会全绿，那比红危险');
+}
+if (calcOkHits !== 0) {
+  problems.push('TT00 度量器失败：令牌算式被当成裸任意值数出来了（' + calcOkHits + ' 条）—— 那会让「用令牌拼出来的值」永远收不干净');
+}
+if (calcBadHits !== 4) {
+  problems.push('TT00 度量器失败：裸任意值/混字面量/未知令牌/裸变量 应数出 4 条，实际 ' + calcBadHits + ' 条 —— 放宽判据时把门一起放开了');
 }
 if (negHits !== 0) {
   problems.push('TT00 度量器负向控制失败：反例（注释里的类名、rounded-none/shadow-none、-0、合法档位）数出了 ' + negHits + ' 条 —— 度量器在误报');
@@ -257,7 +308,7 @@ if (process.argv.includes('--selftest')) {
     up.problems.length === 1 && same.problems.length === 0 && down.problems.length === 0 &&
     down.warns.length === 1 && unreg.problems.length === 0 && unreg.warns.length === 1;
   console.log('棘轮对照：涨 ' + up.problems.length + '（应 1）· 持平 ' + same.problems.length + '（应 0）· 降 ' + down.problems.length + '/警告 ' + down.warns.length + '（应 0/1）· 未登记 ' + unreg.problems.length + '/警告 ' + unreg.warns.length + '（应 0/1）');
-  console.log('度量器对照：正例 ' + JSON.stringify(posCats) + ' · 反例命中 ' + negHits + '（应 0）· 哨兵 ' + scanText(SENTINEL).length + '（应 1）');
+  console.log('度量器对照：正例 ' + JSON.stringify(posCats) + ' · 反例命中 ' + negHits + '（应 0）· 哨兵 ' + scanText(SENTINEL).length + '（应 1）· 令牌算式合法 ' + calcOkHits + '（应 0）/ 裸任意值命中 ' + calcBadHits + '（应 4）');
   console.log(ok && !problems.length ? '结论：双向对照通过（该红的红、该绿的不误报）' : '结论：对照失败');
   process.exit(ok && !problems.length ? 0 : 1);
 }
