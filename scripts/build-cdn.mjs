@@ -263,7 +263,11 @@ for (const name of readdirSync(uiRoot)) {
   kept.push({ name, at });
 }
 kept.sort((a, b) => (a.at < b.at ? 1 : -1));           // 新的在前
-for (const old of kept.slice(KEEP)) {
+// ⚠️ 保留数量是 **KEEP - 1**，不是 KEEP：这一份 `kept` 只含**盘上已有**的目录，
+// 本次要产出的新目录还没落盘。第 62 轮实测：写成 KEEP 时，每次发版都会「保留 5 个旧的 + 新增 1 个」
+// = 6 个，而 check-cdn 的上限判据是 5 —— 闸门红了、构建脚本绿着，两边同一个常量却两种语义。
+// 保留策略由闸门定义、构建脚本服从；反过来（改闸门去迁就脚本）就是把政策改小。
+for (const old of kept.slice(KEEP - 1)) {
   if (old.name === 'v' + VERSION) continue;
   rmSync(join(uiRoot, old.name), { recursive: true, force: true });
   removed.push(old.name + '(超出保留上限 ' + KEEP + ')');
