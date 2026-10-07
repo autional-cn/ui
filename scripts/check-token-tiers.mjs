@@ -27,6 +27,8 @@
 //     口径：calc/min/max/clamp 且**只由设计系统真正发出来的 CSS 变量**（扫 packages/tokens 的生成物得到）
 //     与运算符/括号/无单位数字组成 → 合法；混进任何字面量（+12px）、引用未发出的变量、
 //     或干脆只是一个裸变量（pb-[var(--space-12)] —— 它本来就有档位类 pb-12）→ 照旧违规。
+//     唯一例外是 **layout 族**的裸引用（pt-[var(--layout-modal-offset)]）：layout 值没有档位类可写，
+//     直接引用令牌就是它的正确形态 —— 第 63 轮把两处视口比例值收进 layout.* 时补的。
 //// 度量器自检（学 C5/C9/C10/C11 的做法，双向都要有）：
 //   正例 —— 一段必然违规的样本必须被数出来；数不出来说明解析器失灵，棘轮会**全绿**。
 //   反例 —— 注释里的类名、\`rounded-none\`、\`-0\`、测试文件里的断言串都不许命中。
@@ -115,6 +117,12 @@ for (const dir of [join(ROOT, 'packages', 'tokens'), join(ROOT, 'packages', 'tai
  *  这是**合法**的任意值（随令牌而动），不是档位违规。 */
 export function isTokenCalc(v) {
   if (!v.startsWith('[') || !v.endsWith(']')) return false;
+  // (b) 裸引用 **layout 族**令牌：layout 值没有档位类可写（不存在 p-modal-offset 这种类），
+  // 所以「直接引用令牌」就是这类值的正确写法。第 63 轮把 pt-[15vh] / mt-[8vh] 收进
+  // layout.modal-offset / layout.hero-offset 之后，闸门必须认这种形态，否则「用了令牌」反被判红。
+  // 只放行 --layout-*：间距族（--space-*）的裸引用仍算违规 —— 它有档位类，绕一圈写不是「用了令牌」。
+  const bareLayout = v.match(/^\[var\((--layout-[a-z0-9-]+)\)\]$/);
+  if (bareLayout) return EMITTED_VARS.has(bareLayout[1]);
   const inner = v.slice(1, -1).trim();
   if (!/^(calc|min|max|clamp)\(/.test(inner)) return false;
   const refs = [...inner.matchAll(/var\((--[a-z0-9-]+)\)/g)].map((m) => m[1]);
@@ -225,6 +233,11 @@ const CALC_OK = '<div class="pb-[calc(var(--layout-bottom-nav-height)+var(--spac
 const CALC_BAD = '<div class="pb-[15vh] pb-[calc(var(--space-12)+12px)] pb-[calc(var(--nope-zz9)+var(--space-12))] pb-[var(--space-12)]" />';
 const calcOkHits = scanText(CALC_OK).length;
 const calcBadHits = scanText(CALC_BAD).filter((h) => h.cat === 'spaceArb').length;
+// 第 63 轮：layout 族的裸引用合法；间距族的裸引用、以及不存在的 layout 令牌，仍然违规
+const LAYOUT_OK = '<div class="pt-[var(--layout-modal-offset)] mt-[var(--layout-hero-offset)]" />';
+const LAYOUT_BAD = '<div class="pt-[var(--layout-nope-zz9)] mt-[var(--space-12)]" />';
+const layoutOkHits = scanText(LAYOUT_OK).length;
+const layoutBadHits = scanText(LAYOUT_BAD).filter((h) => h.cat === 'spaceArb').length;
 const posHits = scanText(POS);
 const negHits = scanText(NEG_BLOCK).length + scanText(NEG_LINE).length + scanText(NEG_PROSE).length
   + scanStroke(NEG_LINE, 'probe/Thing.tsx').length            // strokeWidth={2} 合法
@@ -237,6 +250,12 @@ if (posCats.radius !== 2 || posCats.shadow !== 1 || posCats.space !== 1 || posCa
 }
 if (calcOkHits !== 0) {
   problems.push('TT00 度量器失败：令牌算式被当成裸任意值数出来了（' + calcOkHits + ' 条）—— 那会让「用令牌拼出来的值」永远收不干净');
+}
+if (layoutOkHits !== 0) {
+  problems.push('TT00 度量器失败：layout 族令牌的裸引用被当成裸任意值数出来了（' + layoutOkHits + ' 条）—— 那会让「把布局值收进令牌」这件事反而判红');
+}
+if (layoutBadHits !== 2) {
+  problems.push('TT00 度量器失败：不存在的 layout 令牌 / 间距族裸引用 应数出 2 条，实际 ' + layoutBadHits + ' 条 —— 放行 layout 时把间距族也放开了');
 }
 if (calcBadHits !== 4) {
   problems.push('TT00 度量器失败：裸任意值/混字面量/未知令牌/裸变量 应数出 4 条，实际 ' + calcBadHits + ' 条 —— 放宽判据时把门一起放开了');
@@ -308,7 +327,7 @@ if (process.argv.includes('--selftest')) {
     up.problems.length === 1 && same.problems.length === 0 && down.problems.length === 0 &&
     down.warns.length === 1 && unreg.problems.length === 0 && unreg.warns.length === 1;
   console.log('棘轮对照：涨 ' + up.problems.length + '（应 1）· 持平 ' + same.problems.length + '（应 0）· 降 ' + down.problems.length + '/警告 ' + down.warns.length + '（应 0/1）· 未登记 ' + unreg.problems.length + '/警告 ' + unreg.warns.length + '（应 0/1）');
-  console.log('度量器对照：正例 ' + JSON.stringify(posCats) + ' · 反例命中 ' + negHits + '（应 0）· 哨兵 ' + scanText(SENTINEL).length + '（应 1）· 令牌算式合法 ' + calcOkHits + '（应 0）/ 裸任意值命中 ' + calcBadHits + '（应 4）');
+  console.log('度量器对照：正例 ' + JSON.stringify(posCats) + ' · 反例命中 ' + negHits + '（应 0）· 哨兵 ' + scanText(SENTINEL).length + '（应 1）· 令牌算式合法 ' + calcOkHits + '（应 0）/ 裸任意值 ' + calcBadHits + '（应 4）· layout 裸引用 ' + layoutOkHits + '（应 0）/' + layoutBadHits + '（应 2）');
   console.log(ok && !problems.length ? '结论：双向对照通过（该红的红、该绿的不误报）' : '结论：对照失败');
   process.exit(ok && !problems.length ? 0 : 1);
 }

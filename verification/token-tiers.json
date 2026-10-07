@@ -57,7 +57,7 @@
     "admin": {
       "radius": 0,
       "shadow": 0,
-      "space": 1,
+      "space": 0,
       "spaceArb": 0,
       "motion": 0,
       "stroke": 0
@@ -66,7 +66,7 @@
       "radius": 0,
       "shadow": 0,
       "space": 0,
-      "spaceArb": 2,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
@@ -74,7 +74,7 @@
       "radius": 0,
       "shadow": 0,
       "space": 0,
-      "spaceArb": 1,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
@@ -90,14 +90,14 @@
       "radius": 0,
       "shadow": 0,
       "space": 0,
-      "spaceArb": 1,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
     "docs": {
       "radius": 0,
       "shadow": 0,
-      "space": 1,
+      "space": 0,
       "spaceArb": 0,
       "motion": 0,
       "stroke": 0
@@ -151,10 +151,10 @@
       "stroke": 0
     },
     "web": {
-      "radius": 2,
+      "radius": 0,
       "shadow": 0,
       "space": 0,
-      "spaceArb": 2,
+      "spaceArb": 1,
       "motion": 0,
       "stroke": 0
     },

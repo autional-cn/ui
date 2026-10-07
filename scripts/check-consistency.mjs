@@ -209,7 +209,7 @@ function countHandwrittenTables() {
 //   ① inline    页面自己写 <h1 className="… text-xl font-semibold …">
 //   ② marketing 控制台误用了设计系统的营销 PageHeader（居中 hero，text-3xl/sm:text-4xl）
 // ② 是 §2.1「同名不同物」那一条在现实里的样子：实测有三个控制台的 36 个页面把营销 hero 当页头用，
-// 于是同一个产品里一半页面是左对齐小标题、另一半是居中大标题。收敛目标是都用 ConsolePageHeader。
+// 于是同一个产品里一半页面是左对齐小标题、另一半是居中大标题。收敛目标是都用 AppPageHeader。
 const CONSOLE_SITES = ['admin', 'platform', 'security'];
 const INLINE_H1_RE = /<h1\b[^>]*>/g;
 function countConsoleHeaders() {
@@ -226,7 +226,7 @@ function countConsoleHeaders() {
         const cls = (m[0].match(/className="([^"]*)"/) || [, ''])[1];
         if (/\btext-xl\b/.test(cls) && /\bfont-semibold\b/.test(cls)) a++;
       }
-      // <PageHeader 不匹配 <ConsolePageHeader：正则要求 '<' 紧跟 PageHeader
+      // <PageHeader 不匹配 <AppPageHeader：正则要求 '<' 紧跟 PageHeader
       b += (code.match(/<PageHeader\b/g) || []).length;
     }
     if (a) inline[site] = a;
@@ -306,7 +306,7 @@ if (WRITE_REGISTRY) {
   const chPrev = existsSync(CONSOLE_HEADERS_PATH) ? JSON.parse(readFileSync(CONSOLE_HEADERS_PATH, 'utf8')) : null;
   const ch = countConsoleHeaders();
   writeFileSync(CONSOLE_HEADERS_PATH, JSON.stringify({
-    $comment: '控制台页头台账（棘轮，D5）。inline = 页面自己写 text-xl font-semibold 的 <h1>；marketing = 控制台误用设计系统的营销 PageHeader。两者都只许减不许增，convergedSites 里的站点必须为 0（该站已全部改用 @autional/ui 的 ConsolePageHeader）。',
+    $comment: '控制台页头台账（棘轮，D5）。inline = 页面自己写 text-xl font-semibold 的 <h1>；marketing = 控制台误用设计系统的营销 PageHeader。两者都只许减不许增，convergedSites 里的站点必须为 0（该站已全部改用 @autional/ui 的 AppPageHeader）。',
     updated: TODAY,
     convergedSites: (chPrev && chPrev.convergedSites) || [],
     inline: ch.inline,
@@ -787,7 +787,7 @@ info.push('C9 手写浮层存量：' + overlayTotal + ' 处，分布在 ' + Obje
   const negCls = neg && neg.length === 1 ? (neg[0].match(/className="([^"]*)"/) || [, ''])[1] : '';
   const okPos = /\btext-xl\b/.test('text-xl font-semibold') && /\bfont-semibold\b/.test('text-xl font-semibold');
   const okNeg = /\btext-xl\b/.test('text-2xl font-bold') || /\bfont-semibold\b/.test('text-2xl font-bold');
-  if (!pos || !neg || !okPos || okNeg || !/<PageHeader\b/.test('<PageHeader title="x" />') || /<PageHeader\b/.test('<ConsolePageHeader title="x" />')) {
+  if (!pos || !neg || !okPos || okNeg || !/<PageHeader\b/.test('<PageHeader title="x" />') || /<PageHeader\b/.test('<AppPageHeader title="x" />')) {
     problems.push('C10 度量器自检失败（正例 ' + JSON.stringify(posCls) + ' / 反例 ' + JSON.stringify(negCls) + '）——页头计数解析器出错了，棘轮因此失去意义');
   }
 }
@@ -805,7 +805,7 @@ if (!existsSync(CONSOLE_HEADERS_PATH)) {
       const was = recorded[site] || 0;
       const n = now[site] || 0;
       if (n > was) {
-        problems.push('C10 ' + site + ' 新增了「' + LABEL[kind] + '」（' + was + ' → ' + n + '）。控制台的页头一律走 @autional/ui 的 ConsolePageHeader：一个产品里一半页面左对齐小标题、另一半居中大标题，正是这一条要消掉的东西。');
+        problems.push('C10 ' + site + ' 新增了「' + LABEL[kind] + '」（' + was + ' → ' + n + '）。控制台的页头一律走 @autional/ui 的 AppPageHeader：一个产品里一半页面左对齐小标题、另一半居中大标题，正是这一条要消掉的东西。');
       } else if (n < was) {
         warns.push('C10 ' + site + ' 的「' + LABEL[kind] + '」从 ' + was + ' 降到 ' + n + ' —— 这是进展，请跑 node scripts/check-consistency.mjs --write-registry 更新台账');
       }
@@ -819,7 +819,7 @@ if (!existsSync(CONSOLE_HEADERS_PATH)) {
     }
   }
 }
-info.push('C10 控制台页头：inline ' + Object.values(chCounts.inline).reduce((a, b) => a + b, 0) + ' 处 / marketing ' + Object.values(chCounts.marketing).reduce((a, b) => a + b, 0) + ' 处（收敛目标是 0，改用 ConsolePageHeader）');
+info.push('C10 控制台页头：inline ' + Object.values(chCounts.inline).reduce((a, b) => a + b, 0) + ' 处 / marketing ' + Object.values(chCounts.marketing).reduce((a, b) => a + b, 0) + ' 处（收敛目标是 0，改用 AppPageHeader）');
 
 // ── C11 非设计系统色阶（棘轮 + 收敛开关）────────────────────────────────
 {

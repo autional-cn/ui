@@ -15,7 +15,7 @@
 //   H3 顶栏 position 必须是 sticky 或 fixed（不能随内容滚走）
 //   H4 顶栏里的品牌标必须是品牌资产，不能是图标组件
 //
-// 第 29 轮加了 H5：**页面级标题必须由设计系统的 <ConsolePageHeader> 产出**。
+// 第 29 轮加了 H5：**页面级标题必须由设计系统的 <AppPageHeader> 产出**（第 63 轮随组件改名）。
 // 顶栏之下紧接着就是页头标题 —— 它是「同一个产品」的第二条水平线。
 //
 // 用法: node scripts/check-headers.mjs [--json]
@@ -194,17 +194,19 @@ for (const site of readdirSync(SITES)) {
 
 // ── H5 页面级标题（第 29 轮）───────────────────────────────────────────────
 // 顶栏之下紧接着就是**页头标题**：它是「同一个产品」的第二条水平线。
-// 收敛前实测（2026-10-04）：三个控制台 **139 处**走 <ConsolePageHeader>（text-xl font-semibold），
+// 收敛前实测（2026-10-04）：三个控制台 **139 处**走 <AppPageHeader>（text-xl font-semibold），
 // 而 user 门户 **33 个页面各写各的** —— 8 处 text-2xl font-bold、21 处 text-xl font-bold、
 // 2 处 text-2xl、1 处 text-3xl、1 处标题里还塞了图标。同一个页面的第一行两种字号两种字重。
 //
 // 判据两边都验（与 H1/H2 同型，理由同 check-headers 的 H2：**「改用共享组件」不能变成绕过契约的后门**）：
 //   ① 站点侧：手写页面标题的**存量**进台账（登记制棘轮，只许减不许增），且必须**确实在用**那个组件
 //      ——「零命中不是通过」这条纪律在这里表现为：dsHeaders 为 0 也算不达标；
-//   ② DS 侧：ConsolePageHeader 必须真的渲染出一个 <h1>，且字号/字重是契约里那一档。
+//   ② DS 侧：AppPageHeader 必须真的渲染出一个 <h1>，且字号/字重是契约里那一档。
 const TITLE_PAT = /<h[12][^>]*(?:text-(?:xl|2xl|3xl|4xl)|font-bold)/g;
 const TITLE_BASELINE = join(ROOT, 'verification', 'page-title-baseline.json');
-const HEADER_COMPONENT = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'ConsolePageHeader.tsx');
+// 第 63 轮：组件由 ConsolePageHeader 改名为 AppPageHeader（L17：名字把契约说小了，
+// user 门户不是「控制台」却也是它的大用户）。判据跟着名字走，不认旧名 —— 旧名已全舰队迁完。
+const HEADER_COMPONENT = join(ROOT, 'packages', 'ui', 'src', 'molecules', 'AppPageHeader.tsx');
 // 扫源码前先剥注释：这条纪律在这份计划里已经踩过四次（C2/C8/C9/C13）。
 const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
 const titleRows = [];
@@ -213,10 +215,18 @@ const warns = [];
   const hdrSrc = existsSync(HEADER_COMPONENT) ? readFileSync(HEADER_COMPONENT, 'utf8') : '';
   const h1Tag = /<h1\b[^>]*>/.exec(hdrSrc);
   if (!h1Tag || !/text-xl/.test(h1Tag[0]) || !/font-semibold/.test(h1Tag[0])) {
-    problems.push('H5 设计系统的 ConsolePageHeader 不再渲染契约里的页面标题（' + HEADER_COMPONENT.replace(/\\/g, '/') +
+    problems.push('H5 设计系统的 AppPageHeader 不再渲染契约里的页面标题（' + HEADER_COMPONENT.replace(/\\/g, '/') +
       ' 需要一个带 text-xl font-semibold 的 <h1>）—— 四个门户的页头都交给它之后，页头契约就没有人满足了');
   }
-  const base = existsSync(TITLE_BASELINE) ? (JSON.parse(readFileSync(TITLE_BASELINE, 'utf8')).apps || {}) : null;
+  const titleDoc = existsSync(TITLE_BASELINE) ? JSON.parse(readFileSync(TITLE_BASELINE, 'utf8')) : null;
+  const base = titleDoc ? (titleDoc.apps || {}) : null;
+  // 旧名棘轮（第 63 轮改名的过渡期）：改名要跨一次发版才成立 ——
+  //   发版前：站点源码还是旧名，而**装着的** ui 版本也还是旧名（typecheck 认它）；
+  //   发版后：新名随 rc 落地，站点才迁得过去。
+  // 所以这一次发布必须同时带新旧两个导出（别名），闸门也必须**同时认两个名字**，
+  // 否则「发布前置门」在改名这件事上按定义必红 —— 那就成了第 61/62 轮那类
+  // 「把还没轮到的那一步判成错」的同型问题。旧名计数进台账，只许减不许增，
+  // 迁完之后归零，下一轮才能把别名删掉。
   if (!base) {
     problems.push('H5 verification/page-title-baseline.json 缺失 —— 手写页面标题的存量要靠它记账（登记制棘轮）');
   } else {
@@ -226,17 +236,25 @@ const warns = [];
       let code = '';
       for (const file of walk(src, [])) code += stripComments(readFileSync(file, 'utf8')) + '\n';
       const handWritten = (code.match(TITLE_PAT) || []).length;
-      const dsHeaders = (code.match(/<ConsolePageHeader/g) || []).length;
+      const dsHeaders = (code.match(/<AppPageHeader/g) || []).length;
+      const legacyHeaders = (code.match(/<ConsolePageHeader/g) || []).length;
       const was = base[p.site] ?? 0;
-      titleRows.push({ site: p.site, handWritten, was, dsHeaders });
+      titleRows.push({ site: p.site, handWritten, was, dsHeaders, legacyHeaders });
+      const wasLegacy = (titleDoc && titleDoc.legacyName ? titleDoc.legacyName[p.site] : 0) ?? 0;
+      if (legacyHeaders > wasLegacy) {
+        problems.push('H5 ' + p.site + '：又写了 ' + legacyHeaders + ' 处旧名 <ConsolePageHeader>（台账 ' + wasLegacy +
+          '）—— 组件已改名 AppPageHeader，旧名只作为过渡期别名存在，新代码一律用新名');
+      } else if (legacyHeaders < wasLegacy) {
+        warns.push('H5 ' + p.site + '：旧名用法从 ' + wasLegacy + ' 降到 ' + legacyHeaders + ' —— 请更新 verification/page-title-baseline.json 的 legacyName');
+      }
       if (handWritten > was) {
         problems.push('H5 ' + p.site + '：手写页面标题从 ' + was + ' 涨到 ' + handWritten +
-          ' —— 页面级标题一律改走 <ConsolePageHeader>（台账只许减不许增）');
+          ' —— 页面级标题一律改走 <AppPageHeader>（台账只许减不许增）');
       } else if (handWritten < was) {
         warns.push('H5 ' + p.site + '：手写页面标题从 ' + was + ' 降到 ' + handWritten + ' —— 这是进展，请更新 verification/page-title-baseline.json');
       }
-      if (!dsHeaders) {
-        problems.push('H5 ' + p.site + '：源码里 0 处 <ConsolePageHeader> —— 闸门对这个站的页头什么都没验（零命中不是通过）');
+      if (!dsHeaders && !legacyHeaders) {
+        problems.push('H5 ' + p.site + '：源码里 0 处 <AppPageHeader> / <ConsolePageHeader> —— 闸门对这个站的页头什么都没验（零命中不是通过）');
       }
     }
   }
@@ -256,7 +274,7 @@ else {
   }
   if (titleRows.length) {
     console.log('');
-    console.log('  页头标题'.padEnd(15) + '手写(台账)  ConsolePageHeader');
+    console.log('  页头标题'.padEnd(15) + '手写(台账)  AppPageHeader');
     for (const r of titleRows) {
       if (r.verdict) { console.log('  ' + r.site.padEnd(15) + r.verdict); continue; }
       console.log('  ' + r.site.padEnd(15) + String(r.handWritten + '(' + r.was + ')').padStart(10) + String(r.dsHeaders).padStart(18));

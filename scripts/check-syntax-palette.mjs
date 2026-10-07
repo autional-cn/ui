@@ -13,7 +13,7 @@
 //
 // 用法: node scripts/check-syntax-palette.mjs [--json] [--selftest]
 
-import { loadTokens, contrastRatio, parseHex } from './lib/tokens.mjs';
+import { loadTokens, resolvedIn, contrastRatio, parseHex } from './lib/tokens.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const SELFTEST = process.argv.includes('--selftest');
@@ -26,13 +26,17 @@ const MIN_CONTRAST = 4.5;
 const MIN_DE_NORMAL = 12;
 const MIN_DE_DEUT = 10;
 
-// 舰队的代码底色。**故意写成字面量**：这些底色目前是 Tailwind 默认的 slate-950/900
-// （站点侧 bg-slate-950、bg-slate-900），还不属于设计系统令牌，所以没法从 SSOT 读。
-// 这是登记在案的欠账：代码底色本身该成为一个令牌（深色底 + 浅色底两档），
-// 在那之前闸门用真实在用值把这件事钉住，而不是拿一个"理想底色"自欺。
+// 代码底色**从 SSOT 读**（第 63 轮结清这笔账）。
+//
+// 此前这里是两个字面量（#020617 / #0f172a = Tailwind 的 slate-950/900）—— 那是一条登记在案的欠账：
+// 站点侧写的是 Tailwind 出厂色阶（slate 根本不在设计系统里），所以闸门只好把真实在用值抄下来，
+// 免得拿一个"理想底色"自欺。第 63 轮补上 `color.bg-code`（亮 #0f172a / 暗 #020617）之后，
+// 判据与取值都回到 SSOT：改令牌，闸门跟着动；底色被改坏，闸门当场报红。
+const TOKENS = loadTokens();
+const DARK = resolvedIn(TOKENS, { variant: 'dark' });
 const CODE_SURFACES = [
-  { hex: '#020617', label: 'slate-950' },
-  { hex: '#0f172a', label: 'slate-900' }
+  { hex: TOKENS.core.color['bg-code'], label: 'color.bg-code（亮色）' },
+  { hex: DARK['color.bg-code'], label: 'color.bg-code（暗色）' }
 ];
 
 const ROLES = ['plain', 'comment', 'keyword', 'string', 'number', 'function', 'type', 'tag'];
@@ -71,6 +75,13 @@ function deuteranopia(rgb) {
 export function evaluate(syntax) {
   const findings = [];
   const colors = [];
+
+  // 底色是判据的另一半：读不到就静默跳过 = 这道闸门变成「只查色板」，那是另一种失灵。
+  for (const surface of CODE_SURFACES) {
+    if (!surface.hex || !parseHex(surface.hex)) {
+      findings.push({ code: 'SP0', key: 'color.bg-code', message: surface.label + ' 读不到可解析的色值：' + String(surface.hex) });
+    }
+  }
 
   for (const role of ROLES) {
     const raw = syntax[role];
@@ -137,8 +148,7 @@ export function evaluate(syntax) {
 // 只跑「真值通过」会漏掉一类失效：判据写错了、恒为真。所以同时要求
 // 「故意做坏的色板必须被判红」，两条都成立才算这道闸门自己在工作。
 function selftest() {
-  const T = loadTokens();
-  const good = T.core.color.syntax;
+  const good = TOKENS.core.color.syntax;
   const cases = [
     { name: '真值', syntax: good, expect: [] },
     // 负对照 1：还原第一版候选（keyword 紫 + function 天蓝）—— 红绿色盲下两者撞车，
@@ -167,8 +177,7 @@ function selftest() {
 
 if (SELFTEST) selftest();
 
-const T = loadTokens();
-const { findings, metrics } = evaluate(T.core.color.syntax);
+const { findings, metrics } = evaluate(TOKENS.core.color.syntax);
 
 if (AS_JSON) {
   console.log(JSON.stringify({ findings, metrics }, null, 2));

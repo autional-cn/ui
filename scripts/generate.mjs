@@ -581,6 +581,9 @@ const FLAT_COLORS = [
   ['muted', 'bg-muted'],
   ['elevated', 'bg-elevated'],
   ['developer', 'bg-developer'],
+  // 代码块底色（第 63 轮）：与 color.syntax.* 成对 —— 语法色板的可读性判据正是对这个底色的，
+  // 底色的取值必须能从 SSOT 读到，闸门才不会退化成「钉字面量」。
+  ['code', 'bg-code'],
   ['border-subtle', 'border-subtle'],
   ['border-strong', 'border-strong'],
 ];

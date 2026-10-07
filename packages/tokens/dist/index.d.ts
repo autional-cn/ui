@@ -116,6 +116,9 @@ declare const tokens: {
       "bg-elevated": string;
       "bg-muted": string;
       "bg-developer": string;
+      "bg-code": string;
+      "$bg-code-note": string;
+      "$bg-code-note-2": string;
       "text-primary": string;
       "text-secondary": string;
       "text-muted": string;
@@ -321,6 +324,10 @@ declare const tokens: {
       "$bottom-nav-note": string;
       "max-width": string;
       "prose-width": string;
+      "modal-offset": string;
+      "$modal-offset-note": string;
+      "hero-offset": string;
+      "$hero-offset-note": string;
       "breakpoint-sm": string;
       "breakpoint-md": string;
       "breakpoint-lg": string;
@@ -360,6 +367,7 @@ declare const tokens: {
         "bg-surface": string;
         "bg-elevated": string;
         "bg-muted": string;
+        "bg-code": string;
         "text-primary": string;
         "text-secondary": string;
         "text-muted": string;

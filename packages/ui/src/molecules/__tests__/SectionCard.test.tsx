@@ -20,7 +20,7 @@ describe('SectionCard', () => {
 
 	it('区块标题是契约里的那一档：text-base font-semibold（不是页面标题的 text-xl，也不是 font-bold）', () => {
 		// 依据：控制台那 363 张 antd Card 的 head title 是 antd 的 fontSizeLG/600 = 16/600；
-		// 而页面标题（ConsolePageHeader）是 20/600 —— 区块标题既不该与它同尺寸，也不该比它更重。
+		// 而页面标题（AppPageHeader）是 20/600 —— 区块标题既不该与它同尺寸，也不该比它更重。
 		render(<SectionCard title="区块标题">内容</SectionCard>);
 		const h2 = screen.getByRole('heading', { level: 2 });
 		expect(h2.className).toContain('text-base');
