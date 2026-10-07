@@ -1,6 +1,6 @@
 {
   "$comment": "令牌档位台账（棘轮）。站点侧的计数只许减不许增；设计系统自身是硬零，白名单是**过渡期**登记（批次 2 与 ui 发版绑定后必须清空）。生成：node scripts/check-token-tiers.mjs --write-registry。",
-  "generatedAt": "2026-10-06",
+  "generatedAt": "2026-10-07",
   "legal": {
     "radius": [
       "xs",
@@ -63,7 +63,7 @@
     },
     "auth": {
       "radius": 0,
-      "shadow": 3,
+      "shadow": 1,
       "space": 2,
       "motion": 0,
       "stroke": 0
@@ -112,35 +112,35 @@
     },
     "security": {
       "radius": 0,
-      "shadow": 6,
+      "shadow": 0,
       "space": 0,
       "motion": 0,
       "stroke": 0
     },
     "status": {
       "radius": 0,
-      "shadow": 2,
+      "shadow": 0,
       "space": 4,
       "motion": 0,
       "stroke": 0
     },
     "trust": {
       "radius": 0,
-      "shadow": 4,
+      "shadow": 0,
       "space": 0,
       "motion": 0,
       "stroke": 0
     },
     "user": {
       "radius": 0,
-      "shadow": 8,
+      "shadow": 0,
       "space": 1,
       "motion": 0,
       "stroke": 0
     },
     "web": {
       "radius": 3,
-      "shadow": 4,
+      "shadow": 2,
       "space": 9,
       "motion": 0,
       "stroke": 0
