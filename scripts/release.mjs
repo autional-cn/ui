@@ -140,7 +140,30 @@ if (!SKIP_VERIFY) run('node', ['scripts/verify.mjs', '--except', 'publish,cdn'],
 // 第 61 轮实测：check-publish 会断言 `latest == rc`，而在对齐之前那一项按定义必然是红的
 // （`@autional/ui：latest=0.1.0-rc.44 而 rc=0.1.0-rc.45`）—— 它把「还没轮到的那一步」
 // 报成了「发歪了」，于是整条发布链在这里假红中止。判据的顺序也是判据的一部分。
-run('node', ['scripts/align-dist-tags.mjs', '--write'], '4/6 latest 对齐到 ' + TAG);
+// ⚠️ 这一步同样**必须带重试**，原因和下面那道门一模一样：刚发布的包在 npm 上有几分钟的
+// 「processing」传播窗口，读 dist-tags 会读到旧 doc。第 62 轮实测：发布刚结束就对齐，
+// 自证报「@autional/tailwind-preset：latest=0.1.0-rc.7 而 rc=0.1.0-rc.8」并中止，
+// 而几分钟后**原样重跑**的输出是六个包全 OK「无需对齐」—— 也就是说第 61 轮修好的「顺序」
+// 问题之后，这里还藏着第二个同型问题：**把「还没传播完」报成了「发歪了」**。
+console.log('');
+console.log('── 4/6 latest 对齐到 ' + TAG + '（带传播等待） ' + '─'.repeat(10));
+{
+  let aligned = false;
+  for (let i = 1; i <= 8 && !aligned; i++) {
+    try {
+      execFileSync('node', ['scripts/align-dist-tags.mjs', '--write'], { cwd: ROOT, stdio: 'inherit', shell: process.platform === 'win32' });
+      aligned = true;
+    } catch (e) {
+      console.log('  （第 ' + i + '/8 次未对齐 —— 刚发布的包可能还在 processing，等 30s 再读）');
+      await new Promise((res) => setTimeout(res, 30000));
+    }
+  }
+  if (!aligned) {
+    console.error('');
+    console.error('中止：连续 8 次读到的 dist-tags 都没对齐到 ' + TAG + '。**这时才该怀疑「真没对齐」**——先人工跑 pnpm dist-tags:align 复核，别重发同一个版本号。');
+    process.exit(1);
+  }
+}
 
 console.log('');
 console.log('── 发布后置门：npm 与 SSOT 一致（带传播等待） ' + '─'.repeat(10));
