@@ -31,7 +31,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
 import { ROOT, TOKENS_PATH, loadTokens } from './lib/tokens.mjs';
-import { makeSkip } from './lib/scan-scope.mjs';
+import { makeSkip, classSpans, inClassSpan } from './lib/scan-scope.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 const WRITE = process.argv.includes('--write-registry');
@@ -86,11 +86,16 @@ const STROKE = String(T.core.icon.stroke);
 const VIZ_FILE = /(Ring|Score|Chart|Gauge|Sparkline|Donut)\.(tsx|ts|jsx|js|astro)$/i;
 const DIRS = new Set(['t', 'b', 'l', 'r', 's', 'e', 'tl', 'tr', 'bl', 'br', 'ss', 'se', 'es', 'ee']);
 const SPACE_PREFIX = 'p|px|py|pt|pb|pl|pr|ps|pe|m|mx|my|mt|mb|ml|mr|ms|me|gap|gap-x|gap-y|space-x|space-y|inset|inset-x|inset-y|top|bottom|left|right|start|end';
-const SENTINEL = 'rounded-zz9-probe dsh-token-tier-probe-zz9';
+const SENTINEL = '<div class="rounded-zz9-probe dsh-token-tier-probe-zz9" />';
 
 /** 一段文本里所有「档位外的类」。返回 [{cls, cat, index}] */
 export function scanText(text) {
   const s = stripComments(String(text));
+  // **判据只落在会渲染的类上**：散文、注释、断言字符串、乃至密码黑名单（auth 的
+  // local-blacklist.ts 里真的有一行 'shadow'）都不是类。第 57 轮实测：不过是这一条，
+  // space 的 36 处违规里有 4 处是假阳性 —— 而假阳性会让棘轮永远收不到 0，于是台账变成噪声。
+  const spans = classSpans(s);
+  const push = (cls, cat, index) => { if (inClassSpan(spans, index, cls.length)) out.push({ cls, cat, index }); };
   const out = [];
   // 圆角
   for (const m of s.matchAll(/(?<![\w-])rounded(?:-[a-z0-9]+)*(?:-\[[^\]]+\])?/g)) {
@@ -100,7 +105,7 @@ export function scanText(text) {
     const bare = parts.length === 0;
     const logical = parts.length === 1 && parts[0] === 'none';
     const tier = parts.length === 1 && RADIUS.has(parts[0]);
-    if (bare || (!tier && !logical)) out.push({ cls, cat: 'radius', index: m.index });
+    if (bare || (!tier && !logical)) push(cls, 'radius', m.index);
   }
   // 阴影（负向前瞻排除 drop-shadow / text-shadow 一类）
   for (const m of s.matchAll(/(?<![\w-])shadow(?:-[a-z0-9]+)*(?:-\[[^\]]+\])?/g)) {
@@ -111,7 +116,7 @@ export function scanText(text) {
     const tier = parts.length === 1 && SHADOW.has(parts[0]);
     if (tier || none) continue;
     if (!bare && !['sm', 'md', 'lg', 'xl', '2xl', 'inner'].includes(parts[0])) continue; // 非阴影色阶族，交给别的闸门
-    out.push({ cls, cat: 'shadow', index: m.index });
+    push(cls, 'shadow', m.index);
   }
   // 间距
   const re = new RegExp('(?<![\\w-])(?:' + SPACE_PREFIX + ')-(\\d+(?:\\.\\d+)?|\\[[^\\]]+\\])(?![\\w-])', 'g');
@@ -119,16 +124,19 @@ export function scanText(text) {
     const v = m[1];
     if (v === '0') continue;                       // 「无间距」不是档位问题
     if (SPACE.has(v)) continue;                    // SSOT 的键即合法（含密度档与节奏档）
-    out.push({ cls: m[0], cat: 'space', index: m.index });
+    // 任意值与档位值**是两个问题**：pt-[15vh] / my-[100px] 是视口与布局定位，不是间距档位。
+    // 单列一类（报出来、棘轮钉住），而不是假装它们是档位违规。
+    if (v.startsWith('[')) { push(m[0], 'spaceArb', m.index); continue; }
+    push(m[0], 'space', m.index);
   }
   // 动效：duration-<毫秒> 与 ease-<名字>（第 56 轮接进 preset 后，二者都由令牌派生）
   for (const m of s.matchAll(/(?<![\w-])duration-(\d+|\[[^\]]+\])/g)) {
     if (DURATION.has(m[1])) continue;
-    out.push({ cls: m[0], cat: 'motion', index: m.index });
+    push(m[0], 'motion', m.index);
   }
   for (const m of s.matchAll(/(?<![\w-])ease-([a-z-]+)/g)) {
     if (EASE.has(m[1])) continue;
-    out.push({ cls: m[0], cat: 'motion', index: m.index });
+    push(m[0], 'motion', m.index);
   }
   return out;
 }
@@ -169,9 +177,11 @@ const warns = [];
 const POS = '<div class="rounded-2xl shadow-md py-7 rounded duration-700 ease-spring" strokeWidth={2.5}>x</div>';
 const NEG_BLOCK = '/* rounded-2xl shadow-md py-7 duration-700 */ <span class="rounded-none shadow-none p-0 gap-0">y</span>';
 const NEG_LINE = '// rounded-3xl shadow-lg py-9 duration-999\n<div class="rounded-xs shadow-card p-1.5 gap-16 duration-200 ease-out ease-standard" strokeWidth={2}>z</div>';
+// 反例之二：**不是类语境**的字符串（散文、密码黑名单、断言串）——第 57 轮实测的假阳性来源
+const NEG_PROSE = '<p>我们用了 rounded corners 与 shadow 两件事</p>\nconst list = [\'shadow\', \'py-7\', \'rounded-2xl\']';
 const NEG_VIZ = 'strokeWidth={3}';
 const posHits = scanText(POS);
-const negHits = scanText(NEG_BLOCK).length + scanText(NEG_LINE).length
+const negHits = scanText(NEG_BLOCK).length + scanText(NEG_LINE).length + scanText(NEG_PROSE).length
   + scanStroke(NEG_LINE, 'probe/Thing.tsx').length            // strokeWidth={2} 合法
   + scanStroke(NEG_VIZ, 'components/CountdownRing.tsx').length; // 进度环不是图标
 const posCats = { radius: 0, shadow: 0, space: 0, motion: 0, stroke: 0 };
@@ -189,7 +199,7 @@ if (scanText(SENTINEL).length !== 1) {
 
 // ── 站点侧扫描（棘轮）───────────────────────────────────────────────────
 function scanSite(dir) {
-  const acc = { radius: 0, shadow: 0, space: 0, motion: 0, stroke: 0 };
+  const acc = { radius: 0, shadow: 0, space: 0, spaceArb: 0, motion: 0, stroke: 0 };
   for (const f of walk(dir)) {
     const rel = relative(SITES, f).split('\\').join('/');
     if (SKIPREL.some((rx) => rx.test(rel))) continue;
@@ -226,7 +236,7 @@ export function compareRatchet(counts, reg) {
   for (const [site, acc] of Object.entries(counts)) {
     const base = reg && reg.sites && reg.sites[site];
     if (!base) { w.push('TT02 ' + site + ' 未登记在台账里（新站点？跑 --write-registry 补登）'); continue; }
-    for (const cat of ['radius', 'shadow', 'space', 'motion', 'stroke']) {
+    for (const cat of ['radius', 'shadow', 'space', 'spaceArb', 'motion', 'stroke']) {
       const now = acc[cat], was = base[cat] || 0;
       if (now > was) p.push('TT02 ' + site + ' 的「' + cat + '」从 ' + was + ' 涨到 ' + now + ' —— 棘轮只许减');
       else if (now < was) w.push('TT02 ' + site + ' 的「' + cat + '」从 ' + was + ' 降到 ' + now + ' —— 请跑 --write-registry 跟新台账');
@@ -237,7 +247,7 @@ export function compareRatchet(counts, reg) {
 
 // ── --selftest：棘轮本身的双向对照（证明它会红，也证明它不误报）────────────
 if (process.argv.includes('--selftest')) {
-  const Z = { radius: 0, shadow: 0, space: 0, motion: 0, stroke: 0 };
+  const Z = { radius: 0, shadow: 0, space: 0, spaceArb: 0, motion: 0, stroke: 0 };
   const fixture = { sites: { 'probe-site': { ...Z, radius: 1 } } };
   const up = compareRatchet({ 'probe-site': { ...Z, radius: 2 } }, fixture);
   const same = compareRatchet({ 'probe-site': { ...Z, radius: 1 } }, fixture);
@@ -278,12 +288,12 @@ for (const a of allowance) {
 }
 
 // ── 输出 ────────────────────────────────────────────────────────────────
-const CATS = ['radius', 'shadow', 'space', 'motion', 'stroke'];
+const CATS = ['radius', 'shadow', 'space', 'spaceArb', 'motion', 'stroke'];
 const totals = Object.values(siteCounts).reduce((a, c) => {
   const next = { ...a };
   for (const k of CATS) next[k] = (a[k] || 0) + (c[k] || 0);
   return next;
-}, { radius: 0, shadow: 0, space: 0, motion: 0, stroke: 0 });
+}, { radius: 0, shadow: 0, space: 0, spaceArb: 0, motion: 0, stroke: 0 });
 const dsByCat = dsHits.reduce((a, h) => ({ ...a, [h.cat]: (a[h.cat] || 0) + 1 }), {});
 
 if (AS_JSON) {
@@ -293,7 +303,7 @@ if (AS_JSON) {
   console.log('              space=' + [...SPACE].join('/'));
   console.log('              duration=' + [...DURATION].join('/') + 'ms · ease=' + [...EASE].join('/') + ' · icon.stroke=' + STROKE + '（全部读自 tokens/tokens.json）');
   console.log('');
-  console.log('  站点              圆角   阴影   间距   动效   描边');
+  console.log('  站点              圆角   阴影   间距   任意值  动效   描边');
   for (const [s, c] of Object.entries(siteCounts)) {
     console.log('  ' + s.padEnd(16) + CATS.map((k) => String(c[k] || 0).padStart(6)).join(''));
   }

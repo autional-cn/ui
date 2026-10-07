@@ -58,34 +58,39 @@
       "radius": 0,
       "shadow": 0,
       "space": 1,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
     "auth": {
       "radius": 0,
-      "shadow": 1,
-      "space": 2,
+      "shadow": 0,
+      "space": 0,
+      "spaceArb": 2,
       "motion": 0,
       "stroke": 0
     },
     "authenticator": {
       "radius": 0,
       "shadow": 0,
-      "space": 3,
+      "space": 2,
+      "spaceArb": 1,
       "motion": 0,
       "stroke": 0
     },
     "brand": {
       "radius": 0,
       "shadow": 0,
-      "space": 3,
+      "space": 1,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
     "developer": {
       "radius": 0,
       "shadow": 0,
-      "space": 10,
+      "space": 0,
+      "spaceArb": 1,
       "motion": 0,
       "stroke": 0
     },
@@ -93,6 +98,7 @@
       "radius": 0,
       "shadow": 0,
       "space": 1,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
@@ -100,6 +106,7 @@
       "radius": 0,
       "shadow": 0,
       "space": 0,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
@@ -107,6 +114,7 @@
       "radius": 0,
       "shadow": 0,
       "space": 0,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
@@ -114,13 +122,15 @@
       "radius": 0,
       "shadow": 0,
       "space": 0,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
     "status": {
       "radius": 0,
       "shadow": 0,
-      "space": 4,
+      "space": 3,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
@@ -128,6 +138,7 @@
       "radius": 0,
       "shadow": 0,
       "space": 0,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
@@ -135,20 +146,23 @@
       "radius": 0,
       "shadow": 0,
       "space": 1,
+      "spaceArb": 0,
       "motion": 0,
       "stroke": 0
     },
     "web": {
-      "radius": 3,
-      "shadow": 2,
-      "space": 9,
+      "radius": 2,
+      "shadow": 0,
+      "space": 0,
+      "spaceArb": 2,
       "motion": 0,
       "stroke": 0
     },
     "wiki": {
       "radius": 0,
       "shadow": 0,
-      "space": 2,
+      "space": 0,
+      "spaceArb": 1,
       "motion": 0,
       "stroke": 0
     }

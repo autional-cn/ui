@@ -72,7 +72,16 @@ for (const p of PORTALS) {
 }
 info.push('在册门户类型检查：' + checked + ' 个通过' + (skipped.length ? '；跳过 ' + skipped.join('、') + '（未安装，非静默通过）' : ''));
 if (checked === 0 && skipped.length) {
-  problems.push('C12 四个在册门户**一个都没检查**（' + skipped.join('、') + '）—— 全部跳过等于这道闸门没生效');
+  // 两种「一个都没检查」必须分开（第 57 轮实测：release.yml 在 CI 上跑不过自己的前置门就是这一条）：
+  //   ① **站点树根本不在本机**（CI checkout）—— 这是环境事实，不是失败。
+  //      与其他闸门同一约定：「本次工作区没有 sites/，跳过（CI 里同样跳过）」。但**要说清后果**：
+  //      这一层在 CI 里不生效，所以**发布前必须在本机跑过一次全量 verify**。
+  //   ② 站点树在、但一个都没装 —— 那是本机环境坏了，必须红。
+  if (!existsSync(SITES)) {
+    info.push('站点树不在本机（' + SITES + '）—— 门户这一层本闸门在 CI 里不生效；**发布前必须在本机跑过全量 verify**（release.mjs 会挡住）');
+  } else {
+    problems.push('C12 四个在册门户**一个都没检查**（' + skipped.join('、') + '）—— 全部跳过等于这道闸门没生效');
+  }
 }
 
 console.log('类型检查闸门：工作区 ' + declared.length + ' 个包 · 在册门户 ' + checked + ' 个');

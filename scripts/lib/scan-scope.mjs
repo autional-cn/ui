@@ -31,3 +31,45 @@ export const TEST_RE = /(\.|\/)(test|spec)\.[tj]sx?$|__tests__|__mocks__|\.stori
 
 /** 源码扩展名：各闸门口径一致。 */
 export const SRC_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.astro', '.vue', '.svelte']);
+
+/** 「这条命中落在会渲染的类里吗」—— 判据必须落在**类语境**上，否则会把
+ *  散文、注释、**密码黑名单**（`local-blacklist.ts` 里真的有一行 `'shadow'`）、
+ *  断言字符串都算成违规。第 57 轮实测：`space` 的 36 处违规里有 4 处是这类假阳性。
+ *
+ *  返回 [start, end) 区间数组，覆盖：
+ *    ① `class="…"` / `className="…"` / `className={`…`}` / `className={"…"}`
+ *    ② `class:list={…}`（Astro）
+ *    ③ `cn(…)` / `clsx(…)` / `classNames(…)` / `cx(…)` 的实参区
+ */
+export function classSpans(src) {
+  const spans = [];
+  const text = String(src);
+  for (const m of text.matchAll(/class(?:Name)?\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*`([^`]*)`\s*\}|\{\s*"([^"]*)"\s*\})/g)) {
+    const g = [m[1], m[2], m[3], m[4]].find((x) => x !== undefined);
+    if (g === undefined) continue;
+    const start = m.index + m[0].indexOf(g);
+    spans.push([start, start + g.length]);
+  }
+  for (const m of text.matchAll(/class:list\s*=\s*\{/g)) {
+    let i = m.index + m[0].length, depth = 1;
+    const start = i;
+    while (i < text.length && depth > 0) { if (text[i] === '{') depth++; else if (text[i] === '}') depth--; i++; }
+    spans.push([start, i]);
+  }
+  for (const m of text.matchAll(/\b(?:cn|clsx|classNames|cx)\s*\(/g)) {
+    let i = m.index + m[0].length, depth = 1;
+    const start = i;
+    while (i < text.length && depth > 0) {
+      if (text[i] === '(') depth++;
+      else if (text[i] === ')') depth--;
+      else if (text[i] === '`') { i++; while (i < text.length && text[i] !== '`') i++; }
+      else if (text[i] === "'" || text[i] === '"') { const q = text[i]; i++; while (i < text.length && text[i] !== q) { if (text[i] === '\\') i++; i++; } }
+      i++;
+    }
+    spans.push([start, i]);
+  }
+  return spans;
+}
+
+/** 命中是否落在类语境里。 */
+export const inClassSpan = (spans, index, length) => spans.some(([a, b]) => index >= a && index + length <= b);
