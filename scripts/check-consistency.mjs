@@ -243,20 +243,26 @@ function countConsoleHeaders() {
 //   ② 出厂色阶没有做过设计系统那套对比度验证（DS 的 neutral-400 只有 1.93:1）。
 // 判据与 C5/C8/C9 同形：存量只许减不许增；closedKeys 里的键必须为 0。
 //
-// 度量范围**排除 `src/components/layout/**`**：那是并行工作流的只读边界（见计划 §7 L2），
-// 边界解除后应一并收敛 —— 这一点写进台账注释，避免「排除」变成一个没人记得的洞。
+// 度量范围（第 63 轮扩展）：**14 个站全部**，且**不再排除 `src/components/layout/**`**。
+// 此前范围是「4 个控制台 + user」并排除布局目录 —— 那条排除是为并行工作流的只读边界留的（计划 §7 L2），
+// 台账注释里写着「边界解除后应一并收敛」。第 63 轮核实：那条工作流的分支已全部并入 main
+// （逐分支 rev-list 为 0），边界条件不再成立，于是解除。
+// 扩展当天实测：范围外的存量是 **356 处**（trust 137 / status 111 / authenticator 47 / web 33 /
+// docs 18 / auth 8 / developer 1 / user 1），全部迁移到设计系统令牌后归零。
+// 「0 处」这个读数从此覆盖全舰队 —— 在此之前它只覆盖 5 个站，很容易被读成全量。
 const DS_FAMILIES = new Set(['primary', 'sky', 'amber', 'neutral']);
 const LOCKED_CLASSES = ['text-neutral-400'];
 const PALETTE_RE = /\b(bg|text|border|ring|divide|from|to|via|fill|stroke|outline|shadow|decoration|placeholder|caret|accent)-(red|green|blue|yellow|orange|emerald|rose|violet|purple|indigo|teal|cyan|lime|pink|gray|grey|slate|zinc|stone)-(\d{2,3})\b/g;
-const PALETTE_EXCLUDE = /(^|[\\/])components[\\/]layout[\\/]|[\\/]AppLayout\.tsx$/;
+// （原 PALETTE_EXCLUDE 已删除：布局目录不再豁免，见上面的范围说明。）
 function countPaletteUsage() {
   const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/gm, '$1');
   const out = {};
-  for (const site of CONSOLE_SITES.concat(['user'])) {
+  // 第 63 轮：范围扩到全部 14 个站（原来只有 4 个控制台 + user）。
+  const PALETTE_SITES = readdirSync(SITES).filter((n) => { try { return statSync(join(SITES, n)).isDirectory(); } catch { return false; } }).sort();
+  for (const site of PALETTE_SITES) {
     if (!SITES_HAS(site)) continue;
     const counts = {};
-    for (const f of walk(join(SITES, site), [], (x) => /\.(tsx|jsx)$/.test(x), SKIP)) {
-      if (PALETTE_EXCLUDE.test(f)) continue;
+    for (const f of walk(join(SITES, site), [], (x) => /\.(tsx|jsx|ts|astro)$/.test(x), SKIP)) {
       const code = strip(readFileSync(f, 'utf8'));
       for (const m of code.matchAll(PALETTE_RE)) {
         if (DS_FAMILIES.has(m[2])) continue;
@@ -319,7 +325,8 @@ if (WRITE_REGISTRY) {
   writeFileSync(PALETTE_PATH, JSON.stringify({
     $comment: '非设计系统色阶台账（棘轮，C11）。键 = 非 DS 的 Tailwind 色系名（gray/red/green/blue/…），或设计系统内部被锁的类名（如 text-neutral-400）。数字只许减不许增；closedKeys 里的键必须为 0。度量范围排除 src/components/layout/**（并行工作流只读边界，边界解除后一并收敛）。',
     updated: TODAY,
-    coveredSites: CONSOLE_SITES.concat(['user']),
+    // 第 63 轮起：覆盖全部站点（判定时按台账里的这份名单逐个断言 closedKeys 必须为 0）
+  coveredSites: ['admin', 'auth', 'authenticator', 'brand', 'developer', 'docs', 'platform', 'reference', 'security', 'status', 'trust', 'user', 'web', 'wiki'],
     closedKeys: (pPrev && pPrev.closedKeys) || [],
     usage: pu,
   }, null, 2) + '\n');

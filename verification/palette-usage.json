@@ -1,11 +1,21 @@
 {
-  "$comment": "非设计系统色阶台账（棘轮，C11）。键 = 非 DS 的 Tailwind 色系名（gray/red/green/blue/…），或设计系统内部被锁的类名（如 text-neutral-400）。数字只许减不许增；closedKeys 里的键必须为 0。度量范围排除 src/components/layout/**（并行工作流只读边界，边界解除后一并收敛）。",
-  "updated": "2026-10-06",
+  "$comment": "非设计系统色阶台账（棘轮，C11）。键 = 非 DS 的 Tailwind 色系名，或设计系统内部被锁的类名（如 text-neutral-400）。数字只许减不许增；closedKeys 里的键必须为 0。第 63 轮：范围从「4 个控制台 + user，且排除 components/layout」扩到**全部 14 个站、不再排除布局目录**（原排除是给并行工作流的只读边界留的，核实其分支已全部并入 main 后解除）。扩展当天范围外存量 356 处（trust 137 / status 111 / authenticator 47 / web 33 / docs 18 / auth 8 / developer 1 / user 1），全部迁到设计系统令牌（语义族 -> success/warning/danger/info 的 soft/text 配对；深色面 -> surface/elevated/primary；中性 -> neutral 与模式感知的文字令牌）后归零。",
+  "updated": "2026-10-07",
   "coveredSites": [
     "admin",
+    "auth",
+    "authenticator",
+    "brand",
+    "developer",
+    "docs",
     "platform",
+    "reference",
     "security",
-    "user"
+    "status",
+    "trust",
+    "user",
+    "web",
+    "wiki"
   ],
   "closedKeys": [
     "gray",
@@ -21,21 +31,13 @@
     "indigo",
     "orange",
     "yellow",
+    "purple",
+    "pink",
+    "violet",
+    "fuchsia",
+    "teal",
+    "lime",
     "text-neutral-400"
   ],
-  "usage": {
-    "admin": {
-      "purple": 1
-    },
-    "platform": {
-      "purple": 1
-    },
-    "security": {
-      "purple": 2
-    },
-    "user": {
-      "purple": 15,
-      "pink": 2
-    }
-  }
+  "usage": {}
 }
