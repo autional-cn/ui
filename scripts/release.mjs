@@ -136,6 +136,12 @@ if (!SKIP_VERIFY) run('node', ['scripts/verify.mjs', '--except', 'publish,cdn'],
 // ⚠️ 必须**带重试**：刚发布的包在 npm 上有几分钟的「processing」传播窗口，
 // 第 59 轮实测：紧接着跑 check-publish 会因为读到旧的 packument 而报「内容不一致」——
 // 那看起来像「发歪了」，其实是还没传播完。两种情况的处置完全不同，所以这里要等它。
+// ⚠️ 顺序：**先对齐 dist-tags，再跑一致性门**。
+// 第 61 轮实测：check-publish 会断言 `latest == rc`，而在对齐之前那一项按定义必然是红的
+// （`@autional/ui：latest=0.1.0-rc.44 而 rc=0.1.0-rc.45`）—— 它把「还没轮到的那一步」
+// 报成了「发歪了」，于是整条发布链在这里假红中止。判据的顺序也是判据的一部分。
+run('node', ['scripts/align-dist-tags.mjs', '--write'], '4/6 latest 对齐到 ' + TAG);
+
 console.log('');
 console.log('── 发布后置门：npm 与 SSOT 一致（带传播等待） ' + '─'.repeat(10));
 {
@@ -156,8 +162,7 @@ console.log('── 发布后置门：npm 与 SSOT 一致（带传播等待） '
   }
 }
 
-run('node', ['scripts/align-dist-tags.mjs', '--write'], '4/6 latest 对齐到 ' + TAG);
-  run('pnpm', ['build:cdn'], '5/6 重建 CDN 产物');
+run('pnpm', ['build:cdn'], '5/6 重建 CDN 产物');
 
   const CDN = join(ROOT, '..', 'cdn');
   console.log('');

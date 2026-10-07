@@ -73,7 +73,7 @@
     "authenticator": {
       "radius": 0,
       "shadow": 0,
-      "space": 2,
+      "space": 1,
       "spaceArb": 1,
       "motion": 0,
       "stroke": 0
@@ -81,7 +81,7 @@
     "brand": {
       "radius": 0,
       "shadow": 0,
-      "space": 1,
+      "space": 0,
       "spaceArb": 0,
       "motion": 0,
       "stroke": 0
@@ -129,7 +129,7 @@
     "status": {
       "radius": 0,
       "shadow": 0,
-      "space": 3,
+      "space": 0,
       "spaceArb": 0,
       "motion": 0,
       "stroke": 0
@@ -145,7 +145,7 @@
     "user": {
       "radius": 0,
       "shadow": 0,
-      "space": 1,
+      "space": 0,
       "spaceArb": 0,
       "motion": 0,
       "stroke": 0
