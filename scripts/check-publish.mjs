@@ -78,7 +78,11 @@ try {
   delete env.NODE_AUTH_TOKEN;
   const REG = '--registry=https://registry.npmjs.org/';
   execFileSync('npm', ['init', '-y', REG], { cwd: tmp, stdio: 'pipe', shell: process.platform === 'win32' });
-  execFileSync('npm', ['install', REG, ...pkgs.map((p) => p + '@' + versionOf(p))], { cwd: tmp, stdio: 'pipe', env, shell: process.platform === 'win32' });
+  // ⚠️ `--prefer-online`：本机的 npm 缓存会给**过期的 packument**（第 59 轮实测）。
+  // 症状极具误导性 —— 版本端点 200、packument 也已经是新的，但 npm install 报
+  // `ETARGET: No matching version found` / `ERESOLVE: Found @autional/tokens@undefined`，
+  // 看起来像「包发歪了」。而「发歪了」与「读到旧缓存」的处置完全不同，所以这道闸门必须读新鲜的。
+  execFileSync('npm', ['install', '--prefer-online', REG, ...pkgs.map((p) => p + '@' + versionOf(p))], { cwd: tmp, stdio: 'pipe', env, shell: process.platform === 'win32' });
 
   const sha = (f) => createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 12);
   const walk = (d, base, out) => {

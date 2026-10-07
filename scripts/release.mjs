@@ -65,32 +65,62 @@ const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
     process.exit(2);
   }
 
-  if (!SKIP_VERIFY) run('pnpm', ['verify'], '1/6 全部闸门（含舰队层）');
+  // 发布前跑的是 `verify --except publish,cdn`：那两项断言「交付面已与 SSOT 同步」，
+// 而在发布**之前**它们按定义必然为红 —— 让它们变绿正是本次要做的事（与 release.yml 同一口径）。
+if (!SKIP_VERIFY) run('node', ['scripts/verify.mjs', '--except', 'publish,cdn'], '1/6 全部闸门（含舰队层；排除 publish/cdn）');
   else console.log('已跳过 verify（--skip-verify，仅用于明确知道后果时）');
 
-  run('pnpm', ['-r', 'publish', '--access', 'public', '--tag', TAG, '--registry=' + REGISTRY],
-      '2/6 发布 npm（tag=' + TAG + '，registry=npmjs）', { npm_config_registry: REGISTRY });
-
-  // ── 读回：CLI 的成功输出不等于注册表里有 ──────────────────────────────────
-  const packages = readdirSync(join(ROOT, 'packages'), { withFileTypes: true })
+  // 工作区里的包清单（发布与读回都用它）—— **必须先定义再用**：
+  // 第一次写这段时把它放在了读回段，于是 published 那几行落在 TDZ 里（syntax check 看不出来）。
+    const packages = readdirSync(join(ROOT, 'packages'), { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => join(ROOT, 'packages', e.name, 'package.json'))
     .filter((p) => existsSync(p))
     .map((p) => JSON.parse(readFileSync(p, 'utf8')))
     .filter((j) => j.name && j.version);
 
+  // 只发「本地版本还没上过注册表」的包。
+  // 为什么不用 `pnpm -r publish`（第 59 轮实测）：它对**已存在的版本**会报冲突退出，
+  // 于是「只改了 ui 一个包」的正常发版会被 tokens/preset/shared 的旧版本号挡住。
+  // 先读一遍注册表，把要发的列出来；一个都没有就明说「无需发布」，而不是发一堆空版本。
+  const published = new Set();
+  for (const j of packages) {
+    try {
+      const r = await fetch(REGISTRY + j.name.replace('/', '%2f'), { cache: 'no-store' });
+      const doc = await r.json();
+      if (doc.versions && doc.versions[j.version]) published.add(j.name);
+    } catch (e) { /* 读不到就当作要发，后面的读回会兜 */ }
+  }
+  const toPublish = packages.filter((j) => !published.has(j.name));
+  console.log('');
+  console.log('── 2/6 发布 npm（tag=' + TAG + '） ' + '─'.repeat(20));
+  console.log('  待发：' + (toPublish.length ? toPublish.map((j) => j.name + '@' + j.version).join('、') : '（无：所有本地版本都已在注册表上）'));
+  if (toPublish.length) {
+    // `--filter` 每个包一个 —— 写成 `--filter "a b"` 时 pnpm 把 b 当成**脚本名**，
+    // 报 "None of the selected packages has a \"b\" script"（第 59 轮实测）。
+    // 顺序按依赖：tokens 在 preset 之前（后者的 workspace:* 会被改写成本地版本号）。
+    const args = [];
+    for (const j of toPublish) args.push('--filter', j.name);
+    args.push('publish', '--access', 'public', '--tag', TAG, '--registry=' + REGISTRY, '--no-git-checks');
+    run('pnpm', args, '  发布 ' + toPublish.length + ' 个包：' + toPublish.map((j) => j.name).join('、'), { npm_config_registry: REGISTRY });
+  }
+
+  // ── 读回：CLI 的成功输出不等于注册表里有 ──────────────────────────────────
+
   const missing = [];
   console.log('');
   console.log('── 3/6 读回注册表（CLI 说成功不算数） ' + '─'.repeat(12));
   for (const j of packages) {
     let ok = false;
-    for (let i = 0; i < 8 && !ok; i++) {
+    // 80s 不够：第 59 轮实测 tokens 的 processing 窗口超过了它。
+  // 「读不到」与「发歪了」处置完全不同，所以宁可多等 —— 12 × 15s = 3 分钟。
+  for (let i = 0; i < 12 && !ok; i++) {
       try {
         const r = await fetch(REGISTRY + j.name.replace('/', '%2f'), { cache: 'no-store' });
         const doc = await r.json();
         ok = !!(doc.versions && doc.versions[j.version]);
       } catch (e) { /* 传播窗口内读不到是正常的 */ }
-      if (!ok) await new Promise((res) => setTimeout(res, 10000));
+      if (!ok) await new Promise((res) => setTimeout(res, 15000));
     }
     console.log('  ' + (ok ? '[OK]  ' : '[MISS]') + ' ' + j.name + '@' + j.version);
     if (!ok) missing.push(j.name + '@' + j.version);
@@ -102,7 +132,31 @@ const SITES = process.env.AUTIONAL_SITES_DIR || resolve(ROOT, '..', 'sites');
     process.exit(1);
   }
 
-  run('node', ['scripts/align-dist-tags.mjs', '--write'], '4/6 latest 对齐到 ' + TAG);
+  // 发布后补跑 publish 一致性 —— 它现在有真实语义了（此前按定义为红）。
+// ⚠️ 必须**带重试**：刚发布的包在 npm 上有几分钟的「processing」传播窗口，
+// 第 59 轮实测：紧接着跑 check-publish 会因为读到旧的 packument 而报「内容不一致」——
+// 那看起来像「发歪了」，其实是还没传播完。两种情况的处置完全不同，所以这里要等它。
+console.log('');
+console.log('── 发布后置门：npm 与 SSOT 一致（带传播等待） ' + '─'.repeat(10));
+{
+  let ok = false;
+  for (let i = 1; i <= 6 && !ok; i++) {
+    try {
+      execFileSync('node', ['scripts/check-publish.mjs'], { cwd: ROOT, stdio: 'inherit', shell: process.platform === 'win32' });
+      ok = true;
+    } catch (e) {
+      console.log('  （第 ' + i + '/6 次不一致 —— 刚发布的包可能还在 processing，等 30s 再读）');
+      await new Promise((res) => setTimeout(res, 30000));
+    }
+  }
+  if (!ok) {
+    console.error('');
+    console.error('中止：发布后置门连续 6 次不一致。**这时才该怀疑「发歪了」**——先人工核对再决定，别重发同一个版本号。');
+    process.exit(1);
+  }
+}
+
+run('node', ['scripts/align-dist-tags.mjs', '--write'], '4/6 latest 对齐到 ' + TAG);
   run('pnpm', ['build:cdn'], '5/6 重建 CDN 产物');
 
   const CDN = join(ROOT, '..', 'cdn');
