@@ -8,11 +8,11 @@
     "user": 1
   },
   "$why_user": "那 1 处是 app/not-found/page.tsx 的 404 hero（<h1 text-4xl font-bold>404</h1>）：设计系统里没有 404/Result 这一件，三个控制台用的是 antd 的 <Result status=\"404\">，而 user 门户的 antd 入口按计划就是 0 —— 所以它只能是手写的。这是**设计系统缺件**的登记，不是「允许手写页头」的口子：第 29 轮把其余 33 个页面全部收进了 <AppPageHeader>。等设计系统补上这一件（两个消费者已经具备：控制台的 antd Result 与 user 的这个 hero），这 1 处应当归零。",
-  "$legacyName_comment": "旧组件名的存量（第 63 轮 ConsolePageHeader -> AppPageHeader 的过渡期棘轮）。发版要跨一次才成立：发版前站点源码与**装着的** ui 都是旧名，所以这一次发布同时带新旧两个导出（别名），闸门同时认两个名字、只许减不许增。本批迁完后全部归零 —— 归零后下一轮才能删掉别名。",
+  "$legacyName_comment": "旧组件名的存量（第 63 轮 ConsolePageHeader -> AppPageHeader 的过渡期棘轮）。本批已把全舰队 393 处调用全部迁到新名，这里归零 —— 归零意味着「任何新写的旧名都会当场报红」，也意味着下一轮可以把过渡期别名删掉（如果保留过别名的话；本批选择不留别名：全部消费者同一批迁完，留一个只被自己引用的旧名只会变成死代码）。",
   "legacyName": {
-    "admin": 94,
-    "platform": 33,
-    "security": 17,
-    "user": 35
+    "admin": 0,
+    "platform": 0,
+    "security": 0,
+    "user": 0
   }
 }
