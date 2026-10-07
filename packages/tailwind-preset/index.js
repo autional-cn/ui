@@ -87,6 +87,16 @@ module.exports = {
           delete: 'rgb(var(--color-method-delete-rgb))',
           head: 'rgb(var(--color-method-head-rgb))'
         },
+        syntax: {
+          plain: 'rgb(var(--color-syntax-plain-rgb))',
+          comment: 'rgb(var(--color-syntax-comment-rgb))',
+          keyword: 'rgb(var(--color-syntax-keyword-rgb))',
+          string: 'rgb(var(--color-syntax-string-rgb))',
+          number: 'rgb(var(--color-syntax-number-rgb))',
+          function: 'rgb(var(--color-syntax-function-rgb))',
+          type: 'rgb(var(--color-syntax-type-rgb))',
+          tag: 'rgb(var(--color-syntax-tag-rgb))'
+        },
         success: 'rgb(var(--color-success-rgb))',
         warning: 'rgb(var(--color-warning-rgb))',
         danger: 'rgb(var(--color-danger-rgb))',

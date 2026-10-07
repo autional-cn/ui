@@ -138,6 +138,22 @@
 --color-chart-7-rgb: 139 92 246;
 --color-chart-8: #ef4444;
 --color-chart-8-rgb: 239 68 68;
+--color-syntax-plain: #f1f5f9;
+--color-syntax-plain-rgb: 241 245 249;
+--color-syntax-comment: #94a3b8;
+--color-syntax-comment-rgb: 148 163 184;
+--color-syntax-keyword: #a78bfa;
+--color-syntax-keyword-rgb: 167 139 250;
+--color-syntax-string: #bef264;
+--color-syntax-string-rgb: 190 242 100;
+--color-syntax-number: #fbbf24;
+--color-syntax-number-rgb: 251 191 36;
+--color-syntax-function: #67e8f9;
+--color-syntax-function-rgb: 103 232 249;
+--color-syntax-type: #6ee7b7;
+--color-syntax-type-rgb: 110 231 183;
+--color-syntax-tag: #f9a8d4;
+--color-syntax-tag-rgb: 249 168 212;
 --color-method-get: var(--color-primary-600);
 --color-method-get-rgb: var(--color-primary-600-rgb);
 --color-method-post: var(--color-success);
@@ -334,6 +350,7 @@
 /* ── layout ── */
 --layout-header-height: 64px;
 --layout-header-height-compact: 56px;
+--layout-bottom-nav-height: 64px;
 --layout-max-width: 1280px;
 --layout-prose-width: 768px;
 --layout-breakpoint-sm: 640px;

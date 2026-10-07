@@ -544,7 +544,9 @@ outputs.set(
 // Tailwind preset package
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PALETTES = ['primary', 'sky', 'amber', 'neutral', 'chart', 'method'];
+// syntax 是第 62 轮加的：与 chart 同构的「角色色」——品牌色阶按定义表达不了
+// 「关键字 / 字符串 / 注释」这类角色，于是 8 个站各写各的（舰队里 132 处，含三个非 DS 色系）。
+const PALETTES = ['primary', 'sky', 'amber', 'neutral', 'chart', 'method', 'syntax'];
 const FLAT_COLORS = [
   ['success', 'success'],
   ['warning', 'warning'],

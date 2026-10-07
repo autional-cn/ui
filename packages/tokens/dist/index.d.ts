@@ -91,6 +91,17 @@ declare const tokens: {
         "7": string;
         "8": string;
       };
+      syntax: {
+        plain: string;
+        comment: string;
+        keyword: string;
+        string: string;
+        number: string;
+        function: string;
+        type: string;
+        tag: string;
+        $note: string;
+      };
       "$chart-note": string;
       method: {
         get: string;
@@ -306,6 +317,8 @@ declare const tokens: {
       "header-height": string;
       "header-height-compact": string;
       "$header-note": string;
+      "bottom-nav-height": string;
+      "$bottom-nav-note": string;
       "max-width": string;
       "prose-width": string;
       "breakpoint-sm": string;

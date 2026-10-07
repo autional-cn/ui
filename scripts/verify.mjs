@@ -21,6 +21,7 @@ const STEPS = [
   { key: 'assets', label: '字体资产台账 + 字体加载断言', cmd: ['node', 'scripts/check-assets.mjs'] },
   { key: 'typography', label: '排版令牌落地（发布 CSS + 消费方编译产物）', cmd: ['node', 'scripts/check-typography.mjs'] },
   { key: 'chart', label: '图表色板（非文本对比度 + 正常/红绿色盲可区分性）', cmd: ['node', 'scripts/check-chart-palette.mjs'] },
+  { key: 'syntax', label: '语法色板（代码底对比度 + 正常/红绿色盲可区分性）', cmd: ['node', 'scripts/check-syntax-palette.mjs'] },
   { key: 'cdn', label: 'CDN 资产契约（CORS / 不可变缓存 / manifest 字节一致）', cmd: ['node', 'scripts/check-cdn.mjs'] },
   { key: 'colors', label: '非设计系统色值（是否在重复发明已有令牌）', cmd: ['node', 'scripts/check-colors.mjs'] },
   { key: 'icons', label: '图标套件（声明完整 / 文件存在 / theme-color 单源 / 不漂移）', cmd: ['node', 'scripts/check-icons.mjs'] },
@@ -56,7 +57,8 @@ const STEPS = [
 // 而发版流程要做的正是"让它们同步"，所以在同步之前它们按定义必然为红。
 //   publish —— npm 上已发布的 == 本地 SSOT
 //   cdn     —— cdn 工作区的产物 == 本地 SSOT
-// 两项都在发布之后补跑（见 release.yml 的后置门）。其余 16 项在发布前必须全绿。
+// 两项都在发布之后补跑（见 release.yml 的后置门）。其余各项在发布前必须全绿。
+// （这里**不写死项数**：写死的数字会随着加闸门变成谎话，之前就烂过一次。）
 const EXCEPT_ALLOWED = new Set(['publish', 'cdn']);
 const exceptIdx = process.argv.indexOf('--except');
 const EXCEPT = exceptIdx >= 0
