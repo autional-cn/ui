@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmDialogProps {
@@ -59,9 +60,11 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
 
 	const style = variantStyles[variant];
 
-	return (
+	// 与 Modal 同因同解（第 63 轮补·四）：portal 到 body，否则「有 backdrop-filter 的祖先」
+	// 会成为 fixed 后代的包含块，遮罩只覆盖那一小块。
+	const content = (
 		<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-			<div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+			<div className="absolute inset-0 bg-scrim/50 backdrop-blur-sm" onClick={onCancel} />
 			<div className="relative w-full max-w-md rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-6 shadow-brand">
 				<button
 					onClick={onCancel}
@@ -98,4 +101,7 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
 			</div>
 		</div>
 	);
+
+	if (typeof document === 'undefined') return content;
+	return createPortal(content, document.body);
 });

@@ -122,6 +122,7 @@ module.exports = {
         elevated: 'rgb(var(--color-bg-elevated-rgb))',
         developer: 'rgb(var(--color-bg-developer-rgb))',
         code: 'rgb(var(--color-bg-code-rgb))',
+        scrim: 'rgb(var(--color-bg-scrim-rgb))',
         'border-subtle': 'rgb(var(--color-border-subtle-rgb))',
         'border-strong': 'rgb(var(--color-border-strong-rgb))'
       },

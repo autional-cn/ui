@@ -584,6 +584,8 @@ const FLAT_COLORS = [
   // 代码块底色（第 63 轮）：与 color.syntax.* 成对 —— 语法色板的可读性判据正是对这个底色的，
   // 底色的取值必须能从 SSOT 读到，闸门才不会退化成「钉字面量」。
   ['code', 'bg-code'],
+  // 浮层遮罩（第 63 轮补·四）：此前舰队各写各的 bg-black/30|40|50|60，一个概念五种深浅。
+  ['scrim', 'bg-scrim'],
   ['border-subtle', 'border-subtle'],
   ['border-strong', 'border-strong'],
 ];

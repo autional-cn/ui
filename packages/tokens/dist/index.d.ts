@@ -117,6 +117,10 @@ declare const tokens: {
       "bg-muted": string;
       "bg-developer": string;
       "bg-code": string;
+      "bg-scrim": string;
+      "$bg-scrim-note": string;
+      "$bg-scrim-note-2": string;
+      "$bg-scrim-note-3": string;
       "$bg-code-note": string;
       "$bg-code-note-2": string;
       "text-primary": string;

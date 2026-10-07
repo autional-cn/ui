@@ -69,7 +69,7 @@ export const AppShell = React.memo(function AppShell({
 			{/* 移动端遮罩：点它关闭抽屉。桌面端不渲染（lg:hidden）。 */}
 			{mobileOpen && (
 				<div
-					className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+					className="fixed inset-0 z-40 bg-scrim/30 lg:hidden"
 					onClick={onMobileClose}
 					aria-hidden="true"
 				/>

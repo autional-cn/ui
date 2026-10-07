@@ -178,6 +178,8 @@
 --color-bg-developer-rgb: 3 20 37;
 --color-bg-code: #0f172a;
 --color-bg-code-rgb: 15 23 42;
+--color-bg-scrim: #0a0f1a;
+--color-bg-scrim-rgb: 10 15 26;
 --color-text-primary: var(--color-primary-900);
 --color-text-primary-rgb: var(--color-primary-900-rgb);
 --color-text-secondary: var(--color-primary-600);

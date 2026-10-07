@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UI_I18N_NS, uiText } from '../i18n';
@@ -128,8 +129,14 @@ export const Modal = React.memo(function Modal({
 
 	if (!open) return null;
 
-	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+	// ⚠ 必须 portal 到 document.body（第 63 轮补·四实测）：
+	// `position: fixed` 的包含块**不是视口**，而是最近的「有 transform / filter / backdrop-filter /
+	// will-change / contain」的祖先。站点的顶栏内层写了 `backdrop-blur-xl`，于是**在顶栏里打开的浮层**
+	// 的 inset-0 只覆盖顶栏那一小块 —— 实测 www.autional.cn 的搜索面板：遮罩是 976x135 的一条，
+	// 而不是整屏（用户的原话是「弹出一个黑色遮罩，怪怪的」）。
+	// 浮层属于顶层，不属于触发它的那棵子树；portal 是这条规则的结构性实现。
+	const content = (
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/50 p-4">
 			<div className="absolute inset-0" onClick={onClose} />
 			<div
 				ref={panelRef}
@@ -175,4 +182,8 @@ export const Modal = React.memo(function Modal({
 			</div>
 		</div>
 	);
+
+	// SSR / 测试环境没有 document 时退回就地渲染（portal 的目标不存在）
+	if (typeof document === 'undefined') return content;
+	return createPortal(content, document.body);
 });
