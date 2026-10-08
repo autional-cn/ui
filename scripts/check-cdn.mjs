@@ -74,6 +74,61 @@ if (!existsSync(vjPath)) {
   }
 }
 
+// ── ①b 区域指针（单源 CDN 的域名分流契约）──────────────────────────────────
+// 单一 autional/cdn 同时服务两个区域（cdn.autional.com / cdn.autional.cn）。
+// ui/ 与 demo/ 两个区域内容相同，可以共用；但 **ai/ 的 latest 指针必须按域名分流** ——
+// 指针里带 region 与 source（cn 指 sdk 的 skills/autional-cn，com 指 skills/autional-com），
+// 两区内容不同，共用一份必然把一半人指错。分流靠 vercel.json 的 host 条件 rewrite：
+//   /ai/latest.json    +host cdn.autional.cn → /ai/latest.cn.json   （无条件项 = 默认 → .com）
+//   /ai/latest/:path*  +host cdn.autional.cn → /ai/v<cn>/:path*     （默认 → /ai/v<com>/:path*）
+// 这组断言保的是「机制还在、目标目录还在」：它们坏掉时页面不会报错，
+// 只会静默把某个区域的人指到另一个区域的版本 —— 正是本仓反复遇到的静默漂移。
+// ① 段解析的 vj 是块级变量；这里按同一路径再解析一份（解析失败时 ① 段已报过 bad）。
+let aiVj = null;
+try { aiVj = JSON.parse(readFileSync(vjPath, 'utf8')); } catch { /* ① 段已报错 */ }
+if (aiVj) {
+  const rewrites = Array.isArray(aiVj.rewrites) ? aiVj.rewrites : [];
+  const CN_HOSTS = ['cdn.autional.cn', 'cn-cdn.vercel.app'];
+  const isCnRule = (rw) => (rw.has || []).some((h) => h.type === 'host' && CN_HOSTS.some((x) => String(h.value).indexOf(x) >= 0));
+  const isDefaultRule = (rw) => !rw.has || rw.has.length === 0;
+  const docs = {};
+  for (const region of ['com', 'cn']) {
+    const p = join(CDN, 'ai', 'latest.' + region + '.json');
+    if (!existsSync(p)) { bad('缺少 ai/latest.' + region + '.json —— 区域指针存储不对称（两个区域必须各有一份，靠 rewrite 分流）'); continue; }
+    try {
+      docs[region] = JSON.parse(readFileSync(p, 'utf8'));
+      if (docs[region].region !== region) bad('ai/latest.' + region + '.json 的 region 字段是 ' + docs[region].region + '（应为 ' + region + '）');
+      const vdir = join(CDN, 'ai', String(docs[region].version));
+      if (!existsSync(vdir)) bad('ai 指针（' + region + '）指向 ' + docs[region].version + '，但 ai/' + docs[region].version + '/ 目录不存在');
+    } catch (e) { bad('ai/latest.' + region + '.json 不是合法 JSON：' + e.message); }
+  }
+  if (docs.com && docs.cn && docs.com.version === docs.cn.version) {
+    bad('两个区域的 ai 指针指向同一个版本 ' + docs.com.version + ' —— 区域分流失效（cn/com 的 skills 内容不同）');
+  }
+  if (!rewrites.length) {
+    bad('vercel.json 没有 rewrites —— /ai/latest.json 无法按域名分流到两个区域的指针');
+  } else {
+    const latestRules = rewrites.filter((rw) => rw.source === '/ai/latest.json');
+    const fileRules = rewrites.filter((rw) => rw.source === '/ai/latest/:path*');
+    const cnLatest = latestRules.find(isCnRule);
+    const defLatest = latestRules.find(isDefaultRule);
+    if (!cnLatest) bad('vercel.json 缺少 /ai/latest.json 的 cn 域条件 rewrite（has host 含 cdn.autional.cn）—— cn 域会落到 com 指针');
+    else if (String(cnLatest.destination) !== '/ai/latest.cn.json') bad('/ai/latest.json 的 cn 条件目标应为 /ai/latest.cn.json，实际 ' + cnLatest.destination);
+    if (!defLatest) bad('vercel.json 缺少 /ai/latest.json 的默认 rewrite —— 非 cn 域会 404');
+    else if (String(defLatest.destination) !== '/ai/latest.com.json') bad('/ai/latest.json 默认目标应为 /ai/latest.com.json，实际 ' + defLatest.destination);
+    const cnFiles = fileRules.find(isCnRule);
+    const defFiles = fileRules.find(isDefaultRule);
+    const want = (region) => docs[region] ? '/ai/' + docs[region].version + '/:path*' : null;
+    if (!cnFiles) bad('vercel.json 缺少 /ai/latest/:path* 的 cn 域条件 rewrite —— cn 域的 skills 文件会取到 com 版本');
+    else if (want('cn') && String(cnFiles.destination) !== want('cn')) bad('/ai/latest/:path* 的 cn 条件目标应为 ' + want('cn') + '，实际 ' + cnFiles.destination);
+    if (!defFiles) bad('vercel.json 缺少 /ai/latest/:path* 的默认 rewrite —— 非 cn 域的 skills 文件会 404');
+    else if (want('com') && String(defFiles.destination) !== want('com')) bad('/ai/latest/:path* 默认目标应为 ' + want('com') + '，实际 ' + defFiles.destination);
+    if (docs.com && docs.cn && cnLatest && defLatest) {
+      infos.push('区域指针：com→' + docs.com.version + ' / cn→' + docs.cn.version + '（host 条件 rewrite 分流）');
+    }
+  }
+}
+
 // ── ② manifest 与产物字节一致 ───────────────────────────────────────────────
 const uiDir = join(CDN, 'ui');
 let manifest = null;

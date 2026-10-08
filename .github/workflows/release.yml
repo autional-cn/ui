@@ -10,7 +10,7 @@ name: release
 #
 # 前置 secret（缺任何一个都会在 preflight 硬失败，不会静默跳过）：
 #   NPM_TOKEN       @autional 作用域的 publish 权限
-#   CDN_PUSH_TOKEN  对 autional-cn/cdn 有 contents:write 的 PAT
+#   CDN_PUSH_TOKEN  对 autional/cdn 有 contents:write 的 PAT
 #                   （跨仓推送不能用 GITHUB_TOKEN）
 
 on:
@@ -35,7 +35,7 @@ jobs:
             echo "::error::缺少 secret NPM_TOKEN（@autional 作用域的 publish 权限）"; missing=1
           fi
           if [ -z "$CDN_PUSH_TOKEN" ]; then
-            echo "::error::缺少 secret CDN_PUSH_TOKEN（对 autional-cn/cdn 有 contents:write 的 PAT）"; missing=1
+            echo "::error::缺少 secret CDN_PUSH_TOKEN（对 autional/cdn 有 contents:write 的 PAT）"; missing=1
           fi
           if [ "$missing" = 1 ]; then
             echo "::error::发布前置不全。**不降级、不跳过** —— 静默跳过等于只发一半，而另一半要等到有人发现。"
@@ -51,7 +51,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          repository: autional-cn/cdn
+          repository: autional/cdn
           path: cdn
           token: ${{ secrets.CDN_PUSH_TOKEN }}
 
@@ -75,26 +75,24 @@ jobs:
         working-directory: ui
         run: node scripts/verify.mjs --except publish,cdn
 
-      - name: 发布 npm（tag=rc，registry 显式钉 npmjs）
+      # 与本地 release.mjs 共用同一个入口（scripts/publish-npm.mjs）—— 此前这里是裸
+      # `pnpm -r publish`：对**已存在的版本**会冲突退出，于是「只改了 ui 一个包」的正常发版
+      # 会被 tokens/preset/shared 的旧版本号挡住（第 59 轮实测）。读回 / latest 对齐 /
+      # 一致性自证也都在这个脚本里（带「processing 传播窗口」重试）。
+      - name: 发布 npm（单一入口：含读回 / latest 对齐 / 一致性自证）
         working-directory: ui
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm -r publish --access public --tag rc --no-git-checks --registry=https://registry.npmjs.org/
-
-      - name: latest 对齐到 rc（政策见计划文末「规则 2」）
-        working-directory: ui
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: node scripts/align-dist-tags.mjs --write
+        run: node scripts/publish-npm.mjs --tag rc
 
       - name: 重建 CDN 产物（版本目录名带内容指纹）
         working-directory: ui
         run: pnpm build:cdn
 
-      # 发布**后**：补跑那两项。它们现在有真实语义了 —— 没补跑等于这次发版没验过。
-      - name: 发布后置门（publish 一致性 + CDN 契约）
+      # 发布**后**：补跑 CDN 契约。publish 一致性已由 publish-npm.mjs 自证（含传播等待重试）。
+      - name: 发布后置门（CDN 契约）
         working-directory: ui
-        run: node scripts/check-publish.mjs && node scripts/check-cdn.mjs
+        run: node scripts/check-cdn.mjs
 
       - name: 提交并推送 CDN（推送即触发 Vercel 生产部署）
         working-directory: cdn
