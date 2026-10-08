@@ -8,7 +8,7 @@
 //
 // 四步，任何一步失败都中止（宁可停在这里，也不要让半个交付面出门）：
 //   ① 读注册表 → 只发「本地版本还没上过注册表」的包（逐包 --filter）
-//   ② 读回注册表 —— CLI 的成功输出不等于注册表里有（重试 12 × 15s）
+//   ② 读回注册表 —— CLI 的成功输出不等于注册表里有（重试 24 × 15s）
 //   ③ latest 对齐到 tag（重试 8 × 30s；政策见计划文末「规则 2」）
 //   ④ 发布后置门 check-publish（重试 6 × 30s）
 //
@@ -90,9 +90,10 @@ export async function main() {
   console.log('── ② 读回注册表（CLI 说成功不算数） ' + '─'.repeat(12));
   for (const j of packages) {
     let ok = false;
-    // 80s 不够：第 59 轮实测 tokens 的 processing 窗口超过了它。
-    // 「读不到」与「发歪了」处置完全不同，所以宁可多等 —— 12 × 15s = 3 分钟。
-    for (let i = 0; i < 12 && !ok; i++) {
+    // 窗口被实测推动过两次：80s 不够（第 59 轮）；3 分钟也不够（run 37772600336 ——
+    // tokens@0.1.0-rc.17 在 11:52:59 报 MISS，11:53:06 registry 就已可见，差 7 秒）。
+    // 「读不到」与「发歪了」处置完全不同，所以宁可多等 —— 24 × 15s = 6 分钟。
+    for (let i = 0; i < 24 && !ok; i++) {
       try {
         const r = await fetch(REGISTRY + j.name.replace('/', '%2f'), { cache: 'no-store' });
         const doc = await r.json();
