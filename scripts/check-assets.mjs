@@ -11,6 +11,9 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { ROOT, loadTokens, flatten, stripMeta } from './lib/tokens.mjs';
+// B3 单源化：<head> 的 CDN 链接改成了 {{CDN_ASSET_BASE}} 占位符（构建期注入）。
+// 扫描期把它还原成 canonical 基址，既有规则（URL 形态 / 文件存在 / 字节一致）一个字都不用放宽。
+import { expandPlaceholders } from './lib/cdn-refs.mjs';
 
 const LEDGER = join(ROOT, 'verification', 'font-assets.json');
 const KNOWN = join(ROOT, 'verification', 'known-issues.json');
@@ -101,6 +104,7 @@ function cdnDelivered(sitePath) {
   const re = /cdn\.autional\.cn\/ui\/(v[^/'"]+)\/tokens\.css/;
   for (const f of headFiles(sitePath, [], 0)) {
     let t; try { t = readFileSync(f, 'utf8'); } catch (e) { continue; }
+    t = expandPlaceholders(t, sitePath).text;
     const m = re.exec(t);
     if (!m) continue;
     const css = join(CDN_DIR, 'ui', m[1], 'tokens.css');

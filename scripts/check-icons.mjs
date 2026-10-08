@@ -35,6 +35,10 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
+// B3 单源化：运行期资产的链接改成了 {{CDN_ASSET_BASE}} 占位符（构建期注入）。
+// 扫描期还原成 canonical 基址，让 I7/I15/I20/I21/I23 这些既有规则继续管用；
+// 同时新增 I25 守「占位符真的被注入了」（没注入 = 把字面量发给浏览器，比写死旧版本更糟）。
+import { expandPlaceholders, injectionProblems } from './lib/cdn-refs.mjs';
 import { createHash } from 'node:crypto';
 import { ROOT, loadTokens, resolvedIn } from './lib/tokens.mjs';
 import { makeSkip } from './lib/scan-scope.mjs';
@@ -98,8 +102,10 @@ for (const site of readdirSync(SITES)) {
   const candidates = walk(dir, [], 0).filter((f) => /rel=["']?(?:shortcut )?icon["']?/i.test(readFileSync(f, 'utf8')));
   if (!candidates.length) { problems.push('I1 ' + site + '：没有任何文件声明 rel="icon"'); continue; }
   const headFile = candidates[0];
-  const text = readFileSync(headFile, 'utf8');
+  const rawHead = readFileSync(headFile, 'utf8');
+  const text = expandPlaceholders(rawHead, join(SITES, site)).text;
   const rel = relative(SITES, headFile).replace(/\\/g, '/');
+  for (const p of injectionProblems(site, join(SITES, site), candidates)) problems.push(p);
 
   const icons = [...text.matchAll(/<link\b[^>]*\brel=["']?(?:shortcut )?icon["']?[^>]*>/gi)].map((m) => m[0]);
   const apple = /rel=["']?apple-touch-icon["']?/i.test(text);

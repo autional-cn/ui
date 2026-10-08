@@ -43,7 +43,8 @@ const STEPS = [
   { key: 'shell', label: '外壳归属（四个在册门户的外壳必须归 AppShell）', cmd: ['node', 'scripts/check-shell.mjs'] },
   { key: 'lint', label: 'lint（error 必须为 0；warning 按台账棘轮）', cmd: ['node', 'scripts/check-lint.mjs'] },
   { key: 'visual', label: '站点视觉回归（无产物/无浏览器时自动跳过）', cmd: ['node', 'scripts/visual.mjs', 'check'] },
-  { key: 'contrast', label: '对比度 AA（真实页面渲染出来的前景/背景）', cmd: ['node', 'scripts/check-contrast.mjs'] }
+  { key: 'contrast', label: '对比度 AA（真实页面渲染出来的前景/背景）', cmd: ['node', 'scripts/check-contrast.mjs'] },
+  { key: 'fixed-containment', label: '浮层包含块（position: fixed 的祖先不许建立包含块；静态 + 滚到底两轮）', cmd: ['node', 'scripts/check-fixed-containment.mjs'] }
 ];
 
 // ── --except：发布流程需要一次「发之前」的全量校验 ──────────────────────────

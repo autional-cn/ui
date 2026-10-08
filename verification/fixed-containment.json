@@ -1,0 +1,5 @@
+{
+  "$note": "浮层包含块棘轮（第 31 道闸门的 FC2 类）：只许减。生成方式 node scripts/check-fixed-containment.mjs --write-baseline",
+  "generatedAt": "2026-10-08T15:26:26.892Z",
+  "entries": {}
+}
