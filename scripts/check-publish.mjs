@@ -159,7 +159,8 @@ try {
   infos.push(...tags.infos);
   problems.push(...tags.problems);
   if (problems.length) {
-    problems.push('重新发布：cd ui && pnpm -r publish --access public --tag rc（预发版必须带 --tag）');
+    problems.push('重新发布：把落后包的版本号往上一档，然后走发行单入口 node scripts/publish-npm.mjs --tag rc' +
+      '（别再 `pnpm -r publish` —— 第 59 轮实测：它对已存在的旧版本号会冲突退出，把「只改了一个包」的正常发版挡死）');
   }
 } catch (e) {
   const msg = String((e && e.message) || e);
