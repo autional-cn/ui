@@ -98,7 +98,7 @@
 
 ## 8. 当前结论
 
-本仓（`autional-cn/ui`）是 Autional 设计系统的单一真源：
+本仓（`autional/ui`）是 Autional 设计系统的单一真源：
 
 - 看值：`tokens/tokens.json`（SSOT；改完跑 `pnpm gen`）
 - 看规范：`DESIGN.md` + `docs/guidelines/`

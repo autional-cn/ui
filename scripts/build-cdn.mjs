@@ -287,7 +287,7 @@ const manifest = {
   version: VERSION,
   base: BASE,
   origin: CDN_ORIGIN,
-  generatedFrom: 'autional-cn/ui',
+  generatedFrom: 'autional/ui',
   files: entries
 };
 writeFileSync(join(STAGE, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
@@ -371,7 +371,7 @@ const html = [
   '<table><thead><tr><th>路径</th><th class="n">字节</th><th class="h">sha384</th></tr></thead><tbody>',
   rows,
   '</tbody></table>',
-  '<p style="margin-top:32px;color:#8896a6;font-size:12px">由 <code>autional-cn/ui</code> 的 <code>scripts/build-cdn.mjs</code> 生成，请勿手工编辑。</p>',
+  '<p style="margin-top:32px;color:#8896a6;font-size:12px">由 <code>autional/ui</code> 的 <code>scripts/build-cdn.mjs</code> 生成，请勿手工编辑。</p>',
   '</body></html>'
 ].join('\n') + '\n';
 writeFileSync(join(OUT, 'index.html'), html);
