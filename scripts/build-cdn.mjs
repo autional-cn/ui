@@ -263,14 +263,29 @@ for (const name of readdirSync(uiRoot)) {
   kept.push({ name, at });
 }
 kept.sort((a, b) => (a.at < b.at ? 1 : -1));           // 新的在前
-// ⚠️ 保留数量是 **KEEP - 1**，不是 KEEP：这一份 `kept` 只含**盘上已有**的目录，
-// 本次要产出的新目录还没落盘。第 62 轮实测：写成 KEEP 时，每次发版都会「保留 5 个旧的 + 新增 1 个」
-// = 6 个，而 check-cdn 的上限判据是 5 —— 闸门红了、构建脚本绿着，两边同一个常量却两种语义。
+// ⚠️ 预算是「本次构建后总数 ≤ KEEP」，不是写死的 **KEEP - 1**：`kept` 只含**盘上已有**的目录 ——
+// 新增时（同名目录不在盘上）新目录还没落盘，裁到 KEEP-1；而内容未变时（同名目录已在盘上）
+// 本次**不新增**，仍按 KEEP-1 裁就会白删一个有效旧目录。第 63 轮实测：无变化的 build:cdn 把最旧一档
+// （25 个文件）删掉，git 里出现删除 —— release.yml 的「无变化就跳过提交」守卫随之失效，这批删除
+// 会被自动提交推上 cdn main；而被删的正是「路径不可变」要留给旧 HTML 的兜底目录。
+// （第 62 轮实测的是同一条预算的另一头：新增时写成 KEEP 会「保留 5 + 新增 1」= 6，撞 check-cdn 上限。）
 // 保留策略由闸门定义、构建脚本服从；反过来（改闸门去迁就脚本）就是把政策改小。
-for (const old of kept.slice(KEEP - 1)) {
+const willAdd = !existsSync(DEST);
+const excess = Math.max(0, kept.length + (willAdd ? 1 : 0) - KEEP);
+for (const old of kept.slice(kept.length - excess)) {
   if (old.name === 'v' + VERSION) continue;
   rmSync(join(uiRoot, old.name), { recursive: true, force: true });
   removed.push(old.name + '(超出保留上限 ' + KEEP + ')');
+}
+// 自证：对着**盘面**断言「本次构建后总数 ≤ KEEP」。第 62/63 两轮实测是同一个静默漂移的两端
+// （脚本打印「保留 5 个」而实际 6 个 / 打印「保留 5 个」而盘上剩 4 个，两次脚本都绿着）——
+// 「脚本报成功」必须等于「政策真的成立」，所以这里不打印预算、直接数。
+{
+  const after = readdirSync(uiRoot, { withFileTypes: true }).filter((e) => e.isDirectory() && e.name.startsWith('v')).length;
+  if (after + (willAdd ? 1 : 0) > KEEP) {
+    console.error('保留策略自证失败：裁剪后盘上 ' + after + ' 个版本目录' + (willAdd ? ' + 本次新增 1 个' : '') + '，超出上限 ' + KEEP + ' —— 预算算错了，拒绝按错的结果继续落盘');
+    process.exit(1);
+  }
 }
 // 清单必须在**决定是否落盘之前**写好，并放进暂存目录。
 // 原因：指纹未变时整份产物（含 manifest.json）都不该被重写 ——
