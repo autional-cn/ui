@@ -26,7 +26,7 @@
 //   bg-amber-50/60 -> bg-warning-soft/60、text-amber-600 -> text-warning-text）。
 //   Alert 的注释里早就写着这条：**amber 在语义上属于 warning**。
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, loadTokens } from './lib/tokens.mjs';
@@ -191,7 +191,14 @@ function walk(dir, out = []) {
 async function main() {
   const findings = [];
   const targets = [];
-  for (const site of readdirSync(SITES).sort()) {
+  // 站点树不在本机时（CI）只跑设计系统那一半 —— 与 check-typecheck / check-consumers 同一口径：
+  // 门户这一层在 CI 里按定义不生效，发布前必须在本机跑过全量 verify（release.mjs 会挡）。
+  // 缺这道护栏的后果实录：release.yml 首跑时本闸门在 CI 直接 ENOENT 崩掉，27/28 即红。
+  const hasSites = existsSync(SITES);
+  if (!hasSites && !AS_JSON) {
+    console.log('check-semantic-tones：本次工作区没有 sites/ —— 站点这一层本闸门在 CI 里不生效；发布前必须在本机跑过全量 verify（release.mjs 会挡住）。设计系统（packages/）仍照扫。');
+  }
+  for (const site of (hasSites ? readdirSync(SITES).sort() : [])) {
     const dir = join(SITES, site);
     try { if (!statSync(dir).isDirectory()) continue; } catch { continue; }
     targets.push(site);
