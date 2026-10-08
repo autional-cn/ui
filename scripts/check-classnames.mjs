@@ -25,10 +25,18 @@
 // 补 DEFAULT 只可能命中其中一个语义，对另一个语义的作者就是**静默的错色**——
 // 那比构建期报错更糟。所以这里宁可不补，靠本闸门把失败变响并教正确写法。
 //
+// K3（第 63 轮补·五）：名字根本不是名字 —— 「认识的颜色名后面挂了东西」。
+// 来源是 trust 站的 `dark:to-surface00`：K1 的右边界 `(?![a-zA-Z0-9_-])` 要求「名字后面没字符」，
+// 而它后面跟着一个 `0` ⇒ 边界不成立 ⇒ 既不报红、也生成不出规则（渐变暗色端静默失效）。
+// 同族实测还有 auth/user 的 `text-muted-foreground`（shadcn 惯用名，DS 里没有）。
+// 注意它与 K1 的分工：裸色阶（`bg-primary`）是 K1 的，K3 只管「合法的名字挂了尾巴」。
+//
 // 用法: node scripts/check-classnames.mjs [--json]
+//       node scripts/check-classnames.mjs --selftest   （K3 的 15 条正负例控制，改规则前先跑它）
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, relative, extname } from 'node:path';
+import { createRequire } from 'node:module';
 import { ROOT, loadTokens, stripMeta, resolvedIn, contrastRatio } from './lib/tokens.mjs';
 import { makeSkip } from './lib/scan-scope.mjs';
 
@@ -94,6 +102,101 @@ const FG_PREFIXES = ['text', 'fill', 'stroke', 'decoration', 'caret'];
 // (?<!dark:) —— dark: 变体下的前景色对的是深色底，不能拿浅底比。
 const FILL_RE = new RegExp('(?<!dark:)' + NEG + '(?:' + FG_PREFIXES.join('|') + ')-(' + [...FILL_ONLY.keys()].join('|') + ')' + NEG2, 'g');
 
+// ── K3 色阶名后面的非法续接字符 ───────────────────────────────────────────
+// 来源是真事（第 63 轮补·五）：trust 站 compliance 页写着 `dark:to-surface00`。
+// K1 的右边界 `(?![a-zA-Z0-9_-])` 让它**从缝里漏过去**——`to-surface` 后面跟着 `0`，
+// 边界不成立，于是既不报 K1 也不报错，Tailwind 也认不出 `surface00`：
+// 构建成功、零警告、渐变暗色端完全不生效。这与 K1 自己那句「静默的错色」是同一类，
+// 只是形态不同：K1 抓「名字对但没 DEFAULT」，K3 抓「名字根本不是名字」。
+//
+// 规则同样是派生的，但名字来源必须**取全**：K1/K2 用的 PALLETES 只有「无 DEFAULT 的色阶对象」，
+// 漏掉两类真实存在的颜色名 —— 扁平语义色（success / danger / surface / code …）与
+// `{扁平色阶}-{档}`（success-soft / danger-text …）。第一版拿 PALLETES 拼规则，自检立刻抓到两个
+// 假阴性：`dark:to-surface00`（surface 是扁平色）与 `ring-successSoft`（success 是扁平色）。
+// 所以这里直接读 **preset 的 colors** —— 那才是「哪些名字真的能生成」的权威，与站点构建同源。
+//
+// 判定分两步，**不是**「色阶名 + 一个字符」的纯正则 —— 第一版那样写过，自检之外的全量跑立刻报了
+// 三百多处假阳性：`text-neutral-500` 会先匹配到合法档位 `neutral-50`，再把尾巴的 `0` 当成「非法续接字符」。
+// 数字档位天然互为前缀，所以必须按**整词**判，不能按前缀判。
+//   ① 取出候选类名的 base（去掉变体前缀与 `/透明度`）；
+//   ② base 在「能生成的合法名字集」里 ⇒ 放过；否则若 base 以某个已知颜色名**开头且更长**
+//      ⇒ 那是「认识的名字后面挂了东西」，判 K3。裸色阶（`bg-primary`）不在此列，归 K1。
+function presetTheme() {
+  try {
+    const preset = createRequire(import.meta.url)(resolve(ROOT, 'packages', 'tailwind-preset', 'index.js'));
+    const t = preset?.theme?.extend || preset?.theme || {};
+    return { colors: t.colors || {}, backgroundImage: t.backgroundImage || {}, boxShadow: t.boxShadow || {} };
+  } catch (e) {
+    console.log('check-classnames：读不到 preset 源（' + e.message + '），K3 退化为按令牌推导');
+    const colors = {};
+    for (const [k, v] of Object.entries(loadTokens().core.color)) {
+      if (k.startsWith('$')) continue;
+      if (v && typeof v === 'object') colors[k] = Object.fromEntries(Object.keys(v).filter((s) => !s.startsWith('$')).map((s) => [s, 1]));
+      else colors[k] = v;
+      if (/^(bg|text|border)-/.test(k)) colors[k.replace(/^[a-z]+-/, '')] = v;
+    }
+    return { colors, backgroundImage: {}, boxShadow: {} };
+  }
+}
+const PRESET = presetTheme();
+const PRESET_COLORS = PRESET.colors;
+// 合法名字集：扁平色直接可用；色阶对象只有 `{族}-{档}` 可用（裸族名没有 DEFAULT ⇒ K1 判死，不在此列）。
+const VALID_BASES = new Set();
+const COLOR_FAMILIES = Object.keys(PRESET_COLORS);
+for (const [k, v] of Object.entries(PRESET_COLORS)) {
+  if (v && typeof v === 'object' && !Array.isArray(v)) {
+    for (const s of Object.keys(v)) if (!s.startsWith('$')) VALID_BASES.add(k + '-' + s);
+    if (Object.keys(v).includes('DEFAULT')) VALID_BASES.add(k);
+  } else VALID_BASES.add(k);
+}
+// 合法集是**按工具前缀分的**：同一个 base 在不同工具下合法性不同 ——
+// `bg-brand-radial` 合法（backgroundImage 里有 brand-radial），`text-brand-radial` 不合法。
+// 全站合成一个集合会把这个区别抹掉（真事：第一版全量跑把 web 的 bg-brand-radial 误报成 K3）。
+const VALID_BY_PREFIX = new Map();
+for (const p of PREFIXES) {
+  const set = new Set(VALID_BASES);
+  if (p === 'bg') for (const k of Object.keys(PRESET.backgroundImage)) set.add(k);
+  if (p === 'shadow') for (const k of Object.keys(PRESET.boxShadow)) set.add(k);
+  VALID_BY_PREFIX.set(p, set);
+}
+// 候选类名：变体前缀可有，`[...]` 任意值不参与（它的内容不是颜色名）。
+const K3_TOKEN_RE = new RegExp(NEG + '(?:[a-z-]+:)*(' + PREFIXES.join('|') + ')-([A-Za-z][A-Za-z0-9_-]*)', 'g');
+function k3Scan(code) {
+  const out = [];
+  for (const m of code.matchAll(K3_TOKEN_RE)) {
+    const valid = VALID_BY_PREFIX.get(m[1]);
+    const base = m[2].split('/')[0];
+    if (!valid || valid.has(base)) continue;
+    if (!COLOR_FAMILIES.some((fam) => base.startsWith(fam) && base.length > fam.length)) continue;
+    out.push(m[0]);
+  }
+  return out;
+}
+
+// 自检控制（--selftest）：规则是正则拼出来的，正负例各钉住，防止将来改 PREFIXES/PALLETES 时静默失效。
+// 注意负例 `text-primary`（裸色阶）：那是 K1 的管辖，不是 K3 的——两条规则的分界必须钉住，
+// 否则 K3 会把 K1 的整批命中重复报一遍。
+if (process.argv.includes('--selftest')) {
+  const probes = [
+    // 正例：认识的名字后面挂了东西（真事 + 同族变形）
+    ['dark:to-surface00', 1], ['bg-primary500', 1], ['text-chart100', 1], ['ring-successSoft', 1],
+    ['text-dangerText', 1], ['bg-neutral500', 1],
+    // 负例：合法形态一个都不能碰（档位互为前缀那次就是栽在这里）
+    ['text-primary', 0], ['text-primary-700', 0], ['bg-[var(--color-bg-primary)]', 0], ['border-success-soft', 0],
+    ['text-neutral-500 dark:text-neutral-400', 0], ['ring-primary-500 border-primary-500', 0],
+    ['bg-success/10 text-danger-text', 0], ['from-chart-2 via-sky-500 to-surface', 0], ['text-[var(--color-text-muted)]', 0],
+  ];
+  let bad = 0;
+  for (const [s, want] of probes) {
+    const n = k3Scan(s).length;
+    const ok = (want ? n > 0 : n === 0);
+    if (!ok) bad++;
+    console.log((ok ? '  ok   ' : '  FAIL ') + JSON.stringify(s) + ' want=' + want + ' got=' + n + (n ? ' [' + k3Scan(s).join(',') + ']' : ''));
+  }
+  console.log(bad ? 'K3 自检：' + bad + ' 条不符' : 'K3 自检：' + probes.length + '/' + probes.length + ' 通过');
+  process.exit(bad ? 1 : 0);
+}
+
 const SKIPDIR = makeSkip('public');
 // 测试面不在管辖内（U394，2026-10-05）：能力回归锁**刻意**以死类字面量作负例探针
 // （如 trust theme-class-guard 的 'bg-primary/10' 编译探针），且测试产物不上线。
@@ -125,6 +228,7 @@ for (const site of readdirSync(SITES)) {
   if (DARK_FIRST.includes(site)) continue;   // 暗色优先站点：规则的前提不成立，整站不参与 K2
   const hits = [];
   const fillHits = [];
+  const k3Hits = [];
   for (const f of walk(dir, [])) {
     const rel = f.replace(/\\/g, '/');
     if (/\/packages\//.test(rel)) continue;
@@ -136,6 +240,7 @@ for (const site of readdirSync(SITES)) {
         if (SEMANTIC_TEXT.has(cls)) continue;   // U389 语义文本类：有真实插件规则
         hits.push({ cls, file: relative(SITES, f).replace(/\\/g, '/'), line: i + 1 });
       }
+      for (const cls of new Set(k3Scan(code))) k3Hits.push({ cls, file: relative(SITES, f).replace(/\\/g, '/'), line: i + 1 });
       const m2 = code.match(FILL_RE);
       if (m2) for (const cls of new Set(m2)) {
         const key = cls.replace(/^(text|fill|stroke|decoration|caret)-/, '');
@@ -156,10 +261,20 @@ for (const site of readdirSync(SITES)) {
     advisory.push('K2 ' + site + '：' + k + ' × ' + v.length + '（首处 ' + v[0].file + ':' + v[0].line +
       '）—— 该档位对浅色页面底只有 ' + v[0].ratio.toFixed(2) + ':1。若它确实铺在浅底上，应改用更深档位');
   }
-  if (!hits.length && !fillHits.length) continue;
+  if (!hits.length && !fillHits.length && !k3Hits.length) continue;
+  // 只为 K2 advisory 命中的站点不进 perSite —— 否则「有 0 种」这种自相矛盾的结论会出现
+  // （perSite 非空但没有任何 K1/K3 命中）。
+  if (!hits.length && !k3Hits.length) continue;
   const byCls = new Map();
   for (const h of hits) { if (!byCls.has(h.cls)) byCls.set(h.cls, []); byCls.get(h.cls).push(h); }
-  perSite.push({ site, total: hits.length, classes: [...byCls.entries()].map(([c, v]) => ({ cls: c, n: v.length, first: v[0].file + ':' + v[0].line })) });
+  const byK3 = new Map();
+  for (const h of k3Hits) { if (!byK3.has(h.cls)) byK3.set(h.cls, []); byK3.get(h.cls).push(h); }
+  perSite.push({ site, total: hits.length, k3Total: k3Hits.length, classes: [...byCls.entries()].map(([c, v]) => ({ cls: c, n: v.length, first: v[0].file + ':' + v[0].line })), k3: [...byK3.entries()].map(([c, v]) => ({ cls: c, n: v.length, first: v[0].file + ':' + v[0].line })) });
+  for (const [cls, v] of byK3) {
+    problems.push('K3 ' + site + '：' + cls + ' × ' + v.length + '（首处 ' + v[0].file + ':' + v[0].line +
+      '）—— 色阶名后面接了非法续接字符，Tailwind 认不出这个名字，这个类生成不出来（多半是笔误，' +
+      '如 to-surface00 应为 to-surface；合法形态只有 -{档位}、/透明度 或结束）');
+  }
   for (const [cls, v] of byCls) {
     problems.push('K1 ' + site + '：' + cls + ' × ' + v.length + '（首处 ' + v[0].file + ':' + v[0].line +
       '）—— 色阶没有 DEFAULT 键（刻意如此，见 DESIGN.md「Ramp families have no DEFAULT」），这个类生成不出来。' +
@@ -178,12 +293,18 @@ else {
     console.log('         静态分析不知道元素的实际背景；铺在深色面板上的浅色文字是正常的。');
     for (const a of advisory) console.log('    ' + a);
   }
-  if (!perSite.length && !problems.length) console.log('\n结论：没有站点使用「生成不出来」的裸色阶类名');
+  if (!perSite.length && !problems.length) console.log('\n结论：没有站点使用「生成不出来」的类名（K1 裸色阶 / K3 非法续接字符）');
   else {
     console.log('');
     for (const s of perSite) {
-      console.log('  ' + s.site + '  共 ' + s.total + ' 处');
-      for (const c of s.classes) console.log('      ' + c.cls.padEnd(20) + '× ' + String(c.n).padStart(3) + '   ' + c.first);
+      if (s.total) {
+        console.log('  ' + s.site + '  共 ' + s.total + ' 处（K1 裸色阶）');
+        for (const c of s.classes) console.log('      ' + c.cls.padEnd(20) + '× ' + String(c.n).padStart(3) + '   ' + c.first);
+      }
+      if (s.k3Total) {
+        console.log('  ' + s.site + '  共 ' + s.k3Total + ' 处（K3 非法续接字符）');
+        for (const c of s.k3) console.log('      ' + c.cls.padEnd(20) + '× ' + String(c.n).padStart(3) + '   ' + c.first);
+      }
     }
     console.log('');
     for (const p of problems) console.log('  [ERROR] ' + p);
