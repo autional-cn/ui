@@ -178,10 +178,19 @@ describe('TenantIndexGuard（P0-2 slug 白名单守卫）', () => {
 		await waitFor(() => expect(screen.getByTestId('children')).toBeInTheDocument());
 	});
 
-	it('URL 多段路径 → 直接 notFound（basename 已剥离 slug，内部必为未知段）', () => {
-		setPath('/acme-corp/xyz');
+	it('slug 有效 + 子路径（/acme-corp/terms）→ 渲染 children（回归：子路由此前被段数检查误杀）', async () => {
+		stubFetch([{ id: '1', name: 'acme-corp' }]);
+		setPath('/acme-corp/terms');
 		render(wrapper(<TenantIndexGuard notFound={notFound}>{children}</TenantIndexGuard>));
-		expect(screen.getByTestId('notfound')).toBeInTheDocument();
+		await waitFor(() => expect(screen.getByTestId('children')).toBeInTheDocument());
+		expect(screen.queryByTestId('notfound')).toBeNull();
+	});
+
+	it('slug 无效 + 子路径（/nonexistent-tenant/terms）→ 渲染 notFound', async () => {
+		stubFetch([{ id: '1', name: 'acme-corp' }]);
+		setPath('/nonexistent-tenant/terms');
+		render(wrapper(<TenantIndexGuard notFound={notFound}>{children}</TenantIndexGuard>));
+		await waitFor(() => expect(screen.getByTestId('notfound')).toBeInTheDocument());
 		expect(screen.queryByTestId('children')).toBeNull();
 	});
 

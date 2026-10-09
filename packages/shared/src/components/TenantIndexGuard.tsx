@@ -6,9 +6,9 @@
  *
  * - usePublicTenantSlugs: 调公开 tenants API（无认证端点），staleTime 5m 缓存，
  *   retry 1，任何失败返回空数组（放行语义由 TenantIndexGuard 处理）。
- * - TenantIndexGuard: index 路由守卫（P0-2），防止未知路径被贪婪渲染为
- *   Dashboard/首页。404 页由各 portal 通过 notFound prop 注入
- *   （shared 组件不能 import 具体 app 的 not-found/page）。
+ * - TenantIndexGuard: 租户 slug 白名单守卫（P0-2），防止未知 slug 被贪婪渲染为
+ *   租户内容（index 首页与 /:slug/... 子路由通用）。404 页由各 portal 通过
+ *   notFound prop 注入（shared 组件不能 import 具体 app 的 not-found/page）。
  *
  * ⚠️ 依赖约束: shared 包 dependencies 无 @autional/ui，禁止 import @autional/ui
  * （会引入未声明依赖/循环依赖）。loading 默认值用内联 div 骨架，
@@ -105,21 +105,18 @@ function DefaultLoadingSkeleton() {
 }
 
 /**
- * index 路由守卫（P0-2）：防止未知路径被贪婪渲染为 Dashboard/首页。
- * 逻辑与 end-user-portal 现状一致（L94-111）：
- * - URL 多段（如 /acme-corp/xyz）：basename 已剥离 slug，内部单段必为未知路由段 → notFound
- * - URL 单段（如 /not-found）：校验 slug 是否在公开租户列表 → 无效 → notFound
- * - URL 单段且 slug 有效（如 /acme-corp）→ children
+ * 租户 slug 白名单守卫（P0-2）：防止未知 slug 被贪婪渲染为租户内容。
+ * - URL 首段经 extractSlugFromPath 取为 slug（保留段/已注册业务段返回 undefined，放行）。
+ * - slug 命中公开租户列表 → children；未命中 → notFound（/nonexistent-tenant[/...] 均 404）。
+ * - 只校验 slug 一段，不看路径深度 —— 子路径合法性（/acme-corp/terms 等）由路由表决定。
+ *   2026-10-09 移除「URL 段数 > 1 → notFound」检查：它出自已废弃的动态 basename 方案
+ *   （那时 basename 剥掉 slug，内部多段 = 未知路由）；basename 改为 '/' 后它对 index
+ *   路由从未生效，却在包裹子路由处误杀 —— auth 站 /:tenantSlug/terms|privacy 曾因此恒 404。
  * - 白名单为空数组时放行（public tenants API 挂掉时退化为不拦截，与 end-user 现状一致）
  */
 export function TenantIndexGuard({ children, notFound, loading }: TenantIndexGuardProps) {
 	const { data: tenants, isLoading } = usePublicTenantSlugs();
 	const slug = useTenantSlugFromUrl();
-
-	if (typeof window !== 'undefined') {
-		const fullSegs = window.location.pathname.split('/').filter(Boolean);
-		if (fullSegs.length > 1) return <>{notFound}</>;
-	}
 
 	if (isLoading && !tenants) return <>{loading ?? <DefaultLoadingSkeleton />}</>;
 
