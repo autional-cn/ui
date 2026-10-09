@@ -18,7 +18,11 @@ import { usePublicTenantSlugs } from './TenantIndexGuard';
  */
 export function TenantRootRedirect() {
 	const currentTenantId = useCurrentTenantId();
-	const { data: knownTenants, isSuccess: tenantsLoaded } = usePublicTenantSlugs();
+	const {
+		data: knownTenants,
+		isSuccess: tenantsLoaded,
+		isError: tenantsError,
+	} = usePublicTenantSlugs();
 
 	const slug = useMemo(() => {
 		if (!currentTenantId || !tenantsLoaded) return undefined;
@@ -35,7 +39,8 @@ export function TenantRootRedirect() {
 		}
 		// 有会话但公开名单尚未返回：等待（名单是 slug 唯一权威，不得抢跑漏斗 brand）。
 		// 无会话（currentTenantId 空）不受此闸，立即漏斗。
-		if (currentTenantId && !tenantsLoaded) return;
+		// 名单接口彻底失败（rc.35：重试耗尽后 error 态）不等待：按无匹配处理漏斗 brand，不卡死。
+		if (currentTenantId && !tenantsLoaded && !tenantsError) return;
 		const brand = getPortalUrl('brand');
 		// 门户不可派生（如经 IP 主机访问）：保持当前页，不导航（与 EntryRouter 同约定）
 		if (!brand) return;
@@ -43,7 +48,7 @@ export function TenantRootRedirect() {
 			window.location.origin + window.location.pathname,
 		)}`;
 		traceRedirect(target, { reason: 'funnel-brand' });
-	}, [slug, currentTenantId, tenantsLoaded]);
+	}, [slug, currentTenantId, tenantsLoaded, tenantsError]);
 
 	return null;
 }

@@ -5,7 +5,8 @@
  * （不复制 4 份，违反 DRY）。
  *
  * - usePublicTenantSlugs: 调公开 tenants API（无认证端点），staleTime 5m 缓存，
- *   retry 1，任何失败返回空数组（放行语义由 TenantIndexGuard 处理）。
+ *   retry 1 + 8s 超时；失败上抛（不吞成空数组成功）——放行语义由消费方
+ *   （TenantIndexGuard / TenantRootRedirect）在失败态自行 fail-open（rc.35）。
  * - TenantIndexGuard: 租户 slug 白名单守卫（P0-2），防止未知 slug 被贪婪渲染为
  *   租户内容（index 首页与 /:slug/... 子路由通用）。404 页由各 portal 通过
  *   notFound prop 注入（shared 组件不能 import 具体 app 的 not-found/page）。
@@ -30,11 +31,20 @@ export interface PublicTenantInfo {
 	id?: string;
 }
 
+/** 公开租户名单请求超时（ms）。跨境链路（Vercel edge → 源站）实测新连接丢 ~45%，
+ * 失败连接 edge 端要 ~31s 才吐 502；正常成功 ≤2s，8s 留 4x 余量，失败快速交给 retry。
+ * （rc.35：此前无超时 + catch 吞错 → retry 死码、失败被当"空名单"成功。） */
+export const PUBLIC_TENANTS_FETCH_TIMEOUT_MS = 8000;
+
 /**
  * 公开租户列表（无认证端点，用于校验 URL slug 有效性）。
  * 从 end-user-portal App.tsx 原样抽取。
  * - staleTime 5m（plan §5 资源列：public tenants API 有缓存）
- * - retry 1；失败返回 []（白名单空数组放行，避免 API 挂掉时全站 404）
+ * - retry 1；非 2xx / 网络错 / 超时一律上抛（不吞成空数组成功）——
+ *   error 态不落缓存，下次调用自然重试
+ * - 消费方 fail-open：名单缺失（error 态 data=undefined 或空数组）→ 不拦截
+ *   （TenantIndexGuard 渲染 children；TenantRootRedirect 漏斗 brand；
+ *   resolveSlugAgainstList 信任传入 slug）
  *
  * ⚠️ 响应契约：tenant-service ListPublicTenants 返回 dto_base.ListResponse
  * （`{code, message, items, total, pagination, timestamp}`，items 才是数组）。
@@ -44,14 +54,18 @@ export function usePublicTenantSlugs() {
 	return useQuery<Array<PublicTenantInfo>>({
 		queryKey: ['public-tenants'],
 		queryFn: async () => {
+			const controller = new AbortController();
+			const timer = setTimeout(() => controller.abort(), PUBLIC_TENANTS_FETCH_TIMEOUT_MS);
 			try {
-				const res = await fetch('/bff/tenant/api/v1/tenant/public/tenants');
-				if (!res.ok) return [];
+				const res = await fetch('/bff/tenant/api/v1/tenant/public/tenants', {
+					signal: controller.signal,
+				});
+				if (!res.ok) throw new Error(`public tenants API HTTP ${res.status}`);
 				const json = await res.json();
 				const list = json?.items ?? json?.data ?? json ?? [];
 				return Array.isArray(list) ? list : [];
-			} catch {
-				return [];
+			} finally {
+				clearTimeout(timer);
 			}
 		},
 		staleTime: 5 * 60 * 1000,

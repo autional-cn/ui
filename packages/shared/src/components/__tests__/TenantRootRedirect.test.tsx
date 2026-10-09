@@ -34,7 +34,12 @@ import { getPortalUrl } from '../../config';
 function wrapper(children: ReactNode) {
 	return (
 		<QueryClientProvider
-			client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })}
+			client={
+				new QueryClient({
+					// retryDelay 0：hook 内部 retry:1 覆盖 retry，重试退避仍走 defaultOptions
+					defaultOptions: { queries: { retry: false, retryDelay: 0, gcTime: Infinity } },
+				})
+			}
 		>
 			{children}
 		</QueryClientProvider>
@@ -154,7 +159,7 @@ describe('TenantRootRedirect 裸根漏斗', () => {
 		expect(withoutRt(String(mockState.replace.mock.calls[0][0]))).toBe(withoutRt(expectedBrandFunnel()));
 	});
 
-	it('名单接口失败（返回空数组）→ 有会话按无匹配处理，漏斗 brand（不卡死）', async () => {
+	it('名单接口失败（error 态，rc.35 上抛）→ 有会话按无匹配处理，漏斗 brand（不卡死）', async () => {
 		mockState.currentTenantId = 't1';
 		vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
 

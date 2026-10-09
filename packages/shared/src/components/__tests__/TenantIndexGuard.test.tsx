@@ -9,7 +9,9 @@ import { TenantIndexGuard, usePublicTenantSlugs } from '../TenantIndexGuard';
 function createQueryClient() {
 	return new QueryClient({
 		defaultOptions: {
-			queries: { retry: false, gcTime: Infinity },
+			// retryDelay 0：hook 内部 retry:1 覆盖 retry，但重试退避仍走 defaultOptions，
+			// 不设 0 时失败用例要白等默认 1s 退避
+			queries: { retry: false, retryDelay: 0, gcTime: Infinity },
 		},
 	});
 }
@@ -106,20 +108,34 @@ describe('usePublicTenantSlugs（响应契约解析）', () => {
 		await waitFor(() => expect(result).toEqual([{ id: '1', name: 'acme-corp' }]));
 	});
 
-	it('API 非 200 → 返回空数组（放行语义）', async () => {
+	it('API 非 200 → 上抛进入 error 态，不吞成空数组成功（rc.35）', async () => {
 		stubFetchNonOk();
-		let result: unknown[] | undefined;
+		let state: { isError: boolean; data: unknown[] | undefined } | undefined;
 		function Harness() {
 			const q = usePublicTenantSlugs();
-			result = q.data;
+			state = { isError: q.isError, data: q.data };
 			return null;
 		}
 		render(wrapper(<Harness />));
-		await waitFor(() => expect(result).toEqual([]));
+		await waitFor(() => expect(state?.isError).toBe(true));
+		expect(state?.data).toBeUndefined();
 	});
 
-	it('网络异常 → 返回空数组', async () => {
+	it('网络异常 → 上抛进入 error 态（retry 不再被吞错架空，rc.35）', async () => {
 		stubFetchReject();
+		let state: { isError: boolean; data: unknown[] | undefined } | undefined;
+		function Harness() {
+			const q = usePublicTenantSlugs();
+			state = { isError: q.isError, data: q.data };
+			return null;
+		}
+		render(wrapper(<Harness />));
+		await waitFor(() => expect(state?.isError).toBe(true));
+		expect(state?.data).toBeUndefined();
+	});
+
+	it('fetch 携带 AbortSignal（8s 超时接线，rc.35）', async () => {
+		stubFetch([{ id: '1', name: 'acme-corp' }]);
 		let result: unknown[] | undefined;
 		function Harness() {
 			const q = usePublicTenantSlugs();
@@ -127,7 +143,39 @@ describe('usePublicTenantSlugs（响应契约解析）', () => {
 			return null;
 		}
 		render(wrapper(<Harness />));
-		await waitFor(() => expect(result).toEqual([]));
+		await waitFor(() => expect(result).toEqual([{ id: '1', name: 'acme-corp' }]));
+		const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+		const init = fetchMock.mock.calls[0][1] as RequestInit;
+		expect(init.signal).toBeInstanceOf(AbortSignal);
+	});
+
+	it('超时 abort（AbortError）→ 上抛进入 error 态，不吞（rc.35）', async () => {
+		const signals: AbortSignal[] = [];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((_url: string, init?: RequestInit) => {
+				return new Promise((_resolve, reject) => {
+					signals.push(init!.signal!);
+					init!.signal!.addEventListener('abort', () =>
+						reject(new DOMException('The operation was aborted.', 'AbortError')),
+					);
+				});
+			}),
+		);
+		let isError = false;
+		function Harness() {
+			const q = usePublicTenantSlugs();
+			isError = q.isError;
+			return null;
+		}
+		render(wrapper(<Harness />));
+		// 模拟计时器到点 abort（计时器-到点→abort 是标准库行为，此处验 abort 错误的上抛路径）；
+		// hook retry:1 → 两跳都要 abort 才耗尽重试
+		await waitFor(() => expect(signals.length).toBeGreaterThan(0));
+		signals[0].dispatchEvent(new Event('abort'));
+		await waitFor(() => expect(signals.length).toBeGreaterThan(1));
+		signals[1].dispatchEvent(new Event('abort'));
+		await waitFor(() => expect(isError).toBe(true));
 	});
 
 	it('响应无 items/data 且非数组 → 返回空数组', async () => {
@@ -176,6 +224,14 @@ describe('TenantIndexGuard（P0-2 slug 白名单守卫）', () => {
 		setPath('/any-slug');
 		render(wrapper(<TenantIndexGuard notFound={notFound}>{children}</TenantIndexGuard>));
 		await waitFor(() => expect(screen.getByTestId('children')).toBeInTheDocument());
+	});
+
+	it('名单接口失败（重试耗尽 error）→ fail-open 渲染 children，不白屏不 404（rc.35）', async () => {
+		stubFetchReject();
+		setPath('/any-slug');
+		render(wrapper(<TenantIndexGuard notFound={notFound}>{children}</TenantIndexGuard>));
+		await waitFor(() => expect(screen.getByTestId('children')).toBeInTheDocument());
+		expect(screen.queryByTestId('notfound')).toBeNull();
 	});
 
 	it('slug 有效 + 子路径（/acme-corp/terms）→ 渲染 children（回归：子路由此前被段数检查误杀）', async () => {
